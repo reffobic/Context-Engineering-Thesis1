@@ -1,0 +1,16 @@
+# Core dependencies
+# Install with: pip install -r requirements.txt
+
+# Testing
+pytest>=7.0
+
+# Optional — needed for real embedding-based approach (Approach 3)
+# sentence-transformers>=2.2
+# faiss-cpu>=1.7
+
+# Optional — needed for real LLM calls (Approaches 1 & 4)
+# openai>=1.0
+# anthropic>=0.20
+
+# Optional — needed for LLMLingua-2 context pruning
+# llmlingua>=0.2
