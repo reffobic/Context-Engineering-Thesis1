@@ -7,8 +7,12 @@ Run:
 Output: per-approach metrics + comparison table.
 """
 
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+import sys
+import os
+
+_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
 
 from src.answerable_diamond.approaches import (
     SelfRouteApproach,

@@ -11,7 +11,10 @@ Or run the demo directly:
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+# Ensure project root is on path when running this file directly (e.g. from IDE)
+_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
 
 from src.answerable_diamond.approaches import (
     SelfRouteApproach,
