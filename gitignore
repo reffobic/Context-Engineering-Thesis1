@@ -1,0 +1,11 @@
+# API keys — NEVER commit this
+config.py
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
+venv/
+.env/
