@@ -82,14 +82,50 @@ Asks the LLM to answer AND self-report a confidence score (0–10).  Low confide
 
 ---
 
+## File-level context selection (Dr. Ibrahim's idea)
+
+We implement the **context optimization agent** from Dr. Ibrahim's demo: given a project described by a **file map** (path + one-line purpose per file, no code) and a **user change request**, the system returns the **minimal set of files** an LLM (or developer) needs as context to implement that change.
+
+- **Same idea as the Answerable? diamond**, but at **file granularity**: "Is this change answerable from this small set of files?" → if not, expand context.
+- **Ollama-ready**: run with local Ollama (`--ollama`) or use a mock for tests.
+
+**How to run:**
+
+```bash
+# Mock LLM (no Ollama)
+python scripts/demo_file_selector.py
+
+# Local Ollama (e.g. ollama run llama2)
+python scripts/demo_file_selector.py --ollama
+
+# Custom request (e.g. "Use another vector database for the RAG")
+python scripts/demo_file_selector.py --request "Use another vector database for the RAG"
+
+# Apache Subversion (team codebase)
+python scripts/demo_file_selector.py --project subversion
+python scripts/demo_file_selector.py --project subversion --ollama
+```
+
+**What’s included:**
+
+- `src/file_context/` — `FileMap`, `FileContextSelector`, `OllamaClient`, `MockFileSelectorClient`
+- `tests/fixtures/ai_project_file_map.py` — file map from the shared AI chatbot + RAG project (50 files)
+- `tests/fixtures/subversion_file_map.py` — file map for [Apache Subversion](https://github.com/apache/subversion) (39 entries)
+- Gold set for *"Enable uploading an image to the custom chat"* so the demo can report recall vs. Claude’s answer
+
+---
+
 ## Quick Start
 
 ```bash
 # Install dependencies (only pytest needed for mock tests)
 pip install -r requirements.txt
 
-# Run the demo (no API key needed — uses mock LLM)
+# Run the Answerable? diamond demo (no API key needed — uses mock LLM)
 python tests/test_answerable_diamond.py
+
+# Run file-level context selection demo (mock or --ollama; use --project subversion for Apache Subversion)
+python scripts/demo_file_selector.py
 
 # Run full evaluation with metrics table
 python tests/evaluate_approaches.py
@@ -139,16 +175,24 @@ Context-Engineering-Thesis1/
 │   ├── answerable_diamond/
 │   │   ├── approaches.py     ← Four approaches for the diamond
 │   │   └── router.py         ← Routing logic (escalation pipeline)
+│   ├── file_context/
+│   │   ├── file_map.py       ← FileEntry, FileMap (path + purpose)
+│   │   └── selector.py       ← FileContextSelector, Ollama + mock clients
 │   ├── retrieval/
 │   │   └── longrag.py        ← LongRAG retriever stub (Hoda)
 │   └── pruning/
 │       └── context_pruner.py ← Context pruning stub
+├── scripts/
+│   └── demo_file_selector.py ← File-level context selection demo
 ├── tests/
+│   ├── fixtures/
+│   │   ├── ai_project_file_map.py   ← AI chatbot + RAG file map + gold sets
+│   │   └── subversion_file_map.py   ← Apache Subversion file map (team codebase)
 │   ├── stories/
 │   │   └── story_corpus.py   ← Test cases ("The Missing Notebook")
 │   ├── test_answerable_diamond.py
 │   ├── evaluate_approaches.py
-│   └── metrics.py            ← Evaluation metrics (Hana)
+│   └── metrics.py           ← Evaluation metrics (Hana)
 ├── requirements.txt
 └── README.md
 ```
