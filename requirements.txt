@@ -4,6 +4,9 @@
 # Testing
 pytest>=7.0
 
+# TypedDict on Python 3.7 (backend/injection/prompt_builder.py)
+typing_extensions>=4.0; python_version < "3.8"
+
 # Optional — needed for real embedding-based approach (Approach 3)
 # sentence-transformers>=2.2
 # faiss-cpu>=1.7

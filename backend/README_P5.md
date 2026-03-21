@@ -12,10 +12,12 @@ Typical branches: `main`, `approaches+test`, `context-engine` (new engine layout
 
 | Path | Role |
 |------|------|
-| `injection/prompt_builder.py` | Structured context injection: `FILES_AND_CODE`, `DEPENDENCIES`, `TASK` |
-| `agent/ollama_agent.py` | `OllamaAgent.generate_response`, `generate_with_context` |
+| `injection/prompt_builder.py` | Structured injection: `FILES_AND_CODE`, `DEPENDENCIES`, `TASK`; **TypedDict** `ContextChunk`; **group by file**; optional **`start_line`** + line numbers; **token budget** + pluggable `estimate_tokens` |
+| `agent/ollama_agent.py` | `OllamaAgent.generate_response`, `generate_with_context` (optional `max_context_tokens`, `prompt_builder`) |
 
-P3/P4 pass **chunks** as `list[dict]` with at least `text`; optional `path`, `symbol`, `language`, `dependencies`.
+P3/P4 pass **chunks** as `list[ContextChunk]` (typed dict): at least `text`; optional `path`, `symbol`, `language`, `dependencies`, `start_line`.
+
+**Tests:** `tests/backend/test_prompt_builder.py` — run with `PYTHONPATH=. pytest tests/backend/` (install `typing_extensions` on Python 3.7).
 
 ## Ollama vs DeepSeek Coder
 

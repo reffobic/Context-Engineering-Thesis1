@@ -1,5 +1,5 @@
 """
-Person 5 — Ollama-backed agent for code generation.
+Ollama-backed agent for code generation.
 
 Calls local Ollama (same pattern as src/file_context/selector.py OllamaClient).
 Supports:
@@ -14,7 +14,7 @@ You only need Ollama installed. Optional models: pull any coding model, e.g.
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
@@ -91,15 +91,22 @@ class OllamaAgent:
         *,
         system_prompt: Optional[str] = None,
         extra_dependencies: Optional[str] = None,
+        max_context_tokens: Optional[int] = None,
+        prompt_builder: Optional[PromptBuilder] = None,
     ) -> str:
         """
         Full P5 path: build structured prompt (injection) → Ollama chat.
+
+        Pass ``prompt_builder`` to reuse a configured instance (token budget, line numbers, etc.).
         """
-        builder = PromptBuilder(
+        builder = prompt_builder or PromptBuilder(
             system_prompt=system_prompt or DEFAULT_SYSTEM_PROMPT
         )
         system, user = builder.build(
-            user_task, chunks, extra_dependencies=extra_dependencies
+            user_task,
+            chunks,
+            extra_dependencies=extra_dependencies,
+            max_context_tokens=max_context_tokens,
         )
         return self.generate_response(user, system=system)
 
