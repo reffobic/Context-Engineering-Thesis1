@@ -105,6 +105,10 @@ def main():
 
     result = selector.select(file_map, args.request)
 
+    # print("\n  RAW LLM RESPONSE:")
+    # print("  " + "-" * 50)
+    # print(result.raw_response)
+
     print("\n  SELECTED FILES (minimal context set):")
     print("  " + "-" * 50)
     for p in result.selected_paths:
@@ -119,7 +123,7 @@ def main():
         recall = len(selected_set & gold_all) / len(gold_all) if gold_all else 0
         extra = selected_set - gold_all
         missing = gold_all - selected_set
-        print("\n  COMPARISON TO GOLD (from Claude's answer in the chat):")
+        print("\n  COMPARISON TO GOLD:")
         print("  " + "-" * 50)
         print(f"    Recall (selected ∩ gold / gold): {recall:.0%}")
         if missing:

@@ -59,7 +59,7 @@ class OllamaClient(LLMClient):
         req = Request(url, data=data, method="POST")
         req.add_header("Content-Type", "application/json")
         try:
-            with urlopen(req, timeout=120) as resp:
+            with urlopen(req, timeout=600) as resp:
                 out = json.loads(resp.read().decode())
                 return out.get("response", "")
         except URLError as e:
