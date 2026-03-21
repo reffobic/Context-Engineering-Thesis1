@@ -7,9 +7,92 @@
 
 ## Overview
 
-This repository implements the **Context Engineering Optimization Engine** described in our literature survey.  The system sits between a user's prompt and an AI agent (GPT / Gemini / Claude) and ensures the agent only receives **relevant, clean context** — not noise.
+This repository implements the **Context Engineering Optimization Engine** from our literature survey: manage what the model sees (retrieval, pruning, injection) so coding assistants get **relevant, bounded context** instead of noise.
 
-### Block Diagram
+### Target pipeline (`context-engine` branch)
+
+```
+Developer → Client (CLI / Web / IDE) → MCP Server (Context Engine)
+              ├ retrieve_context
+              ├ prune_context
+              ├ inject_context
+              └ search_codebase
+         → Vector DB (code embeddings) → Ollama (local LLM) → generated code
+```
+
+Evaluation runs **outside** this loop (golden tasks, baselines, metrics).
+
+---
+
+## Git branches
+
+| Branch | Purpose |
+|--------|---------|
+| **`context-engine`** | **Active integration branch** — backend layout (MCP + tools + P5 agent). Develop the full engine here. |
+| `main` | Stable / default line with the thesis repo history. |
+| `approaches+test` | Earlier prototypes: Answerable? diamond, story tests, file-level selector demos. |
+
+Use `git branch -a` to see remotes (`origin/main`, `origin/context-engine`, etc.).
+
+---
+
+## Team map (parallel work)
+
+| Person | Role | Main deliverable | Location (planned / current) |
+|--------|------|------------------|------------------------------|
+| P1 | MCP server + integration | Working context engine shell | `backend/mcp_server/` (TBD) |
+| P2 | Code indexing + embeddings | Vector DB population | `backend/indexing/` (TBD) |
+| P3 | Retrieval tool | Semantic search / `retrieve_context` | `backend/retrieval/` (TBD) |
+| P4 | Context pruning | Token reduction | `backend/pruning/` (TBD) |
+| **P5** | **LLM agent + prompt builder** | **Structured injection + Ollama** | **`backend/injection/`**, **`backend/agent/`** ✅ |
+| P6 | Evaluation | Benchmarks + metrics | `evaluation/` (TBD) |
+
+**Person 5 (implemented):**
+
+- `backend/injection/prompt_builder.py` — builds system + user messages with `<CONTEXT>`, `<FILES_AND_CODE>`, optional `<DEPENDENCIES>`, `<TASK>`.
+- `backend/agent/ollama_agent.py` — `OllamaAgent.generate_response()`, `generate_with_context()` using Ollama `/api/chat` or `/api/generate`.
+
+Details: [`backend/README_P5.md`](backend/README_P5.md).
+
+**Ollama vs DeepSeek Coder:** Ollama is the runtime. DeepSeek Coder is an optional **model** (`ollama pull …`); no separate DeepSeek install required.
+
+### Run Person 5 smoke test
+
+From repo root:
+
+```bash
+export PYTHONPATH=.
+
+# Build prompt only (no HTTP)
+OLLAMA_SKIP=1 python backend/agent/ollama_agent.py
+
+# Full round-trip (Ollama running + model pulled)
+python backend/agent/ollama_agent.py llama3.2:3b
+```
+
+### P5 API for integrators (P1)
+
+```python
+from backend.agent import OllamaAgent
+
+agent = OllamaAgent(model="qwen3.5:4b")
+answer = agent.generate_with_context(
+    user_task="Add logging to the checkout flow.",
+    chunks=[
+        {"path": "app.py", "text": "def checkout(): pass", "language": "python"},
+    ],
+)
+```
+
+Chunks are `list[dict]` with at least `text`; optional `path`, `symbol`, `language`, `dependencies` (from P3/P4).
+
+---
+
+## Legacy prototypes (`src/` + `tests/`)
+
+These predate the `backend/` engine layout but remain useful for **research and demos**.
+
+### Block diagram (Answerable? diamond)
 
 ```
 User ──Prompt──► [Online Pipeline]
@@ -19,7 +102,7 @@ User ──Prompt──► [Online Pipeline]
                   └───┬───┘
                       │
                  ┌────▼────┐
-                 │Answerable│  ◄── THIS is what we are building
+                 │Answerable?│
                  │    ?    │
                  └──┬───┬──┘
                Yes  │   │ No
@@ -28,183 +111,108 @@ User ──Prompt──► [Online Pipeline]
                     │         │
                     │  [Context Pruning & Injection]
                     │         │
-                    └────►  AI Agent (GPT / Gemini / Claude)
+                    └────►  AI Agent
 ```
 
----
-
-## Task Split
+### Task split (earlier checklist)
 
 | Task | Owner | Status |
 |------|-------|--------|
-| Approaches for Answerable? diamond + tests | **Hana, Refai** | ✅ In progress (this branch) |
-| Evaluation metrics | **Hana** | ✅ `tests/metrics.py` |
-| AGENTS.md | **Haya** | ⬜ Pending |
-| Context window overflow (tool output) | **Haya** | ⬜ Pending |
-| LongRAG offline processing | **Hoda** | ⬜ Stub in `src/retrieval/longrag.py` |
+| Approaches for Answerable? diamond + tests | **Hana, Refai** | ✅ `src/answerable_diamond/` |
+| Evaluation metrics (routing) | **Hana** | ✅ `tests/metrics.py` |
+| File-level context selection | **Refai / team** | ✅ `src/file_context/`, `scripts/demo_file_selector.py` |
+| AGENTS.md | **Haya** | ⬜ |
+| Context window overflow (tool output) | **Haya** | ⬜ |
+| LongRAG offline processing | **Hoda** | ⬜ stub `src/retrieval/longrag.py` |
 
----
+### Four Answerable? approaches
 
-## The Answerable? Diamond — Four Approaches
+Implemented in `src/answerable_diamond/approaches.py`: SELF-ROUTE, keyword overlap, semantic similarity (mock embedder), confidence estimation. See file docstrings for paper refs (Li et al., Alansari & Luqman, etc.).
 
-The core problem: **given a user query and a set of RAG-retrieved chunks, is the query answerable from those chunks alone?**
+### File-level context selection (Dr. Ibrahim’s demo)
 
-If YES → send directly to AI Agent (cheap, fast).  
-If NO  → escalate to LongRAG + FastGen (expensive, thorough).
-
-We implement and compare **four approaches**:
-
-### Approach 1 — SELF-ROUTE (LLM-as-judge)
-> *Li et al. (2024) — "Retrieval Augmented Generation or Long Context LLMs?"*
-
-Prompt the LLM with the retrieved chunks and ask it to declare `ANSWERABLE` or `UNANSWERABLE`.  No fine-tuning required.  Routes >50% of queries to the cheaper RAG pipeline.
-
-**File:** `src/answerable_diamond/approaches.py` → `SelfRouteApproach`
-
-### Approach 2 — Keyword Overlap Heuristic
-Fast zero-LLM-call baseline.  Tokenises the query into content words and checks what fraction appear in the retrieved chunks.  Deterministic and interpretable.
-
-**File:** `src/answerable_diamond/approaches.py` → `KeywordOverlapApproach`
-
-### Approach 3 — Semantic Similarity (Embedding-based)
-> *Alansari & Luqman (2025) — embedding-based hallucination detection*
-
-Computes cosine similarity between the query embedding and the mean chunk embedding.  Catches semantic paraphrases that keyword overlap misses.
-
-**File:** `src/answerable_diamond/approaches.py` → `SemanticSimilarityApproach`
-
-### Approach 4 — Confidence / Uncertainty Estimation
-> *Alansari & Luqman (2025) — uncertainty-based detection*
-
-Asks the LLM to answer AND self-report a confidence score (0–10).  Low confidence → escalate.  Useful as a proxy for token-level probability when model internals are inaccessible.
-
-**File:** `src/answerable_diamond/approaches.py` → `ConfidenceEstimationApproach`
-
----
-
-## File-level context selection (Dr. Ibrahim's idea)
-
-We implement the **context optimization agent** from Dr. Ibrahim's demo: given a project described by a **file map** (path + one-line purpose per file, no code) and a **user change request**, the system returns the **minimal set of files** an LLM (or developer) needs as context to implement that change.
-
-- **Same idea as the Answerable? diamond**, but at **file granularity**: "Is this change answerable from this small set of files?" → if not, expand context.
-- **Ollama-ready**: run with local Ollama (`--ollama`) or use a mock for tests.
-
-**How to run:**
+Given a **file map** (path + purpose, no code) and a **change request**, the selector returns a minimal file list. Run:
 
 ```bash
-# Mock LLM (no Ollama)
-python scripts/demo_file_selector.py
-
-# Local Ollama (e.g. ollama run llama2)
-python scripts/demo_file_selector.py --ollama
-
-# Custom request (e.g. "Use another vector database for the RAG")
-python scripts/demo_file_selector.py --request "Use another vector database for the RAG"
-
-# Apache Subversion (team codebase)
-python scripts/demo_file_selector.py --project subversion
-python scripts/demo_file_selector.py --project subversion --ollama
+python scripts/demo_file_selector.py                    # mock / Ollama
+python scripts/demo_file_selector.py --project subversion --ollama --model llama3.2:3b
 ```
 
-**What’s included:**
-
-- `src/file_context/` — `FileMap`, `FileContextSelector`, `OllamaClient`, `MockFileSelectorClient`
-- `tests/fixtures/ai_project_file_map.py` — file map from the shared AI chatbot + RAG project (50 files)
-- `tests/fixtures/subversion_file_map.py` — file map for [Apache Subversion](https://github.com/apache/subversion) (39 entries)
-- Gold set for *"Enable uploading an image to the custom chat"* so the demo can report recall vs. Claude’s answer
+Fixtures: `tests/fixtures/ai_project_file_map.py`, `tests/fixtures/subversion_file_map.py` ([Apache Subversion](https://github.com/apache/subversion)).
 
 ---
 
-## Quick Start
+## Quick start
 
 ```bash
-# Install dependencies (only pytest needed for mock tests)
 pip install -r requirements.txt
 
-# Run the Answerable? diamond demo (no API key needed — uses mock LLM)
+# --- context-engine (P5) ---
+export PYTHONPATH=.
+OLLAMA_SKIP=1 python backend/agent/ollama_agent.py
+
+# --- Legacy demos ---
 python tests/test_answerable_diamond.py
-
-# Run file-level context selection demo (mock or --ollama; use --project subversion for Apache Subversion)
 python scripts/demo_file_selector.py
-
-# Run full evaluation with metrics table
 python tests/evaluate_approaches.py
-
-# Run pytest suite
 python -m pytest tests/test_answerable_diamond.py -v
 ```
 
 ---
 
-## Test Corpus — "The Missing Notebook"
+## Test corpus — “The Missing Notebook”
 
-We use a short detective story as a stand-in for Valeo's internal documents.  This lets us test all four approaches without needing corporate access.
-
-| ID | Description | Expected |
-|----|-------------|----------|
-| TC-01 | Direct fact — one chunk | ANSWERABLE |
-| TC-02 | Multi-hop — two chunks | ANSWERABLE |
-| TC-03 | Answer not in chunks | UNANSWERABLE |
-| TC-04 | Irrelevant chunks | UNANSWERABLE |
-| TC-05 | Conclusion paragraph | ANSWERABLE |
-| TC-06 | Escalation test | UNANSWERABLE → ANSWERABLE after LongRAG |
+Story-based cases for the Answerable? diamond (`tests/stories/story_corpus.py`): TC-01 … TC-06 (answerable / unanswerable / escalation).
 
 ---
 
-## Evaluation Metrics
+## Evaluation metrics (diamond / routing)
 
-Defined in `tests/metrics.py`:
-
-| Metric | What it measures |
-|--------|-----------------|
-| Routing Accuracy | % of queries correctly classified |
-| Precision / Recall / F1 | Standard classification metrics (ANSWERABLE = positive) |
-| Escalation Rate | % of queries sent to expensive LongRAG |
-| False Escalation Rate | % of answerable queries unnecessarily escalated (wasted cost) |
-| Missed Escalation Rate | % of unanswerable queries not escalated (hallucination risk) |
-| Average Confidence | Mean confidence score |
-| Cost Proxy | Weighted token cost (RAG=1×, LongRAG=10×) |
+`tests/metrics.py`: routing accuracy, precision / recall / F1, escalation rates, cost proxy.
 
 ---
 
-## Project Structure
+## Project structure
 
 ```
 Context-Engineering-Thesis1/
-├── src/
+├── backend/                      ← context-engine integration
+│   ├── README_P5.md              ← Person 5 usage
+│   ├── injection/
+│   │   └── prompt_builder.py     ← P5: structured prompts
+│   └── agent/
+│       └── ollama_agent.py       ← P5: Ollama client + generate_with_context
+│   ├── mcp_server/               ← P1 (TBD)
+│   ├── indexing/                 ← P2 (TBD)
+│   ├── retrieval/                ← P3 (TBD)
+│   └── pruning/                  ← P4 (TBD)
+├── src/                          ← legacy / research prototypes
 │   ├── answerable_diamond/
-│   │   ├── approaches.py     ← Four approaches for the diamond
-│   │   └── router.py         ← Routing logic (escalation pipeline)
 │   ├── file_context/
-│   │   ├── file_map.py       ← FileEntry, FileMap (path + purpose)
-│   │   └── selector.py       ← FileContextSelector, Ollama + mock clients
 │   ├── retrieval/
-│   │   └── longrag.py        ← LongRAG retriever stub (Hoda)
 │   └── pruning/
-│       └── context_pruner.py ← Context pruning stub
 ├── scripts/
-│   └── demo_file_selector.py ← File-level context selection demo
+│   └── demo_file_selector.py
 ├── tests/
 │   ├── fixtures/
-│   │   ├── ai_project_file_map.py   ← AI chatbot + RAG file map + gold sets
-│   │   └── subversion_file_map.py   ← Apache Subversion file map (team codebase)
 │   ├── stories/
-│   │   └── story_corpus.py   ← Test cases ("The Missing Notebook")
 │   ├── test_answerable_diamond.py
 │   ├── evaluate_approaches.py
-│   └── metrics.py           ← Evaluation metrics (Hana)
+│   └── metrics.py
+├── evaluation/                   ← P6 (TBD)
+├── data/                         ← sample codebase (TBD)
 ├── requirements.txt
 └── README.md
 ```
 
 ---
 
-## Literature References
+## Literature references
 
-- Li et al. (2024) — SELF-ROUTE: RAG vs Long Context routing
-- Jiang et al. (2024) — LongRAG: large retrieval units
-- Ge et al. (2024) — FastGen: adaptive KV cache compression
-- Lu et al. (2024) — TurboRAG: offline KV cache pre-computation
-- Asai et al. (2023) — SELF-RAG: reflection tokens
-- Alansari & Luqman (2025) — Hallucination detection survey
-- Liu et al. (2024) — "Lost in the Middle": positional bias
+- Li et al. (2024) — SELF-ROUTE: RAG vs Long Context routing  
+- Jiang et al. (2024) — LongRAG: large retrieval units  
+- Ge et al. (2024) — FastGen: adaptive KV cache compression  
+- Lu et al. (2024) — TurboRAG: offline KV cache pre-computation  
+- Asai et al. (2023) — SELF-RAG: reflection tokens  
+- Alansari & Luqman (2025) — Hallucination detection survey  
+- Liu et al. (2024) — “Lost in the Middle”: positional bias  
