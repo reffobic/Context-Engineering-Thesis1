@@ -1,4 +1,4 @@
-"""Person 5 — LLM agent (Ollama)."""
+"""LLM agent (Ollama)."""
 
 from .ollama_agent import OllamaAgent, generate_response
 
