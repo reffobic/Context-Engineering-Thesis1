@@ -392,16 +392,17 @@ class CodeIndexer:
     ) -> dict:
         repo_path = Path(repo_path).resolve()
         files     = scan_repository(repo_path, languages=languages)
-        stats     = {"files_scanned": len(files), "files_indexed": 0,
-                     "chunks_added": 0, "chunks_skipped": 0}
-
+        stats = {"files_scanned": len(files), "files_indexed": 0, "chunks_added": 0, "chunks_skipped": 0, "files_skipped": 0}
+        
         for fpath in files:
             rel   = str(fpath.relative_to(repo_path))
             fhash = _file_hash(fpath)
 
             if incremental and self._hash_cache.get(rel) == fhash:
                 logger.debug("Skipping unchanged file: %s", rel)
-                stats["chunks_skipped"] += 1
+                stats["files_skipped"] += 1
+                chunks = read_and_chunk_file(fpath, repo_path)
+                stats["chunks_skipped"] += len(chunks)
                 continue
 
             chunks = read_and_chunk_file(fpath, repo_path)
@@ -558,3 +559,4 @@ if __name__ == "__main__":
     else:
         parser.print_help()
         sys.exit(1)
+        

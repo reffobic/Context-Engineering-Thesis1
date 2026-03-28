@@ -1,8 +1,9 @@
 from fastapi import FastAPI
-from tool_registry import register_tool
+from tool_registry import call_tool
 import requests
 import logging
 import signal # in the case that a tool hangs 
+from pathlib import Path # For absolute path that is not machine specific
 
 app = FastAPI()
 
@@ -20,28 +21,13 @@ def ollama_generate(prompt):
 
     return response.json()
 
-""""
-Once tools are created in each folder, they can be called here using tool_registry like this:
-
-from retrieval.retrieval_tool import retrieve_context
-from pruning.pruning_tool import prune_context
-from injection.prompt_builder import inject_context
-
-register_tool("retrieve_context", retrieve_context)
-register_tool("prune_context", prune_context)
-register_tool("inject_context", inject_context)
-
-
-then...
-
-call_tool("retrieve_context", query)
-"""
-
+# Confirm server is running
 @app.get("/")
 async def root():
+    logging.info("Context Engine is running")
     return {"Context Engine Running"}
 
-# Example/tentative main pipeline 
+
 # !!!!!!!!!!! MISSING: add logging e.g. logging.info("retrieval started")
 def run_pipeline(user_prompt):
 
@@ -56,10 +42,25 @@ def run_pipeline(user_prompt):
     return result
 
 
-# Add API endpoint
-@app.post("/generate")
-def generate(prompt: str):
+# Add API endpoints
+@app.post("/index")
+def index(repo_path: str, languages: list[str] = None):
+    """
+    Indexing and Embeddings 
+    Note: no indexing in pipeline because it's a one-time setup
+    
+    Initial test with Flask: (PASS/FAIL)
+    Final test with subversion: (PASS/FAIL)
+    """
+    logging.info("Indexing started")
+    BASE_DIR = Path(__file__).resolve().parent.parent  # goes up to backend/
+    result = call_tool("index_codebase", repo_path=str(BASE_DIR / "flask_test"), languages=languages)
+    logging.info("Indexing complete: %s", result)
+    return result
 
-    result = run_pipeline(prompt)
+# @app.post("/generate")
+# def generate(prompt: str):
 
-    return {"output": result}
+#     result = run_pipeline(prompt)
+
+#     return {"output": result}
