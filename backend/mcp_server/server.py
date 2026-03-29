@@ -1,25 +1,11 @@
 from fastapi import FastAPI
 from tool_registry import call_tool
-import requests
 import logging
-import signal # in the case that a tool hangs 
-from pathlib import Path # For absolute path that is not machine specific
+from pathlib import Path  # For absolute path that is not machine specific
 
 app = FastAPI()
 
 logging.basicConfig(level=logging.INFO)
-
-def ollama_generate(prompt):
-
-    response = requests.post(
-        "http://localhost:11434/api/generate",
-        json={
-            "model": "codellama",
-            "prompt": prompt
-        }
-    )
-
-    return response.json()
 
 # Confirm server is running
 @app.get("/")
