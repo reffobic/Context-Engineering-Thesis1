@@ -28,17 +28,19 @@ async def root():
     return {"Context Engine Running"}
 
 
-# !!!!!!!!!!! MISSING: add logging e.g. logging.info("retrieval started")
+# Current pipeline  
 def run_pipeline(user_prompt):
-
+    logging.info("Retrieval started")
     context = call_tool("retrieve_context", user_prompt)
 
+    logging.info("Pruning started")
     pruned_context = call_tool("prune_context", context)
 
+    logging.info("Injection started")
     final_prompt = call_tool("inject_context", user_prompt, pruned_context)
 
+    logging.info("Generating response")
     result = ollama_generate(final_prompt)
-
     return result
 
 
