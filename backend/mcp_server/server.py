@@ -37,10 +37,9 @@ def run_pipeline(user_prompt):
     pruned_context = call_tool("prune_context", context)
 
     logging.info("Injection started")
-    final_prompt = call_tool("inject_context", user_prompt, pruned_context)
-
+    final_prompt = call_tool("inject_context", user_prompt, pruned_context) 
     logging.info("Generating response")
-    result = ollama_generate(final_prompt)
+    result = call_tool("ollama_generate", final_prompt)
     return result
 
 
@@ -60,9 +59,9 @@ def index(repo_path: str, languages: list[str] = None):
     logging.info("Indexing complete: %s", result)
     return result
 
-# @app.post("/generate")
-# def generate(prompt: str):
+@app.post("/generate")
+def generate(prompt: str):
 
-#     result = run_pipeline(prompt)
+    result = run_pipeline(prompt)
 
-#     return {"output": result}
+    return {"output": result}
