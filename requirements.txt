@@ -1,0 +1,6 @@
+# Python 3.7 only — backend/injection uses TypedDict from typing_extensions
+typing_extensions>=4.0; python_version < "3.8"
+
+# Full stack (indexing + MCP): Python 3.10+, install with THAT interpreter:
+#   python3.12 -m pip install -r backend/indexing/requirements.txt fastapi uvicorn pydantic
+# (Bare `pip` may target pyenv 3.7 and fail with No module named '_ctypes'.)

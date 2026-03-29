@@ -1,9 +1,22 @@
-from fastapi import FastAPI
-from tool_registry import call_tool
 import logging
-from pathlib import Path  # For absolute path that is not machine specific
+from pathlib import Path
+from typing import List, Optional
+
+from fastapi import FastAPI, Query
+from pydantic import BaseModel
+
+try:
+    from tool_registry import call_tool
+except ModuleNotFoundError:  # when running as package: python -m uvicorn mcp_server.server:app
+    from mcp_server.tool_registry import call_tool
 
 app = FastAPI()
+
+
+class GenerateRequest(BaseModel):
+    """JSON body for POST /generate (matches `run_demo.py` and `requests.post(..., json={...})`)."""
+
+    prompt: str
 
 logging.basicConfig(level=logging.INFO)
 
@@ -31,23 +44,29 @@ def run_pipeline(user_prompt):
 
 # Add API endpoints
 @app.post("/index")
-def index(repo_path: str, languages: list[str] = None):
+def index(
+    repo_path: Optional[str] = Query(
+        None,
+        description="Absolute path to repository root. Defaults to backend/flask_test when omitted.",
+    ),
+    languages: Optional[List[str]] = Query(
+        None,
+        description="Optional language filter passed to the indexer.",
+    ),
+):
     """
-    Indexing and Embeddings 
-    Note: no indexing in pipeline because it's a one-time setup
-    
-    Initial test with Flask: (PASS/FAIL)
-    Final test with subversion: (PASS/FAIL)
+    One-time / batch indexing into ChromaDB (not part of /generate pipeline).
+
+    Query params: ``repo_path`` (optional), ``languages`` (optional).
     """
     logging.info("Indexing started")
-    BASE_DIR = Path(__file__).resolve().parent.parent  # goes up to backend/
-    result = call_tool("index_codebase", repo_path=str(BASE_DIR / "flask_test"), languages=languages)
+    base_dir = Path(__file__).resolve().parent.parent  # backend/
+    resolved = repo_path if repo_path else str(base_dir / "flask_test")
+    result = call_tool("index_codebase", repo_path=resolved, languages=languages)
     logging.info("Indexing complete: %s", result)
     return result
 
 @app.post("/generate")
-def generate(prompt: str):
-
-    result = run_pipeline(prompt)
-
+def generate(req: GenerateRequest):
+    result = run_pipeline(req.prompt)
     return {"output": result}

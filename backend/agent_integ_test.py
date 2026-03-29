@@ -13,7 +13,10 @@ print("Passthrough — no pruning applied")
 # Step 3 — inject
 print("\n=== Injection ===")
 prompt = call_tool("inject_context", "How does Flask handle routing?", pruned)
-print(f"Prompt length: {len(prompt)} chars")
+if isinstance(prompt, dict):
+    print(f"Prompt: system={len(prompt['system'])} chars, user={len(prompt['user'])} chars")
+else:
+    print(f"Prompt length: {len(prompt)} chars")
 
 # Step 4 — generate
 print("\n=== Generation ===")

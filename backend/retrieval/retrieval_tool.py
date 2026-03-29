@@ -2,9 +2,10 @@
 # Person 3 — Full Retrieval Tool
 
 import chromadb
-from sentence_transformers import SentenceTransformer
 from collections import Counter
 from pathlib import Path
+
+from indexing.sentence_model import get_sentence_transformer
 
 # ══════════════════════════════════════════════════════════════════
 # CONFIG
@@ -29,7 +30,6 @@ MAX_CONTEXT_CHUNKS_PER_FILE = 10
 # CONNECTION
 # ══════════════════════════════════════════════════════════════════
 
-model      = SentenceTransformer(EMBEDDING_MODEL)
 client     = chromadb.PersistentClient(path=CHROMA_PATH)
 collection = client.get_collection(COLLECTION_NAME)
 
@@ -39,6 +39,7 @@ collection = client.get_collection(COLLECTION_NAME)
 # ══════════════════════════════════════════════════
 
 def vector_retrieve(query: str, top_k: int = 5) -> list[dict]:
+    model = get_sentence_transformer(EMBEDDING_MODEL)
     query_embedding = model.encode([query])[0].tolist()
 
     results = collection.query(

@@ -29,11 +29,14 @@ except ImportError:
     logging.warning("chromadb not installed. Run: pip install chromadb")
 
 try:
-    from sentence_transformers import SentenceTransformer
+    from sentence_transformers import SentenceTransformer  # noqa: F401 — availability probe
     SBERT_AVAILABLE = True
 except ImportError:
+    SentenceTransformer = None  # type: ignore[misc, assignment]
     SBERT_AVAILABLE = False
     logging.warning("sentence-transformers not installed. Run: pip install sentence-transformers")
+
+from .sentence_model import get_sentence_transformer
 
 # ─── logging ─────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -365,8 +368,7 @@ class CodeIndexer:
         if not SBERT_AVAILABLE:
             raise RuntimeError("sentence-transformers is required. Install: pip install sentence-transformers")
 
-        logger.info("Loading embedding model: %s", model_name)
-        self.model      = SentenceTransformer(model_name)
+        self.model = get_sentence_transformer(model_name)
         self.model_name = model_name
 
         # FIX 4: store db_path on self so _cache_path() can use it instead of

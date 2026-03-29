@@ -10,7 +10,7 @@ def register_tool(name, function):
 
 def call_tool(name, *args, **kwargs):
     if name not in tools:
-        raise Exception(f"Tool {name} not registered")
+        raise ValueError(f"Tool {name!r} not registered")
     return tools[name](*args, **kwargs)
 
 
