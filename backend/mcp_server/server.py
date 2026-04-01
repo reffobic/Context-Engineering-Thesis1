@@ -24,7 +24,7 @@ logging.basicConfig(level=logging.INFO)
 @app.get("/")
 async def root():
     logging.info("Context Engine is running")
-    return {"Context Engine Running"}
+    return {"message": "Context Engine Running"}
 
 
 # Current pipeline  

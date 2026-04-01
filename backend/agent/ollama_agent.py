@@ -14,7 +14,8 @@ You only need Ollama installed. Optional models: pull any coding model, e.g.
 from __future__ import annotations
 
 import json
-from typing import List, Optional
+import os
+from typing import Any, List, Optional
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
@@ -35,13 +36,30 @@ class OllamaAgent:
 
     def __init__(
         self,
-        model: str = "llama3.2:3b",
+        model: str = "qwen3.5:9b",
         base_url: str = "http://localhost:11434",
         timeout: int = 600,
+        *,
+        think: Optional[bool] = None,
     ):
         self.model = model
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
+        # Default: no thinking (faster). Enable with OLLAMA_THINK=1 if you want reasoning traces.
+        if think is not None:
+            self.think = think
+        else:
+            env = os.environ.get("OLLAMA_THINK", "0").strip().lower()
+            self.think = env in ("1", "true", "yes", "on")
+        raw = os.environ.get("OLLAMA_NUM_PREDICT", "8192")
+        try:
+            self.num_predict = int(raw)
+        except ValueError:
+            self.num_predict = 8192
+
+    def _ollama_options(self) -> dict[str, Any]:
+        """Caps generation length; raise OLLAMA_NUM_PREDICT if answers truncate early."""
+        return {"num_predict": self.num_predict}
 
     def generate_response(self, prompt: str, system: Optional[str] = None) -> str:
         """
@@ -53,7 +71,13 @@ class OllamaAgent:
 
     def _generate(self, prompt: str) -> str:
         url = f"{self.base_url}/api/generate"
-        body = {"model": self.model, "prompt": prompt, "stream": False}
+        body = {
+            "model": self.model,
+            "prompt": prompt,
+            "stream": False,
+            "think": self.think,
+            "options": self._ollama_options(),
+        }
         return self._post_json(url, body, response_key="response")
 
     def _chat(self, system: str, user: str) -> str:
@@ -65,10 +89,16 @@ class OllamaAgent:
                 {"role": "user", "content": user},
             ],
             "stream": False,
+            "think": self.think,
+            "options": self._ollama_options(),
         }
         raw = self._post_json_raw(url, body)
         msg = raw.get("message") or {}
-        return (msg.get("content") or "").strip()
+        content = (msg.get("content") or "").strip()
+        if content:
+            return content
+        # Some models route output to thinking when think=true
+        return (msg.get("thinking") or "").strip()
 
     def _post_json(self, url: str, body: dict, response_key: str) -> str:
         raw = self._post_json_raw(url, body)
@@ -111,7 +141,7 @@ class OllamaAgent:
         return self.generate_response(user, system=system)
 
 
-def generate_response(prompt: str, *, model: str = "llama3.2:3b", system: Optional[str] = None) -> str:
+def generate_response(prompt: str, *, model: str = "qwen3.5:9b", system: Optional[str] = None) -> str:
     """Functional shortcut."""
     return OllamaAgent(model=model).generate_response(prompt, system=system)
 
@@ -128,7 +158,7 @@ if __name__ == "__main__":
             "text": "def hello():\n    return 'world'\n",
         }
     ]
-    agent = OllamaAgent(model=sys.argv[1] if len(sys.argv) > 1 else "llama3.2:3b")
+    agent = OllamaAgent(model=sys.argv[1] if len(sys.argv) > 1 else "qwen3.5:9b")
     print("--- Built user message (preview) ---")
     sys_p, user = build_coding_prompt("Add type hints to hello().", demo_chunks)
     print("SYSTEM (first 200 chars):", sys_p[:200], "...")

@@ -4,7 +4,7 @@ from typing import Any, Union
 
 from .ollama_agent import OllamaAgent
 
-agent = OllamaAgent()  # initialize once
+agent = OllamaAgent(model="qwen3.5:9b")  # must match a model you have: ollama list
 
 
 def ollama_generate(payload: Union[str, dict[str, Any]]) -> str:

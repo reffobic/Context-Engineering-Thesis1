@@ -20,13 +20,14 @@ Related materials in the repo:
 7. [Running the MCP server](#running-the-mcp-server)
 8. [HTTP API](#http-api)
 9. [Smoke tests](#smoke-tests)
-10. [Manual and integration scripts](#manual-and-integration-scripts)
-11. [Ollama](#ollama)
-12. [Paths, data, and ignores](#paths-data-and-ignores)
-13. [Import paths and `PYTHONPATH](#import-paths-and-pythonpath)`
-14. [Branches and integration](#branches-and-integration)
-15. [Known limitations](#known-limitations)
-16. [Troubleshooting](#troubleshooting)
+10. [Manual test cases (`TESTCASES.md`)](#manual-test-cases-testcasesmd)
+11. [Manual and integration scripts](#manual-and-integration-scripts)
+12. [Ollama](#ollama)
+13. [Paths, data, and ignores](#paths-data-and-ignores)
+14. [Import paths and `PYTHONPATH](#import-paths-and-pythonpath)`
+15. [Branches and integration](#branches-and-integration)
+16. [Known limitations](#known-limitations)
+17. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -67,6 +68,7 @@ Default embedding model: `**all-MiniLM-L6-v2`** (shared via `backend/indexing/se
 ```
 Context-Engineering-Thesis1/
 ├── README.md                          # This file
+├── TESTCASES.md                       # Manual test cases: TC-01–TC-11, commands, execution record
 ├── requirements.txt                   # Minimal deps (e.g. typing_extensions on Python 3.7)
 ├── Context Engineering Literature Survey.pdf
 ├── Thesis Proposal Presentation 1.pdf
@@ -252,6 +254,19 @@ If Tier B is skipped, install deps with `**python3.12 -m pip install ...`** as a
 
 ---
 
+## Manual test cases (`TESTCASES.md`)
+
+End-to-end checks against the **running** server (`curl` to `/`, `/generate`, `/index`) plus the **smoke script** are documented in **[`TESTCASES.md`](TESTCASES.md)** at the repository root. That file holds:
+
+- **TC-01–TC-11** — baseline API and RAG checks  
+- **TC-12–TC-19** — **hard** Subversion-focused pipeline tests (multi-step FS lifecycle, error pathology, semantic-only queries, multi-symbol tables, delta editor, etc.) plus **§2.1** on how to design cases from an indexed tree  
+- **Execution record** — summary table and per-TC evidence log (update when you re-test)  
+- **Verdict rubric** — Pass / Partial / Fail
+
+Use it as the single place to record thesis or regression manual test evidence alongside `backend/smoke_test.py`.
+
+---
+
 ## Manual and integration scripts
 
 Run from `**backend/**` with `**PYTHONPATH=.**` (or equivalent) so `mcp_server` and sibling packages resolve:
@@ -278,7 +293,7 @@ python3.12 -m pytest -q tests/backend/test_pruning.py
 
 ## Ollama
 
-- Default agent model in code is often `**llama3.2:3b**` (see `OllamaAgent`); override with your model name if different.
+- Default agent model in code is often `**qwen3.5:9b**` (see `OllamaAgent`); override with your model name if different.
 - Ollama must be **running** on the host (default `**http://localhost:11434`**).
 - Example pull:
   ```bash
@@ -352,6 +367,8 @@ Do **not** commit `chroma_db` contents unless your team explicitly wants a froze
 ---
 
 ## Quick reference
+
+Manual test cases (**TC-01–TC-19**, including advanced Subversion pipeline stress tests) and execution record: **`TESTCASES.md`** (repo root).
 
 ```bash
 # Smoke test (full stack)
