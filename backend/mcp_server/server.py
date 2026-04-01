@@ -47,7 +47,11 @@ async def ui_page():
             {"error": "UI not found", "path": str(index)},
             status_code=404,
         )
-    return FileResponse(index, media_type="text/html")
+    return FileResponse(
+        index,
+        media_type="text/html",
+        headers={"Cache-Control": "no-store, max-age=0"},
+    )
 
 
 # Current pipeline  
