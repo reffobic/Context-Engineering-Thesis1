@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from fastapi import FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
@@ -12,6 +13,13 @@ except ModuleNotFoundError:  # when running as package: python -m uvicorn mcp_se
     from mcp_server.tool_registry import call_tool
 
 app = FastAPI()
+# Lets the UI work from file:// or another port during local demos (not for public deployment).
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 _STATIC = Path(__file__).resolve().parent / "static"
 
