@@ -7,3 +7,7 @@ backend/chroma_db/
 *.py[cod]
 *.pyc
 .pytest_cache/
+
+# Old/legacy tracked artifacts (keep repo clean)
+data/chroma_db/
+data/subversion/
