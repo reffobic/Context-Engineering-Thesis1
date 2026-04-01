@@ -1,65 +1,72 @@
-from fastapi import FastAPI
-from tool_registry import register_tool
-import requests
 import logging
-import signal # in the case that a tool hangs 
+from pathlib import Path
+from typing import List, Optional
+
+from fastapi import FastAPI, Query
+from pydantic import BaseModel
+
+try:
+    from tool_registry import call_tool
+except ModuleNotFoundError:  # when running as package: python -m uvicorn mcp_server.server:app
+    from mcp_server.tool_registry import call_tool
 
 app = FastAPI()
 
+
+class GenerateRequest(BaseModel):
+    """JSON body for POST /generate (matches `run_demo.py` and `requests.post(..., json={...})`)."""
+
+    prompt: str
+
 logging.basicConfig(level=logging.INFO)
 
-def ollama_generate(prompt):
-
-    response = requests.post(
-        "http://localhost:11434/api/generate",
-        json={
-            "model": "codellama",
-            "prompt": prompt
-        }
-    )
-
-    return response.json()
-
-""""
-Once tools are created in each folder, they can be called here using tool_registry like this:
-
-from retrieval.retrieval_tool import retrieve_context
-from pruning.pruning_tool import prune_context
-from injection.prompt_builder import inject_context
-
-register_tool("retrieve_context", retrieve_context)
-register_tool("prune_context", prune_context)
-register_tool("inject_context", inject_context)
-
-
-then...
-
-call_tool("retrieve_context", query)
-"""
-
+# Confirm server is running
 @app.get("/")
 async def root():
+    logging.info("Context Engine is running")
     return {"Context Engine Running"}
 
-# Example/tentative main pipeline 
-# !!!!!!!!!!! MISSING: add logging e.g. logging.info("retrieval started")
-def run_pipeline(user_prompt):
 
+# Current pipeline  
+def run_pipeline(user_prompt):
+    logging.info("Retrieval started")
     context = call_tool("retrieve_context", user_prompt)
 
+    logging.info("Pruning started")
     pruned_context = call_tool("prune_context", context)
 
-    final_prompt = call_tool("inject_context", user_prompt, pruned_context)
-
-    result = ollama_generate(final_prompt)
-
+    logging.info("Injection started")
+    final_prompt = call_tool("inject_context", user_prompt, pruned_context) 
+    logging.info("Generating response")
+    result = call_tool("ollama_generate", final_prompt)
     return result
 
 
-# Add API endpoint
+# Add API endpoints
+@app.post("/index")
+def index(
+    repo_path: Optional[str] = Query(
+        None,
+        description="Absolute path to repository root. Defaults to backend/flask_test when omitted.",
+    ),
+    languages: Optional[List[str]] = Query(
+        None,
+        description="Optional language filter passed to the indexer.",
+    ),
+):
+    """
+    One-time / batch indexing into ChromaDB (not part of /generate pipeline).
+
+    Query params: ``repo_path`` (optional), ``languages`` (optional).
+    """
+    logging.info("Indexing started")
+    base_dir = Path(__file__).resolve().parent.parent  # backend/
+    resolved = repo_path if repo_path else str(base_dir / "flask_test")
+    result = call_tool("index_codebase", repo_path=resolved, languages=languages)
+    logging.info("Indexing complete: %s", result)
+    return result
+
 @app.post("/generate")
-def generate(prompt: str):
-
-    result = run_pipeline(prompt)
-
+def generate(req: GenerateRequest):
+    result = run_pipeline(req.prompt)
     return {"output": result}

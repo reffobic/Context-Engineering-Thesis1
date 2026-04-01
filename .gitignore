@@ -1,0 +1,9 @@
+flask_test/
+backend/chroma_db/
+.deps/
+
+# Python bytecode / caches
+**/__pycache__/
+*.py[cod]
+*.pyc
+.pytest_cache/

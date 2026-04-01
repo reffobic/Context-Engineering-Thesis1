@@ -1,0 +1,9 @@
+# P2 — Code Indexing & Embeddings
+# Core dependencies
+
+chromadb>=0.4.0
+sentence-transformers>=2.2.0
+
+# Already used by P1 (listed here for completeness)
+fastapi>=0.100.0
+requests>=2.31.0
