@@ -37,7 +37,7 @@ PYTHONPATH=.. uvicorn server:app --host 127.0.0.1 --port 8000
 
 **Optional:** `OLLAMA_NUM_PREDICT` (default `8192` in code) if answers truncate.
 
-**Advanced runs:** **§2.1** explains how to design **hard** Subversion-based cases; **TC-12–TC-19** apply them.
+**Advanced runs:** **§2.1** explains how to design **hard** Subversion-based cases; **TC-12–TC-20** apply them.
 
 ---
 
@@ -75,6 +75,7 @@ Turn hits into **prompts**: single-symbol recall → multi-step sequence → com
 | **L4** | No API names (“pending changes → durable revision”) | Pure semantic retrieval; may retrieve unrelated code |
 | **L5** | Explicit negation (“three things **not** in CONTEXT”) | Hallucination under pressure |
 | **L6** | Many symbols in one prompt (`svn_delta_editor_t`, …) | Pruning drops files; table format errors |
+| **L7** | Verbatim extract with **documented** gold string (**TC-20**) | Paraphrase sold as verbatim; plausible wrong quote |
 
 ### How to record results for hard tests
 
@@ -83,6 +84,8 @@ Turn hits into **prompts**: single-symbol recall → multi-step sequence → com
 3. Mark **Partial** if structure is good but citations drift; **Fail** if HTTP errors or fabricated files.
 
 **Retrieval variance (seen on recorded runs):** Questions that mention **SQLite** or **errors** but not **`svn_fs_*`** can surface **`libsvn_wc/wc_db.c`** chunks instead of **`libsvn_fs`** tests—see **TC-13** vs **TC-14**. For FS-specific evidence, **anchor** the prompt with symbols or paths (`svn_fs_commit_txn`, `fs-test.c`, `rep-cache`) so hybrid / `$contains` queries pull the right neighborhood.
+
+**Ground-truth pin (hallucination check):** **TC-20** documents an **expected verbatim substring** from the indexed tree (Apache Subversion `fs-test.c`). After a run, compare the model output to that string: a **wrong** confident quote = likely **hallucination**; **NOT IN CONTEXT** when the chunk truly was not injected = **honest miss**.
 
 ---
 
@@ -109,6 +112,7 @@ Turn hits into **prompts**: single-symbol recall → multi-step sequence → com
 | **TC-17** | Multi-symbol stress table | Pruning + many targets | Same | **200**; table format; **NOT IN CONTEXT** per symbol where appropriate. |
 | **TC-18** | Debug `PATH_SYNTAX` | Locate specific failing input | Same | **200**; path / scenario from `fs-test.c` or admits not retrieved. |
 | **TC-19** | Delta / editor role | Harder API (`svn_delta_editor_t`) | Same | **200**; uses header/test snippets if retrieved; **Partial** OK if thin context. |
+| **TC-20** | Verbatim quote (known answer) | Detect hallucination vs CONTEXT | Same | **200**; output contains **ground-truth substring** (§4 TC-20) **or** explicit **NOT IN CONTEXT**; **Fail** if a different “verbatim” quote is invented. |
 
 ---
 
@@ -276,6 +280,20 @@ curl -sS http://127.0.0.1:8000/generate \
   -d '{"prompt":"Using only CONTEXT: what is svn_delta_editor_t and how is it used in the Subversion code you see—driver vs editor, apply_txn, or similar? If CONTEXT only shows a declaration or one call site, say so. If absent, say NOT IN CONTEXT."}'
 ```
 
+### TC-20 — Verbatim comment (ground truth / hallucination probe)
+
+**Reviewer ground truth** (Apache Subversion `subversion/tests/libsvn_fs/fs-test.c`, `test-repo-commit-with-locked-rep-cache` / `SVN_ERR_SQLITE_BUSY` test): the C comment immediately before `err = svn_fs_commit_txn(...)` followed by `SVN_TEST_ASSERT_ERROR(err, SVN_ERR_SQLITE_BUSY)` must contain this text (whitespace / `*` margin may vary):
+
+> `Attempt to commit fs transaction. This should result in a commit post-processing error due to us still holding the shared lock on the rep-cache.db.`
+
+If your indexed checkout **differs** (older release), run `rg -n "Attempt to commit fs transaction" subversion/tests/libsvn_fs/fs-test.c` on **your** tree and paste the authoritative substring into your notes before scoring.
+
+```bash
+curl -sS http://127.0.0.1:8000/generate \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"Using only CONTEXT: In subversion/tests/libsvn_fs/fs-test.c, quote VERBATIM the entire C comment block that appears immediately before the line that calls svn_fs_commit_txn and is immediately followed (after that commit call) by SVN_TEST_ASSERT_ERROR(err, SVN_ERR_SQLITE_BUSY). If that exact comment is not present in CONTEXT, reply with only: NOT IN CONTEXT."}'
+```
+
 ---
 
 ## 5. Execution record — summary table
@@ -303,13 +321,14 @@ _Update dates and verdicts when you re-run._
 | TC-17 | 2026-04-01 | qwen3.5:9b | 200 | Partial | Table OK; **`svn_fs_commit_txn` = no** conflicts with TC-16 same evening—check retrieval/pruning or model error. |
 | TC-18 | 2026-04-01 | qwen3.5:9b | 200 | Partial | No `fs-test.c` in CONTEXT; PATH_SYNTAX conditions from `fs-loader`/path validation—honest + partial answer. |
 | TC-19 | 2026-04-01 | qwen3.5:9b | 200 | Pass (caveats) | `svn_delta_editor_t *` in `deprecated.c` wrappers; driver/apply_txn admitted NOT IN CONTEXT. |
+| TC-20 | 2026-04-01 | qwen3.5:9b | 200 | Mixed | **A: Fail** (wrong rep-cache “read transaction” block). **B–D:** `NOT IN CONTEXT`. **E: Pass** (gold “Attempt to commit fs transaction…” block). High run-to-run variance. |
 
 ---
 
 ## 6. Detailed results — evidence log (per test case)
 
 For each TC below: **command** (exact), **HTTP status**, **response** (full JSON or abridged with “[…]”), **server log** (representative lines), **reviewer verdict / notes**.  
-**TC-12–TC-19** have **recorded** detail below.  
+**TC-12–TC-20** have **recorded** detail below.  
 When you re-run a test, **replace or append** dated sub-bullets so this file stays the authoritative record.
 
 ---
@@ -669,6 +688,47 @@ When you re-run a test, **replace or append** dated sub-bullets so this file sta
 
 ---
 
+### TC-20 — Verbatim comment (ground truth / hallucination probe)
+
+- **Verdict (recorded):** **Mixed** — **five** identical `curl`s recorded (same prompt); outcomes span **wrong excerpt**, repeated **`NOT IN CONTEXT`**, and **one correct gold quote** (see runs below).  
+- **Stress target:** Model must reproduce the **gold** comment (immediately before `svn_fs_commit_txn` with `SVN_TEST_ASSERT_ERROR(err, SVN_ERR_SQLITE_BUSY)` after) or reply **only** `NOT IN CONTEXT`.  
+- **Command & ground truth:** See §4 **TC-20**. **Gold substring** includes: *“Attempt to commit fs transaction. This should result in a commit post-processing error due to us still holding the shared lock on the rep-cache.db.”*  
+- **Scoring (human):**
+  - **Pass:** Normalized output contains the **ground-truth sentence** (allow `*` column / newline folding).
+  - **Pass (honest miss):** Only **NOT IN CONTEXT** (or equivalent) and injected prompt truly lacks that comment—retrieval miss, not hallucination.
+  - **Partial:** Right file/story but wording drift or mixed quote + invention—verify against source.
+  - **Fail (hallucination):** Different comment presented as **verbatim**, or invented path/file for the quote.
+
+#### Run A — 2026-04-01 (~23:44)
+
+- **HTTP status:** `200 OK`  
+- **Server log (representative):** `Retrieval started` → prune → inject → generate → `200 OK` (`127.0.0.1:46970`).  
+- **Response (body):** Markdown code block quoting **the wrong** C comment: *“Obtain a shared lock on the rep-cache.db by starting a new read transaction.”* (the block **above** `svn_sqlite__open`, **not** the block immediately **above** `err = svn_fs_commit_txn(...)` / `SVN_ERR_SQLITE_BUSY`).  
+- **Rubric:** **Fail** for TC-20’s stated goal: satisfies “verbatim” form but **violates the positional constraint** in the prompt; also **does not** contain the **gold** “Attempt to commit fs transaction…” text. Likely **keyword association** (`rep-cache`, `commit`) without parsing “immediately before `svn_fs_commit_txn` … followed by `SVN_TEST_ASSERT_ERROR`”.
+
+#### Run B — 2026-04-01 (~23:45)
+
+- **HTTP status:** `200 OK`  
+- **Server log (representative):** Same pipeline → `200 OK` (`127.0.0.1:53008`).  
+- **Response (body):** `NOT IN CONTEXT` only (instruction followed).  
+- **Rubric:** **Pass (honest miss)** if the injected prompt truly omitted the gold comment; **inconclusive** without a prompt dump—same curl as Run A shows **retrieval/pruning variance** or **non-deterministic generation** after different retrieval.
+
+#### Runs C–D — 2026-04-01 (later session, same command)
+
+- **HTTP status:** `200 OK` (each).  
+- **Response (body):** `NOT IN CONTEXT` only (both runs).  
+- **Rubric:** **Pass (honest miss)** under the same caveat as Run B. Together with Run B, **three** consecutive-style outcomes were **`NOT IN CONTEXT`** before Run E—suggests the gold comment is **often absent** from the pruned window, not only “sometimes present.”
+
+#### Run E — 2026-04-01 (third consecutive curl in same session as C–D)
+
+- **HTTP status:** `200 OK`  
+- **Response (body):** Markdown fenced code block (`c`) containing the **correct** multi-line comment, including *“Attempt to commit fs transaction.”* … *“…shared lock on the rep-cache.db.”* (model used **two spaces** after `transaction.` vs typical single space in upstream—treat as **normalization** when scoring).  
+- **Rubric:** **Pass** for TC-20: output contains the **gold** substring and matches the **intended** comment block, not the earlier “read transaction” block from Run A.
+
+- **Thesis takeaway:** TC-20 behaved as designed: **failure mode** (Run A: **wrong but plausible excerpt**), **honest miss** streak (Runs B–D), and **occasional full success** (Run E) on the **identical** request—strong evidence for **retrieval/pruning variance** and/or **decoder stochasticity**. For papers, log **retrieved chunk IDs** or full injected `<CONTEXT>` per request and report **multiple trials**.
+
+---
+
 ## 7. Verdict definitions and rubric
 
 | Verdict | Meaning |
@@ -676,6 +736,7 @@ When you re-run a test, **replace or append** dated sub-bullets so this file sta
 | **Pass** | Meets pass criteria; safe for the documented use. |
 | **Partial** | Usable with caveats (e.g. verify model citations against source). |
 | **Fail** | Wrong status, crash, or violates pass criteria. |
+| **Mixed** | Multiple runs on the same TC disagree (e.g. **TC-20**: Fail / NOT IN CONTEXT / Pass); see §6 per-run rubric. |
 
 **Reviewer checklist:** truncation, hallucination, wrong repository/corpus, citation mismatch, unexpected **500**.
 
@@ -685,4 +746,4 @@ When you re-run a test, **replace or append** dated sub-bullets so this file sta
 
 - **`backend/smoke_test.py`** — Tier A (no Chroma/Ollama for A) and Tier B (full app import + TestClient). Overlaps **TC-11**; does not replace **TC-01–TC-10** HTTP checks against a live server.
 - **Unit tests:** e.g. `pytest tests/backend/test_pruning.py` — not covered by this manual sheet.
-- **Advanced Subversion stress:** **TC-12–TC-19** and **§2.1** — require a **full Subversion index** in `backend/chroma_db` for meaningful scores; combine with **`OLLAMA_NUM_PREDICT`** increases if answers truncate mid-table.
+- **Advanced Subversion stress:** **TC-12–TC-20** and **§2.1** — require a **full Subversion index** in `backend/chroma_db` for meaningful scores; combine with **`OLLAMA_NUM_PREDICT`** increases if answers truncate mid-table.
