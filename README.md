@@ -42,7 +42,7 @@ flowchart LR
   subgraph online [Request path]
     Q[User prompt]
     R[Retrieve chunks]
-    P[Prune stub]
+    P[Prune chunks]
     I[Inject prompts]
     L[Ollama LLM]
     Q --> R --> P --> I --> L
@@ -54,7 +54,7 @@ flowchart LR
 
 - **Indexing** embeds code chunks and stores them in **ChromaDB** (cosine space, collection `code_embeddings` by default).
 - **Retrieval** queries Chroma with the user prompt (hybrid / ranking logic in `retrieval_tool.py`).
-- **Pruning** is currently a **passthrough** (placeholder until a real pruner is integrated).
+- **Pruning** is implemented (structure-aware pruning + token-budget selection) and wired into the pipeline.
 - **Injection** builds structured **system** + **user** messages from chunks (`PromptBuilder` / `build_coding_prompt`).
 - **Agent** calls **Ollama** over HTTP (`/api/chat` when both system and user are set).
 
@@ -89,6 +89,10 @@ Context-Engineering-Thesis1/
     ├── retrieval/
     │   ├── retrieval_tool.py          # Vector + hybrid retrieval from Chroma
     │   └── retrieval_tool_endpoint.py # Thin adapter: retrieve_context
+    ├── pruning/
+    │   ├── file.py                    # Structure-aware pruner (P4)
+    │   ├── __init__.py                # Exports prune_context + helpers
+    │   └── pruning_tool_endpoint.py   # Thin adapter: prune_context (tool_registry integration)
     ├── injection/
     │   ├── prompt_builder.py          # PromptBuilder, ContextChunk, token budget, line numbers
     │   ├── prompt_builder_endpoint.py # inject_context → {system, user}
@@ -115,7 +119,7 @@ There is **no** top-level `src/` package in this branch snapshot; the active cod
 | ------------------ | -------------------------------------------------------------- |
 | `index_codebase`   | Index a repository into Chroma (see `code_indexer_endpoint`)   |
 | `retrieve_context` | Retrieve ranked chunks for a query                             |
-| `prune_context`    | **Passthrough** (returns input unchanged) until real pruning   |
+| `prune_context`    | Structure-aware pruning (P4) → PromptBuilder-compatible chunks |
 | `inject_context`   | Build `{"system": str, "user": str}` for the LLM               |
 | `ollama_generate`  | Call Ollama (uses **chat** when `system` + `user` are present) |
 
@@ -138,7 +142,9 @@ There is **no** top-level `src/` package in this branch snapshot; the active cod
 
 ### P4 — Pruning
 
-- **Not implemented** yet in the registry; `prune_context` is identity. Replace when a pruner (e.g. token budget, LLMLingua-style) is ready.
+- Implemented in `backend/pruning/file.py` and exposed as a tool via `backend/pruning/pruning_tool_endpoint.py`.
+- Pipeline call signature: `prune_context(query, retrieved_items, token_budget=...)` → returns PromptBuilder-compatible chunks.
+- Unit tests live in `tests/backend/test_pruning.py`.
 
 ### P5 — Injection + agent (`backend/injection/`, `backend/agent/`)
 
@@ -259,6 +265,14 @@ Run from `**backend/**` with `**PYTHONPATH=.**` (or equivalent) so `mcp_server` 
 | `retrieval_integ_test.py` | Retrieval-focused                                                                   |
 | `indexing_integ_test.py`  | Calls `index_codebase` with a sample path                                           |
 
+### Pruning tests (P4)
+
+Run pruning unit tests with Python 3.10+:
+
+```bash
+python3.12 -m pytest -q tests/backend/test_pruning.py
+```
+
 
 ---
 
@@ -313,7 +327,7 @@ Do **not** commit `chroma_db` contents unless your team explicitly wants a froze
 
 | Limitation             | Detail                                                                                 |
 | ---------------------- | -------------------------------------------------------------------------------------- |
-| **Pruning**            | Stub only; no token compression or reranking yet                                       |
+| **Pruning**            | Implemented, but still a heuristic pruner; strategy/thresholds may evolve              |
 | **Auth**               | API has no authentication or rate limiting (local / research use)                      |
 | **Heavy import**       | Loading `tool_registry` initializes indexer + model + Chroma                           |
 | **Two Chroma clients** | Indexer and retrieval each open a client to the same path (acceptable, minor overhead) |
