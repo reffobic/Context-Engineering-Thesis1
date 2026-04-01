@@ -15,19 +15,18 @@ Related materials in the repo:
 2. [Repository layout](#repository-layout)
 3. [Pipeline and tool registry](#pipeline-and-tool-registry)
 4. [Major components](#major-components)
-5. [Design decisions (implemented)](#design-decisions-implemented)
-6. [Python environment](#python-environment)
-7. [Installation](#installation)
-8. [Running the MCP server](#running-the-mcp-server)
-9. [HTTP API](#http-api)
-10. [Smoke tests](#smoke-tests)
-11. [Manual and integration scripts](#manual-and-integration-scripts)
-12. [Ollama](#ollama)
-13. [Paths, data, and ignores](#paths-data-and-ignores)
-14. [Import paths and `PYTHONPATH](#import-paths-and-pythonpath)`
-15. [Branches and integration](#branches-and-integration)
-16. [Known limitations](#known-limitations)
-17. [Troubleshooting](#troubleshooting)
+5. [Python environment](#python-environment)
+6. [Installation](#installation)
+7. [Running the MCP server](#running-the-mcp-server)
+8. [HTTP API](#http-api)
+9. [Smoke tests](#smoke-tests)
+10. [Manual and integration scripts](#manual-and-integration-scripts)
+11. [Ollama](#ollama)
+12. [Paths, data, and ignores](#paths-data-and-ignores)
+13. [Import paths and `PYTHONPATH](#import-paths-and-pythonpath)`
+14. [Branches and integration](#branches-and-integration)
+15. [Known limitations](#known-limitations)
+16. [Troubleshooting](#troubleshooting)
 
 ---
 
