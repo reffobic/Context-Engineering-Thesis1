@@ -12,15 +12,25 @@ def inject_context(user_prompt: str, chunks: list[dict]) -> dict[str, str]:
     Returns separate ``system`` and ``user`` strings so ``OllamaAgent`` can call
     ``/api/chat`` with proper roles instead of stuffing both into ``/api/generate``.
     """
-    context_chunks = [
-        ContextChunk(
-            text=strip_redundant_line_number_column(c["code"]),
-            path=c["metadata"]["file"],
-            symbol=c["metadata"]["function"],
-            language=c["metadata"]["language"],
-            start_line=c["metadata"]["start_line"],
+    # Supports two upstream shapes:
+    # 1) Retrieval items (P3): {"code": str, "metadata": {...}}
+    # 2) Pruned ContextChunks (P4): {"text": str, "path": str, ...}
+    context_chunks: list[ContextChunk] = []
+    for c in chunks:
+        if "text" in c:
+            # Already PromptBuilder-compatible
+            cc = ContextChunk(**c)  # type: ignore[arg-type]
+            context_chunks.append(cc)
+            continue
+        meta = c.get("metadata", {}) or {}
+        context_chunks.append(
+            ContextChunk(
+                text=strip_redundant_line_number_column(c.get("code", "") or ""),
+                path=meta.get("file", ""),
+                symbol=meta.get("function", ""),
+                language=meta.get("language", ""),
+                start_line=meta.get("start_line", 0),
+            )
         )
-        for c in chunks
-    ]
     system_prompt, user_message = build_coding_prompt(user_prompt, context_chunks)
     return {"system": system_prompt, "user": user_message}

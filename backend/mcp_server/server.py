@@ -33,7 +33,8 @@ def run_pipeline(user_prompt):
     context = call_tool("retrieve_context", user_prompt)
 
     logging.info("Pruning started")
-    pruned_context = call_tool("prune_context", context)
+    # P4 expects (query, retrieved_items). Tool can still choose to passthrough.
+    pruned_context = call_tool("prune_context", user_prompt, context)
 
     logging.info("Injection started")
     final_prompt = call_tool("inject_context", user_prompt, pruned_context) 
