@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from fastapi import FastAPI, Query
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
 try:
@@ -11,6 +12,8 @@ except ModuleNotFoundError:  # when running as package: python -m uvicorn mcp_se
     from mcp_server.tool_registry import call_tool
 
 app = FastAPI()
+
+_STATIC = Path(__file__).resolve().parent / "static"
 
 
 class GenerateRequest(BaseModel):
@@ -24,7 +27,19 @@ logging.basicConfig(level=logging.INFO)
 @app.get("/")
 async def root():
     logging.info("Context Engine is running")
-    return {"message": "Context Engine Running"}
+    return {"message": "Context Engine Running", "ui": "/ui"}
+
+
+@app.get("/ui")
+async def ui_page():
+    """Simple browser UI for /generate and /index (same origin — no CORS needed)."""
+    index = _STATIC / "index.html"
+    if not index.is_file():
+        return JSONResponse(
+            {"error": "UI not found", "path": str(index)},
+            status_code=404,
+        )
+    return FileResponse(index, media_type="text/html")
 
 
 # Current pipeline  

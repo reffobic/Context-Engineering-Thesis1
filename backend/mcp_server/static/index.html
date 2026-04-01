@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Context Engine — Prompt</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --surface: #fff;
+      --border: #d8dce3;
+      --text: #1a1d23;
+      --muted: #5c6370;
+      --accent: #0d6efd;
+      --accent-hover: #0b5ed7;
+      --danger: #b02a37;
+      --radius: 10px;
+      --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 1.75rem 1.25rem 3rem;
+    }
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 650;
+      margin: 0 0 0.25rem;
+      letter-spacing: -0.02em;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+    textarea {
+      width: 100%;
+      min-height: 140px;
+      padding: 0.75rem 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      resize: vertical;
+      background: var(--surface);
+    }
+    textarea:focus {
+      outline: 2px solid rgba(13, 110, 253, 0.35);
+      outline-offset: 1px;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-top: 1rem;
+      align-items: center;
+    }
+    button {
+      font-family: var(--font);
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0.55rem 1rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button.primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    button.primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+    button.secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    button.secondary:hover:not(:disabled) {
+      background: #eef0f4;
+    }
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .status {
+      font-size: 0.8rem;
+      color: var(--muted);
+      min-height: 1.25rem;
+      margin-top: 0.75rem;
+    }
+    .status.working { color: var(--accent); }
+    .status.err { color: var(--danger); }
+    .panel {
+      margin-top: 1.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .panel-h {
+      padding: 0.5rem 0.85rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      background: #eef0f4;
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-body {
+      padding: 1rem 0.85rem;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: min(55vh, 520px);
+      overflow-y: auto;
+    }
+    .panel-body.empty {
+      color: var(--muted);
+      font-style: italic;
+      font-family: var(--font);
+    }
+    details.advanced {
+      margin-top: 1.25rem;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 0.65rem 0.85rem;
+      background: var(--surface);
+    }
+    details.advanced summary {
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .advanced-inner {
+      margin-top: 0.75rem;
+    }
+    .advanced-inner input {
+      width: 100%;
+      padding: 0.5rem 0.65rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+    }
+    footer {
+      margin-top: 2rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    footer a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Context Engine</h1>
+    <p class="sub">Ask about the indexed codebase — retrieval, pruning, injection, then Ollama.</p>
+
+    <label for="prompt">Your prompt</label>
+    <textarea id="prompt" placeholder="e.g. What does the Flask app expose as routes?"></textarea>
+
+    <div class="row">
+      <button type="button" class="primary" id="btn-generate">Run pipeline</button>
+      <button type="button" class="secondary" id="btn-index">Index default repo</button>
+    </div>
+
+    <details class="advanced">
+      <summary>Indexing options</summary>
+      <div class="advanced-inner">
+        <label for="repo-path">Optional repo path (absolute)</label>
+        <input id="repo-path" type="text" placeholder="Leave empty for backend/flask_test" spellcheck="false" />
+        <div class="row" style="margin-top:0.75rem">
+          <button type="button" class="secondary" id="btn-index-custom">Index this path</button>
+        </div>
+      </div>
+    </details>
+
+    <div class="status" id="status" aria-live="polite"></div>
+
+    <div class="panel">
+      <div class="panel-h">Model output</div>
+      <div class="panel-body empty" id="output">No response yet.</div>
+    </div>
+
+    <div class="panel" id="index-panel" hidden>
+      <div class="panel-h">Index result</div>
+      <div class="panel-body" id="index-out"></div>
+    </div>
+
+    <footer>
+      API: <code>POST /generate</code> · <code>POST /index</code> ·
+      Health: <a href="/">GET /</a>
+    </footer>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const statusEl = $("status");
+    const outputEl = $("output");
+    const indexPanel = $("index-panel");
+    const indexOut = $("index-out");
+
+    function setStatus(msg, cls) {
+      statusEl.textContent = msg || "";
+      statusEl.className = "status" + (cls ? " " + cls : "");
+    }
+
+    function setWorking(on, label) {
+      $("btn-generate").disabled = on;
+      $("btn-index").disabled = on;
+      $("btn-index-custom").disabled = on;
+      setStatus(on ? (label || "Working…") : "", on ? "working" : "");
+    }
+
+    async function postJson(path, body) {
+      const res = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: body !== undefined ? JSON.stringify(body) : "{}",
+      });
+      const text = await res.text();
+      let data;
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = { _raw: text };
+      }
+      if (!res.ok) {
+        const detail = data.detail ?? data.message ?? text || res.statusText;
+        throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+      }
+      return data;
+    }
+
+    $("btn-generate").addEventListener("click", async () => {
+      const prompt = $("prompt").value.trim();
+      if (!prompt) {
+        setStatus("Enter a prompt first.", "err");
+        return;
+      }
+      indexPanel.hidden = true;
+      outputEl.classList.remove("empty");
+      outputEl.textContent = "";
+      setWorking(true, "Running retrieve → prune → inject → Ollama…");
+      try {
+        const data = await postJson("/generate", { prompt });
+        const out = data.output;
+        outputEl.textContent =
+          typeof out === "string" ? out : JSON.stringify(out, null, 2);
+        setStatus("Done.");
+      } catch (e) {
+        outputEl.textContent = "";
+        outputEl.classList.add("empty");
+        outputEl.textContent = "Request failed.";
+        setStatus(e.message || String(e), "err");
+      } finally {
+        setWorking(false);
+      }
+    });
+
+    async function runIndex(query) {
+      indexPanel.hidden = false;
+      indexOut.textContent = "";
+      setWorking(true, "Indexing…");
+      try {
+        const url = query ? "/index?" + query : "/index";
+        const data = await postJson(url, {});
+        indexOut.textContent = JSON.stringify(data, null, 2);
+        setStatus("Index finished.");
+      } catch (e) {
+        indexOut.textContent = e.message || String(e);
+        setStatus("Index failed.", "err");
+      } finally {
+        setWorking(false);
+      }
+    }
+
+    $("btn-index").addEventListener("click", () => runIndex(""));
+
+    $("btn-index-custom").addEventListener("click", () => {
+      const p = $("repo-path").value.trim();
+      if (!p) {
+        setStatus("Enter an absolute repo path, or use “Index default repo”.", "err");
+        return;
+      }
+      const q = new URLSearchParams({ repo_path: p });
+      runIndex(q.toString());
+    });
+  </script>
+</body>
+</html>

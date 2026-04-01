@@ -216,7 +216,8 @@ Base URL example: `http://127.0.0.1:8000`
 
 | Method | Path        | Description                                                                                                                                                             |
 | ------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET`  | `/`         | Health: `{"Context Engine Running"}` (or similar JSON)                                                                                                                  |
+| `GET`  | `/`         | Health: JSON includes `"Context Engine Running"` and **`"ui": "/ui"`** for the browser prompt page.                                                                      |
+| `GET`  | `/ui`       | **Simple web UI** — prompt box, **Run pipeline** (`POST /generate`), **Index** (`POST /index`). Same origin as the API (open after starting uvicorn).                    |
 | `POST` | `/generate` | **JSON body** `{"prompt": "<user text>"}` → `{"output": "<model response>"}`                                                                                            |
 | `POST` | `/index`    | **Query parameters** `repo_path` (optional), `languages` (optional). If `repo_path` is omitted, defaults to `**backend/flask_test`** under the server’s backend layout. |
 
@@ -381,6 +382,9 @@ cd backend/mcp_server && PYTHONPATH=.. uvicorn server:app --reload --host 127.0.
 curl -s -X POST http://127.0.0.1:8000/generate \
   -H "Content-Type: application/json" \
   -d '{"prompt":"Your question about the codebase"}'
+
+# Browser UI (with server up)
+open http://127.0.0.1:8000/ui   # macOS; or visit /ui in any browser
 ```
 
 ---
