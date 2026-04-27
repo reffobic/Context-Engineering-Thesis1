@@ -119,6 +119,9 @@ Turn hits into **prompts**: single-symbol recall → multi-step sequence → com
 | **TC-24** | Serializer summary behavior | Validate tool-search serializer claims | Same | **200**; matches tests for summary mode, truncation, and `parameters_hint`; distinguishes tested behavior vs assumptions. |
 | **TC-25** | Unsupported-claim discipline (Superset) | Force explicit “not in context” handling | Same | **200**; has separate supported vs unsupported lists; no fabricated classes/functions. |
 | **TC-26** | Multi-topic Superset comparison | Stress retrieval precision under broad query | Same | **200**; compares `create_app`, decorators, middleware, serializer tests with correct scope boundaries and minimal cross-topic drift. |
+| **TC-27** | Superset source-first `Query` vs `SavedQuery` | Verify model definitions outrank tests/docs | Same, re-indexed after retrieval upgrade | **200**; Stage Evidence includes `superset-core/src/superset_core/queries/models.py`; answer compares real fields/roles or says NOT IN CONTEXT. |
+| **TC-28** | Superset source-first dashboard/chart/dataset models | Verify core model file retrieval | Same, re-indexed after retrieval upgrade | **200**; Stage Evidence includes `superset-core/src/superset_core/common/models.py` or exact defining files; answer does not rely only on docs/tests. |
+| **TC-29** | Superset source-first `superset/app.py` config behavior | Verify exact path routing | Same, re-indexed after retrieval upgrade | **200**; Stage Evidence includes `superset/app.py`; diagnostics show exact path detection; answer covers precedence/fallback/side effects from context. |
 
 ---
 
@@ -348,6 +351,30 @@ curl -sS http://127.0.0.1:8000/generate \
   -d '{"prompt":"Compare in one answer: create_app initialization flow, config/env overrides, middleware/path handling, REST API decorator routing, and MCP serializer summary mode tests in Superset. Use markdown table + concise notes per row. If evidence is missing in CONTEXT, write NOT IN CONTEXT in that row."}'
 ```
 
+### TC-27 — Superset source-first `Query` vs `SavedQuery`
+
+```bash
+curl -sS http://127.0.0.1:8000/generate \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"Source-first check: What is the difference between Query and SavedQuery models in Superset? Prefer model definition files over tests/docs. The expected source file is superset-core/src/superset_core/queries/models.py. If that file is not in CONTEXT, start with NOT IN CONTEXT: superset-core/src/superset_core/queries/models.py, then summarize only what is visible."}'
+```
+
+### TC-28 — Superset source-first dashboard/chart/dataset definitions
+
+```bash
+curl -sS http://127.0.0.1:8000/generate \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"Source-first check: Where are dashboards, charts, and datasets defined in Superset? Prefer core source model files over docs/tests. Expected source includes superset-core/src/superset_core/common/models.py. If that file is not in CONTEXT, say NOT IN CONTEXT for it and list the retrieved files that are visible."}'
+```
+
+### TC-29 — Superset source-first `superset/app.py` exact path
+
+```bash
+curl -sS http://127.0.0.1:8000/generate \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app.py: precedence order, fallback behavior, and side effects. Expected path: superset/app.py. If superset/app.py is not in CONTEXT, start with NOT IN CONTEXT: superset/app.py."}'
+```
+
 ## 4.1 Natural user prompts (Superset)
 
 Use these as realistic, non-research user prompts. Keep wording natural; avoid forcing technical jargon unless needed.
@@ -407,6 +434,9 @@ _Update dates and verdicts when you re-run._
 | TC-24 | — | qwen3.5:9b | — | Pending | Serializer summary-mode behavior vs tests check. |
 | TC-25 | — | qwen3.5:9b | — | Pending | Supported vs unsupported claim discipline check. |
 | TC-26 | — | qwen3.5:9b | — | Pending | Broad Superset comparison stress check. |
+| TC-27 | — | qwen3.5:9b | — | Pending | Source-first `Query` vs `SavedQuery` retrieval check after upgrade. |
+| TC-28 | — | qwen3.5:9b | — | Pending | Source-first dashboards/charts/datasets model retrieval check after upgrade. |
+| TC-29 | — | qwen3.5:9b | — | Pending | Source-first `superset/app.py` exact-path retrieval check after upgrade. |
 
 ---
 

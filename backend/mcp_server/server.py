@@ -82,7 +82,10 @@ def _retrieval_summary(items: list[dict]) -> dict:
     files = []
     seen = set()
     top_chunks = []
+    diagnostics = {}
     for item in items:
+        if not diagnostics and item.get("retrieval_diagnostics"):
+            diagnostics = item.get("retrieval_diagnostics") or {}
         meta = item.get("metadata", {}) or {}
         file_path = meta.get("file") or "(unknown path)"
         if file_path not in seen:
@@ -97,9 +100,15 @@ def _retrieval_summary(items: list[dict]) -> dict:
                 "start_line": meta.get("start_line"),
                 "end_line": meta.get("end_line"),
                 "similarity": item.get("similarity"),
+                "dense_score": item.get("dense_score"),
+                "bm25_score": item.get("bm25_score"),
+                "exact_match_score": item.get("exact_match_score"),
+                "source_score": item.get("source_score"),
+                "path_match_score": item.get("path_match_score"),
                 "hybrid_score": item.get("hybrid_score"),
+                "rerank_score": item.get("rerank_score"),
                 "final_score": item.get("final_score"),
-                "path_prior": item.get("path_prior"),
+                "candidate_sources": item.get("candidate_sources", []),
                 "preview": _preview_text(item.get("code")),
                 "parent_context_chars": len(item.get("parent_context") or ""),
             }
@@ -109,6 +118,7 @@ def _retrieval_summary(items: list[dict]) -> dict:
         "unique_files": len(files),
         "files": files,
         "top_chunks": top_chunks,
+        "diagnostics": diagnostics,
     }
 
 
@@ -239,6 +249,20 @@ def index(
         None,
         description="Optional language filter passed to the indexer.",
     ),
+    include_dirs: Optional[List[str]] = Query(
+        None,
+        description="Optional repo-relative directories to scan, e.g. superset or superset-core/src.",
+    ),
+    max_files: Optional[int] = Query(
+        600,
+        ge=1,
+        le=10000,
+        description="Limit files per indexing run to avoid CPU spikes. Repeat indexing to continue.",
+    ),
+    rebuild_bm25: bool = Query(
+        False,
+        description="Rebuild BM25 from the whole Chroma collection. Slower; normally leave false.",
+    ),
 ):
     """
     One-time / batch indexing into ChromaDB (not part of /generate pipeline).
@@ -248,7 +272,14 @@ def index(
     logging.info("Indexing started")
     base_dir = Path(__file__).resolve().parent.parent  # backend/
     resolved = repo_path if repo_path else str(base_dir / "flask_test")
-    result = call_tool("index_codebase", repo_path=resolved, languages=languages)
+    result = call_tool(
+        "index_codebase",
+        repo_path=resolved,
+        languages=languages,
+        include_dirs=include_dirs,
+        max_files=max_files,
+        rebuild_bm25=rebuild_bm25,
+    )
     result = {
         **result,
         "repo_path": resolved,

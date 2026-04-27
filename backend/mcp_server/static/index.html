@@ -607,7 +607,9 @@
           "<div class=\"item-title\">Chroma collection: " + escapeHtml(summary.collection || "code_embeddings") + "</div>" +
           "<div class=\"item-meta\">Languages: " + escapeHtml(languageText) + "</div>" +
           "<div class=\"item-meta\">Chunk types: " + escapeHtml(typeText) + "</div>" +
-          "<div class=\"item-meta\">DB path: " + escapeHtml(summary.db_path || "") + "</div>";
+          "<div class=\"item-meta\">DB path: " + escapeHtml(summary.db_path || "") + "</div>" +
+          "<div class=\"item-meta\">BM25 index: " + escapeHtml(summary.bm25_exists ? "available" : "missing") +
+          (summary.bm25_path ? " (" + escapeHtml(summary.bm25_path) + ")" : "") + "</div>";
 
         var files = summary.files || [];
         if (!files.length) {
@@ -650,17 +652,32 @@
       function renderRetrieved(stage) {
         var summary = stage && stage.summary ? stage.summary : {};
         var chunks = summary.top_chunks || [];
+        var diagnostics = summary.diagnostics || {};
+        var plan = diagnostics.query_plan || {};
+        var counts = diagnostics.candidate_source_counts || {};
         if (!chunks.length) return "";
         return "<div class=\"item\"><div class=\"item-title\">Retrieved " + formatNum(summary.candidate_chunks) + " chunks from " + formatNum(summary.unique_files) + " files</div>" +
+          "<div class=\"item-meta\">Intent: " + escapeHtml((plan.intent || []).join(", ") || "general") +
+          " | paths: " + escapeHtml((plan.paths || []).join(", ") || "none") +
+          " | symbols: " + escapeHtml((plan.symbols || []).join(", ") || "none") + "</div>" +
+          "<div class=\"item-meta\">Candidates: vector " + formatNum(counts.vector || 0) +
+          ", BM25 " + formatNum(counts.bm25 || 0) +
+          ", exact " + formatNum(counts.exact || 0) +
+          " | merged " + formatNum(diagnostics.merged_candidates || 0) +
+          " | reranker " + escapeHtml(diagnostics.reranker_enabled ? "enabled" : "fallback fusion") + "</div>" +
           chunks.map(function (chunk) {
             return "<div class=\"item\" style=\"margin-top:0.6rem\">" +
               "<div class=\"item-title\">" + escapeHtml(chunk.file) + "</div>" +
               "<div class=\"item-meta\">" + escapeHtml(chunk.symbol || chunk.chunk_type || "chunk") +
               " | lines " + escapeHtml(chunk.start_line) + "-" + escapeHtml(chunk.end_line) +
               " | final " + escapeHtml(chunk.final_score) +
-              " | hybrid " + escapeHtml(chunk.hybrid_score) +
-              " | similarity " + escapeHtml(chunk.similarity) +
-              " | path_prior " + escapeHtml(chunk.path_prior) + "</div>" +
+              " | dense " + escapeHtml(chunk.dense_score) +
+              " | BM25 " + escapeHtml(chunk.bm25_score) +
+              " | exact " + escapeHtml(chunk.exact_match_score) +
+              " | source " + escapeHtml(chunk.source_score) +
+              " | path " + escapeHtml(chunk.path_match_score) +
+              " | rerank " + escapeHtml(chunk.rerank_score) +
+              " | sources " + escapeHtml((chunk.candidate_sources || []).join("+")) + "</div>" +
               "<div class=\"snippet\">" + escapeHtml(chunk.preview || "") + "</div>" +
               "</div>";
           }).join("") +
