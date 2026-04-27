@@ -278,6 +278,8 @@ def prune_single_item(query: str, item: dict) -> Optional[ContextChunk]:
         return None
 
     # Step 2: focus on relevant window
+    # NOTE: find_best_window() returns a line number relative to `compact`.
+    # We remap it to the original file's absolute line using retrieval metadata.
     pruned_text, start_line = find_best_window(compact, query, radius=3, max_lines=40)
     if not pruned_text.strip():
         return None
@@ -295,7 +297,18 @@ def prune_single_item(query: str, item: dict) -> Optional[ContextChunk]:
         chunk["dependencies"] = dep_note
 
     if start_line is not None:
-        chunk["start_line"] = start_line
+        meta_start = meta.get("start_line", 0)
+        try:
+            base_start = int(meta_start)
+        except (TypeError, ValueError):
+            base_start = 0
+
+        # If retrieval metadata has a valid file start line, convert from
+        # snippet-local numbering to absolute file numbering.
+        if base_start > 0:
+            chunk["start_line"] = base_start + start_line - 1
+        else:
+            chunk["start_line"] = start_line
 
     return chunk
 
