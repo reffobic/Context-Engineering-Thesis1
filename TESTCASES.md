@@ -113,6 +113,12 @@ Turn hits into **prompts**: single-symbol recall → multi-step sequence → com
 | **TC-18** | Debug `PATH_SYNTAX` | Locate specific failing input | Same | **200**; path / scenario from `fs-test.c` or admits not retrieved. |
 | **TC-19** | Delta / editor role | Harder API (`svn_delta_editor_t`) | Same | **200**; uses header/test snippets if retrieved; **Partial** OK if thin context. |
 | **TC-20** | Verbatim quote (known answer) | Detect hallucination vs CONTEXT | Same | **200**; output contains **ground-truth substring** (§4 TC-20) **or** explicit **NOT IN CONTEXT**; **Fail** if a different “verbatim” quote is invented. |
+| **TC-21** | Superset onboarding flow | Explain prompt-to-response pipeline on Superset | Superset repo indexed via `POST /index` | **200**; names concrete Superset files/functions; does not claim missing pipeline if those files are in context. |
+| **TC-22** | `create_app` deep trace | Validate app factory explanation quality | Same | **200**; covers config load, env overrides, app root middleware, and startup side-effects with file references. |
+| **TC-23** | Middleware extraction context | Validate MCP middleware grounding | Same | **200**; accurately explains `_extract_context_info` inputs/outputs and context fallbacks without inventing retrieval internals in that file. |
+| **TC-24** | Serializer summary behavior | Validate tool-search serializer claims | Same | **200**; matches tests for summary mode, truncation, and `parameters_hint`; distinguishes tested behavior vs assumptions. |
+| **TC-25** | Unsupported-claim discipline (Superset) | Force explicit “not in context” handling | Same | **200**; has separate supported vs unsupported lists; no fabricated classes/functions. |
+| **TC-26** | Multi-topic Superset comparison | Stress retrieval precision under broad query | Same | **200**; compares `create_app`, decorators, middleware, serializer tests with correct scope boundaries and minimal cross-topic drift. |
 
 ---
 
@@ -294,6 +300,79 @@ curl -sS http://127.0.0.1:8000/generate \
   -d '{"prompt":"Using only CONTEXT: In subversion/tests/libsvn_fs/fs-test.c, quote VERBATIM the entire C comment block that appears immediately before the line that calls svn_fs_commit_txn and is immediately followed (after that commit call) by SVN_TEST_ASSERT_ERROR(err, SVN_ERR_SQLITE_BUSY). If that exact comment is not present in CONTEXT, reply with only: NOT IN CONTEXT."}'
 ```
 
+### TC-21 — Superset onboarding flow (pipeline-focused)
+
+```bash
+curl -sS http://127.0.0.1:8000/generate \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"I am onboarding to Superset. Trace exactly how a user prompt flows through your context-engineering pipeline from API entry to final model response. Name concrete files/functions involved in indexing assumptions, retrieval scoring, pruning decisions, prompt injection, and generation. End with a short architecture summary. Use only CONTEXT and say NOT IN CONTEXT if a stage file is missing."}'
+```
+
+### TC-22 — Superset `create_app` deep trace
+
+```bash
+curl -sS http://127.0.0.1:8000/generate \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"Explain what create_app does in Superset and how it connects to config loading, env overrides (SUPERSET_CONFIG / SUPERSET_APP_ROOT), middleware/path handling, CLI app factory usage, and test fixtures. Use section headings and file/function references only from CONTEXT."}'
+```
+
+### TC-23 — Superset MCP middleware context extraction
+
+```bash
+curl -sS http://127.0.0.1:8000/generate \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"In superset/mcp_service/middleware.py, explain _extract_context_info precisely: input sources (message, metadata), fallback order, extracted fields (agent_id, user_id, dashboard_id, slice_id, dataset_id), and one likely failure mode. Use only CONTEXT and cite file/function names."}'
+```
+
+### TC-24 — Superset serializer summary behavior
+
+```bash
+curl -sS http://127.0.0.1:8000/generate \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"Based only on CONTEXT, summarize how Superset tool search serializer summary mode works: include_schemas defaults, description truncation behavior, and parameters_hint generation. Cross-check against the relevant unit tests and separate guaranteed behavior from assumptions."}'
+```
+
+### TC-25 — Superset supported vs unsupported discipline
+
+```bash
+curl -sS http://127.0.0.1:8000/generate \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"Two sections only. (A) Three claims about Superset MCP/RAG pipeline that are supported by CONTEXT with file/function evidence. (B) Three claims that are NOT IN CONTEXT. Do not invent functions, classes, or scores."}'
+```
+
+### TC-26 — Superset multi-topic comparison stress
+
+```bash
+curl -sS http://127.0.0.1:8000/generate \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"Compare in one answer: create_app initialization flow, config/env overrides, middleware/path handling, REST API decorator routing, and MCP serializer summary mode tests in Superset. Use markdown table + concise notes per row. If evidence is missing in CONTEXT, write NOT IN CONTEXT in that row."}'
+```
+
+## 4.1 Natural user prompts (Superset)
+
+Use these as realistic, non-research user prompts. Keep wording natural; avoid forcing technical jargon unless needed.
+
+| Prompt ID | Natural prompt (copy/paste) | Expected result | Pass check |
+|---|---|---|---|
+| N-01 | `Where does Superset app startup begin in this codebase?` | Mentions `superset/app.py` `create_app` (or says NOT IN CONTEXT if absent). | Names at least one concrete startup file/function. |
+| N-02 | `What does create_app do in Superset, in simple terms?` | High-level summary: app creation, config load, app root handling, middleware side effects. | Clear plain-English explanation with file/function evidence. |
+| N-03 | `How is Superset app created from the CLI?` | Mentions `superset/cli/main.py` calling `superset.app.create_app`. | Includes CLI file + factory call path. |
+| N-04 | `If I set SUPERSET_CONFIG and SUPERSET_APP_ROOT, what changes?` | Explains config module selection and app root path behavior/middleware impact. | Correct precedence + side effects, or explicit NOT IN CONTEXT. |
+| N-05 | `How do tests create an app instance in Superset?` | Mentions `self.create_app().app_context()` patterns in integration/unit tests. | Includes at least one test file call site. |
+| N-06 | `Where is middleware context extracted for MCP requests?` | Points to `superset/mcp_service/middleware.py` and `_extract_context_info` behavior. | Lists extracted IDs/fields or says unavailable in context. |
+| N-07 | `How are Superset API routes registered in core code?` | Mentions API decorator flow in `superset-core/src/superset_core/rest_api/decorators.py`. | Names decorator/API files and route role. |
+| N-08 | `What is serializer summary mode in MCP tool search?` | References serializer helpers/tests; describes truncation and `parameters_hint` behavior. | Matches tests if available; avoids unsupported claims. |
+| N-09 | `What is the difference between Query and SavedQuery models?` | Uses `superset-core/src/superset_core/queries/models.py` distinction and key fields. | Correct model-level comparison from context. |
+| N-10 | `Where are dashboards, charts, and datasets defined?` | Points to `superset-core/src/superset_core/common/models.py` (and possibly DAOs). | Names model file(s) and entities accurately. |
+| N-11 | `How are background tasks defined in Superset core?` | Mentions task decorators/models/DAOs in `superset-core/src/superset_core/tasks/`. | Identifies decorator + model roles. |
+| N-12 | `I’m new — what 5 files should I read first to understand Superset backend flow?` | Gives practical ordered list with one-line reason each. | File list is concrete and grounded in retrieved context. |
+
+### Natural prompt scoring notes
+
+- **Pass:** grounded answer with concrete file/function references, no fabricated APIs/classes.
+- **Partial:** useful answer but misses concrete file names or mixes in weak inferences.
+- **Fail:** invents unsupported details, ignores explicit context limits, or contradicts retrieved snippets.
+
 ---
 
 ## 5. Execution record — summary table
@@ -322,6 +401,12 @@ _Update dates and verdicts when you re-run._
 | TC-18 | 2026-04-01 | qwen3.5:9b | 200 | Partial | No `fs-test.c` in CONTEXT; PATH_SYNTAX conditions from `fs-loader`/path validation—honest + partial answer. |
 | TC-19 | 2026-04-01 | qwen3.5:9b | 200 | Pass (caveats) | `svn_delta_editor_t *` in `deprecated.c` wrappers; driver/apply_txn admitted NOT IN CONTEXT. |
 | TC-20 | 2026-04-01 | qwen3.5:9b | 200 | Mixed | **A: Fail** (wrong rep-cache “read transaction” block). **B–D:** `NOT IN CONTEXT`. **E: Pass** (gold “Attempt to commit fs transaction…” block). High run-to-run variance. |
+| TC-21 | — | qwen3.5:9b | — | Pending | Superset onboarding/pipeline trace quality check. |
+| TC-22 | — | qwen3.5:9b | — | Pending | Superset `create_app` deep-trace grounding check. |
+| TC-23 | — | qwen3.5:9b | — | Pending | MCP middleware extraction precision check. |
+| TC-24 | — | qwen3.5:9b | — | Pending | Serializer summary-mode behavior vs tests check. |
+| TC-25 | — | qwen3.5:9b | — | Pending | Supported vs unsupported claim discipline check. |
+| TC-26 | — | qwen3.5:9b | — | Pending | Broad Superset comparison stress check. |
 
 ---
 

@@ -3,18 +3,20 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Context Engine — Prompt</title>
+  <title>Context Engine Pipeline Dashboard</title>
   <style>
     :root {
-      --bg: #f6f7f9;
+      --bg: #f4f6fb;
       --surface: #fff;
-      --border: #d8dce3;
-      --text: #1a1d23;
-      --muted: #5c6370;
+      --surface-soft: #f8f9fc;
+      --border: #d8dce7;
+      --text: #18202f;
+      --muted: #606b7d;
       --accent: #0d6efd;
-      --accent-hover: #0b5ed7;
+      --accent-soft: #e7f0ff;
+      --good: #16803c;
       --danger: #b02a37;
-      --radius: 10px;
+      --radius: 12px;
       --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       --mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, monospace;
     }
@@ -28,66 +30,131 @@
       line-height: 1.5;
     }
     .wrap {
-      max-width: 720px;
+      max-width: 1180px;
       margin: 0 auto;
       padding: 1.75rem 1.25rem 3rem;
     }
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 1.25rem;
+    }
     h1 {
-      font-size: 1.35rem;
-      font-weight: 650;
+      font-size: clamp(1.5rem, 3vw, 2.25rem);
+      font-weight: 750;
       margin: 0 0 0.25rem;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.03em;
+    }
+    h2 {
+      font-size: 1rem;
+      margin: 0;
+      letter-spacing: -0.01em;
     }
     .sub {
       color: var(--muted);
-      font-size: 0.9rem;
-      margin-bottom: 1.5rem;
+      font-size: 0.95rem;
+      margin: 0;
+      max-width: 760px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.55rem;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: #084298;
+      border: 1px solid #cfe2ff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .grid {
+      display: grid;
+      gap: 1rem;
+    }
+    .grid.two {
+      grid-template-columns: minmax(0, 0.92fr) minmax(340px, 1.08fr);
+      align-items: start;
+    }
+    .grid.metrics {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(20, 25, 38, 0.04);
+    }
+    .panel-h {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: center;
+      padding: 0.8rem 1rem;
+      background: var(--surface-soft);
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-h small {
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .panel-body {
+      padding: 1rem;
     }
     label {
       display: block;
       font-size: 0.8rem;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--muted);
       margin-bottom: 0.35rem;
     }
-    textarea {
+    textarea,
+    input {
       width: 100%;
-      min-height: 140px;
       padding: 0.75rem 0.85rem;
       border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border-radius: 10px;
       font-family: var(--mono);
-      font-size: 0.85rem;
-      resize: vertical;
+      font-size: 0.86rem;
       background: var(--surface);
+      color: var(--text);
     }
-    textarea:focus {
-      outline: 2px solid rgba(13, 110, 253, 0.35);
+    textarea {
+      min-height: 150px;
+      resize: vertical;
+    }
+    textarea:focus,
+    input:focus {
+      outline: 2px solid rgba(13, 110, 253, 0.25);
       outline-offset: 1px;
     }
     .row {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.6rem;
+      gap: 0.65rem;
       margin-top: 1rem;
       align-items: center;
     }
     button {
       font-family: var(--font);
       font-size: 0.9rem;
-      font-weight: 600;
-      padding: 0.55rem 1rem;
-      border-radius: 8px;
+      font-weight: 700;
+      padding: 0.58rem 1rem;
+      border-radius: 9px;
       border: none;
       cursor: pointer;
-      transition: background 0.15s;
+      transition: background 0.15s, border 0.15s;
     }
     button.primary {
       background: var(--accent);
       color: #fff;
     }
     button.primary:hover:not(:disabled) {
-      background: var(--accent-hover);
+      background: #0b5ed7;
     }
     button.secondary {
       background: var(--surface);
@@ -95,81 +162,185 @@
       border: 1px solid var(--border);
     }
     button.secondary:hover:not(:disabled) {
-      background: #eef0f4;
+      background: #eef1f7;
     }
     button:disabled {
       opacity: 0.55;
       cursor: not-allowed;
     }
     .status {
-      font-size: 0.8rem;
+      font-size: 0.86rem;
       color: var(--muted);
-      min-height: 1.25rem;
-      margin-top: 0.75rem;
+      min-height: 1.35rem;
+      margin-top: 0.8rem;
     }
     .status.working { color: var(--accent); }
     .status.err { color: var(--danger); }
-    .panel {
-      margin-top: 1.5rem;
-      background: var(--surface);
+    .metric {
+      padding: 0.85rem;
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
+      border-radius: 10px;
+      background: var(--surface-soft);
     }
-    .panel-h {
-      padding: 0.5rem 0.85rem;
-      font-size: 0.75rem;
+    .metric strong {
+      display: block;
+      font-size: 1.35rem;
+      line-height: 1.1;
+      margin-bottom: 0.2rem;
+    }
+    .metric span {
+      color: var(--muted);
+      font-size: 0.78rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-      background: #eef0f4;
-      border-bottom: 1px solid var(--border);
+      letter-spacing: 0.04em;
     }
-    .panel-body {
-      padding: 1rem 0.85rem;
-      font-family: var(--mono);
-      font-size: 0.82rem;
-      white-space: pre-wrap;
-      word-break: break-word;
-      max-height: min(55vh, 520px);
-      overflow-y: auto;
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 0.75rem;
     }
-    .panel-body.empty {
-      color: var(--muted);
-      font-style: italic;
-      font-family: var(--font);
-    }
-    details.advanced {
-      margin-top: 1.25rem;
-      border: 1px dashed var(--border);
-      border-radius: var(--radius);
-      padding: 0.65rem 0.85rem;
-      background: var(--surface);
-    }
-    details.advanced summary {
-      cursor: pointer;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--muted);
-    }
-    .advanced-inner {
-      margin-top: 0.75rem;
-    }
-    .advanced-inner input {
-      width: 100%;
-      padding: 0.5rem 0.65rem;
+    .stage {
       border: 1px solid var(--border);
-      border-radius: 8px;
-      font-family: var(--mono);
+      border-radius: 12px;
+      padding: 0.85rem;
+      background: var(--surface);
+      min-height: 176px;
+    }
+    .stage.active {
+      border-color: #9ec5fe;
+      background: #f7fbff;
+    }
+    .stage.done {
+      border-color: #b7e4c7;
+      background: #f8fff9;
+    }
+    .stage h3 {
+      font-size: 0.88rem;
+      margin: 0 0 0.45rem;
+    }
+    .stage p {
+      margin: 0.35rem 0;
+      color: var(--muted);
       font-size: 0.8rem;
     }
-    footer {
-      margin-top: 2rem;
-      font-size: 0.75rem;
-      color: var(--muted);
+    .stage .number {
+      display: inline-flex;
+      width: 1.45rem;
+      height: 1.45rem;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: #084298;
+      font-size: 0.78rem;
+      font-weight: 800;
+      margin-right: 0.35rem;
     }
-    footer a { color: var(--accent); }
+    .list {
+      display: grid;
+      gap: 0.65rem;
+      margin-top: 0.75rem;
+    }
+    .item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem;
+      background: var(--surface-soft);
+    }
+    .item-title {
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      font-weight: 800;
+      word-break: break-word;
+    }
+    .item-meta {
+      color: var(--muted);
+      font-size: 0.78rem;
+      margin-top: 0.25rem;
+    }
+    .snippet {
+      margin-top: 0.5rem;
+      padding: 0.6rem;
+      border-radius: 8px;
+      background: #101828;
+      color: #e6edf7;
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      white-space: pre-wrap;
+      max-height: 170px;
+      overflow: auto;
+    }
+    details {
+      margin-top: 0.75rem;
+    }
+    details summary {
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+    pre {
+      margin: 0.6rem 0 0;
+      padding: 0.75rem;
+      background: #101828;
+      color: #e6edf7;
+      border-radius: 8px;
+      overflow: auto;
+      max-height: 360px;
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      white-space: pre-wrap;
+    }
+    .advanced {
+      margin-top: 1rem;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 0.7rem 0.85rem;
+      background: var(--surface-soft);
+    }
+    .advanced-inner {
+      margin-top: 0.8rem;
+      display: grid;
+      gap: 0.8rem;
+    }
+    .files {
+      max-height: 430px;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+    }
+    .file-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 0.75rem;
+      padding: 0.65rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .file-row:last-child {
+      border-bottom: none;
+    }
+    .file-path {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      word-break: break-word;
+    }
+    .file-meta {
+      color: var(--muted);
+      font-size: 0.75rem;
+      margin-top: 0.18rem;
+    }
+    .file-count {
+      color: var(--good);
+      font-size: 0.78rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .empty {
+      color: var(--muted);
+      font-style: italic;
+    }
     .warn-file {
       background: #fff8e6;
       border: 1px solid #e6c200;
@@ -179,80 +350,198 @@
       font-size: 0.88rem;
       margin-bottom: 1rem;
     }
-    .warn-file code { font-size: 0.85em; }
+    footer {
+      margin-top: 2rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    footer code,
+    .warn-file code {
+      font-size: 0.85em;
+    }
+    footer a { color: var(--accent); }
+    @media (max-width: 980px) {
+      .grid.two,
+      .grid.metrics,
+      .pipeline {
+        grid-template-columns: 1fr;
+      }
+      .hero {
+        display: block;
+      }
+      .pill {
+        margin-top: 0.75rem;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div id="file-protocol-warn" class="warn-file" hidden>
       <strong>Wrong URL.</strong> This page was opened as a local file, so <code>Run pipeline</code> cannot reach the API.
-      Start the server, then open
-      <code id="suggested-ui-url">http://127.0.0.1:8000/ui</code>
-      in the browser (same machine).
-    </div>
-    <h1>Context Engine</h1>
-    <p class="sub">Open this page at <code>/ui</code> while the server is running (do not open the HTML file directly from disk).</p>
-
-    <label for="user-prompt">Your prompt</label>
-    <textarea id="user-prompt" name="user_prompt" placeholder="e.g. What does the Flask app expose as routes?" autocomplete="off"></textarea>
-
-    <div class="row" style="position:relative;z-index:1">
-      <button type="button" class="primary" id="btn-generate">Run pipeline</button>
-      <button type="button" class="secondary" id="btn-index">Index default repo</button>
+      Start the server, then open <code>http://127.0.0.1:8000/ui</code> in the browser.
     </div>
 
-    <details class="advanced">
-      <summary>API &amp; indexing options</summary>
-      <div class="advanced-inner">
-        <label for="api-base">API base URL (only if page is not served from the same host as the server)</label>
-        <input id="api-base" type="text" placeholder="e.g. http://127.0.0.1:8000 — leave empty for same-origin" spellcheck="false" />
-        <label for="repo-path" style="margin-top:0.75rem">Optional repo path (absolute)</label>
-        <input id="repo-path" type="text" placeholder="Leave empty for backend/flask_test" spellcheck="false" />
-        <div class="row" style="margin-top:0.75rem">
-          <button type="button" class="secondary" id="btn-index-custom">Index this path</button>
+    <header class="hero">
+      <div>
+        <h1>Context Engineering Pipeline</h1>
+        <p class="sub">
+          A live dashboard for indexing, retrieval, context optimization, prompt construction, and generation.
+          It shows what files are indexed and how each prompt is managed before the model answers.
+        </p>
+      </div>
+      <span class="pill">Presentation dashboard</span>
+    </header>
+
+    <div class="grid two">
+      <section class="panel">
+        <div class="panel-h">
+          <h2>Run the Pipeline</h2>
+          <small>POST /generate</small>
+        </div>
+        <div class="panel-body">
+          <label for="user-prompt">User request</label>
+          <textarea id="user-prompt" name="user_prompt" placeholder="e.g. Explain how retrieval finds code for a Flask route." autocomplete="off"></textarea>
+          <div class="row">
+            <button type="button" class="primary" id="btn-generate">Run pipeline</button>
+            <button type="button" class="secondary" id="btn-index">Index default repo</button>
+            <button type="button" class="secondary" id="btn-refresh-index">Refresh index summary</button>
+          </div>
+
+          <details class="advanced">
+            <summary>API and indexing options</summary>
+            <div class="advanced-inner">
+              <div>
+                <label for="api-base">API base URL</label>
+                <input id="api-base" type="text" placeholder="Leave empty for same-origin, or use http://127.0.0.1:8000" spellcheck="false" />
+              </div>
+              <div>
+                <label for="repo-path">Optional repo path (absolute)</label>
+                <input id="repo-path" type="text" placeholder="Leave empty for backend/flask_test" spellcheck="false" />
+              </div>
+              <div class="row" style="margin-top:0">
+                <button type="button" class="secondary" id="btn-index-custom">Index this path</button>
+              </div>
+            </div>
+          </details>
+
+          <div class="status" id="status" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-h">
+          <h2>Indexed Files</h2>
+          <small>GET /index/summary</small>
+        </div>
+        <div class="panel-body">
+          <div class="grid metrics">
+            <div class="metric"><strong id="metric-files">-</strong><span>Files indexed</span></div>
+            <div class="metric"><strong id="metric-chunks">-</strong><span>Chunks</span></div>
+            <div class="metric"><strong id="metric-languages">-</strong><span>Languages</span></div>
+            <div class="metric"><strong id="metric-model">-</strong><span>Embedding model</span></div>
+          </div>
+          <div id="index-breakdown" class="item" style="margin-top:0.9rem">
+            <div class="empty">Index summary has not loaded yet.</div>
+          </div>
+          <div id="indexed-files" class="files" style="margin-top:0.9rem">
+            <div class="file-row"><div class="empty">No indexed file list yet.</div></div>
+          </div>
+          <details id="index-raw-details">
+            <summary>Raw index JSON</summary>
+            <pre id="index-raw">{}</pre>
+          </details>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel" style="margin-top:1rem">
+      <div class="panel-h">
+        <h2>Pipeline Manager</h2>
+        <small>Indexing -> Retrieval -> Pruning -> Injection -> Generation</small>
+      </div>
+      <div class="panel-body">
+        <div class="pipeline" id="pipeline-flow">
+          <div class="stage" id="stage-index"><h3><span class="number">1</span>Index</h3><p>Scan files, chunk code, embed chunks, and store metadata in ChromaDB.</p><p id="stage-index-summary">Waiting for index summary.</p></div>
+          <div class="stage" id="stage-retrieve"><h3><span class="number">2</span>Retrieval</h3><p>Find candidate chunks using vector, keyword, symbol, and ranking signals.</p><p id="stage-retrieve-summary">Waiting for a prompt run.</p></div>
+          <div class="stage" id="stage-prune"><h3><span class="number">3</span>Pruning</h3><p>Score, trim, and keep the most useful context under a token budget.</p><p id="stage-prune-summary">Waiting for a prompt run.</p></div>
+          <div class="stage" id="stage-inject"><h3><span class="number">4</span>Injection</h3><p>Build structured system and user messages with selected code context.</p><p id="stage-inject-summary">Waiting for a prompt run.</p></div>
+          <div class="stage" id="stage-generate"><h3><span class="number">5</span>Generation</h3><p>Send the managed prompt to Ollama and display the final answer.</p><p id="stage-generate-summary">Waiting for a prompt run.</p></div>
         </div>
       </div>
-    </details>
+    </section>
 
-    <div class="status" id="status" aria-live="polite"></div>
+    <div class="grid two" style="margin-top:1rem">
+      <section class="panel">
+        <div class="panel-h">
+          <h2>Stage Evidence</h2>
+          <small>Presentation-safe previews</small>
+        </div>
+        <div class="panel-body">
+          <div id="stage-evidence" class="list">
+            <div class="empty">Run the pipeline to see retrieved files, pruning decisions, prompt sizes, and raw trace data.</div>
+          </div>
+        </div>
+      </section>
 
-    <div class="panel">
-      <div class="panel-h">Model output</div>
-      <div class="panel-body empty" id="output">No response yet.</div>
-    </div>
-
-    <div class="panel" id="index-panel" hidden>
-      <div class="panel-h">Index result</div>
-      <div class="panel-body" id="index-out"></div>
+      <section class="panel">
+        <div class="panel-h">
+          <h2>Model Output</h2>
+          <small>Final answer</small>
+        </div>
+        <div class="panel-body">
+          <div class="snippet empty" id="output">No response yet.</div>
+          <details id="pipeline-raw-details">
+            <summary>Raw pipeline JSON</summary>
+            <pre id="pipeline-raw">{}</pre>
+          </details>
+        </div>
+      </section>
     </div>
 
     <footer>
-      API: <code>POST /generate</code> · <code>POST /index</code> ·
+      API: <code>POST /generate</code> · <code>POST /index</code> · <code>GET /index/summary</code> ·
       Health: <a href="/">GET /</a>
     </footer>
   </div>
 
   <script>
     (function () {
+      var statusEl, outputEl, evidenceEl, filesEl, indexBreakdownEl;
+
       function el(id) {
         return document.getElementById(id);
       }
 
-      var statusEl, outputEl, indexPanel, indexOut;
+      function escapeHtml(value) {
+        return String(value == null ? "" : value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function formatNum(value) {
+        if (value == null || value === "") return "-";
+        return Number(value).toLocaleString();
+      }
+
+      function prettyJson(value) {
+        return JSON.stringify(value == null ? {} : value, null, 2);
+      }
 
       function getApiBase() {
         var node = el("api-base");
         var raw = (node && node.value ? node.value : "").trim().replace(/\/$/, "");
         if (raw) return raw;
-        if (window.location.protocol === "file:")
-          return "http://127.0.0.1:8000";
+        if (window.location.protocol === "file:") return "http://127.0.0.1:8000";
         return "";
       }
 
       function apiUrl(path) {
         var base = getApiBase();
-        if (!base) return path;
-        return base + path;
+        return base ? base + path : path;
       }
 
       function setStatus(msg, cls) {
@@ -261,23 +550,18 @@
       }
 
       function setWorking(on, label) {
-        el("btn-generate").disabled = on;
-        el("btn-index").disabled = on;
-        el("btn-index-custom").disabled = on;
-        if (on) {
-          setStatus(label || "Working…", "working");
-        } else {
-          statusEl.classList.remove("working");
-        }
+        ["btn-generate", "btn-index", "btn-index-custom", "btn-refresh-index"].forEach(function (id) {
+          var node = el(id);
+          if (node) node.disabled = on;
+        });
+        if (on) setStatus(label || "Working...", "working");
+        else statusEl.classList.remove("working");
       }
 
-      async function postJson(path, body) {
-        var url = apiUrl(path);
-        var res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: body !== undefined ? JSON.stringify(body) : "{}",
-        });
+      async function requestJson(method, path, body) {
+        var opts = { method: method, headers: { "Content-Type": "application/json" } };
+        if (method !== "GET") opts.body = body !== undefined ? JSON.stringify(body) : "{}";
+        var res = await fetch(apiUrl(path), opts);
         var text = await res.text();
         var data;
         try {
@@ -292,36 +576,189 @@
         return data;
       }
 
+      function markStage(id, state) {
+        var node = el(id);
+        if (!node) return;
+        node.classList.remove("active");
+        node.classList.remove("done");
+        if (state) node.classList.add(state);
+      }
+
+      function setStageText(id, text) {
+        var node = el(id);
+        if (node) node.textContent = text;
+      }
+
+      function renderIndexSummary(summary) {
+        summary = summary || {};
+        el("metric-files").textContent = formatNum(summary.indexed_files_total || 0);
+        el("metric-chunks").textContent = formatNum(summary.total_chunks || 0);
+        el("metric-languages").textContent = formatNum(Object.keys(summary.by_language || {}).length);
+        el("metric-model").textContent = summary.model || "-";
+        el("index-raw").textContent = prettyJson(summary);
+
+        var languageText = Object.keys(summary.by_language || {}).map(function (key) {
+          return key + ": " + summary.by_language[key];
+        }).join(", ") || "No language counts yet.";
+        var typeText = Object.keys(summary.by_chunk_type || {}).map(function (key) {
+          return key + ": " + summary.by_chunk_type[key];
+        }).join(", ") || "No chunk type counts yet.";
+        indexBreakdownEl.innerHTML =
+          "<div class=\"item-title\">Chroma collection: " + escapeHtml(summary.collection || "code_embeddings") + "</div>" +
+          "<div class=\"item-meta\">Languages: " + escapeHtml(languageText) + "</div>" +
+          "<div class=\"item-meta\">Chunk types: " + escapeHtml(typeText) + "</div>" +
+          "<div class=\"item-meta\">DB path: " + escapeHtml(summary.db_path || "") + "</div>";
+
+        var files = summary.files || [];
+        if (!files.length) {
+          filesEl.innerHTML = "<div class=\"file-row\"><div class=\"empty\">No indexed files found. Run indexing with a repo path first.</div></div>";
+        } else {
+          filesEl.innerHTML = files.map(function (file) {
+            var symbols = (file.symbols || []).slice(0, 5).join(", ");
+            var lines = file.start_line && file.end_line ? " lines " + file.start_line + "-" + file.end_line : "";
+            return "<div class=\"file-row\">" +
+              "<div><div class=\"file-path\">" + escapeHtml(file.path) + "</div>" +
+              "<div class=\"file-meta\">" + escapeHtml(file.language || "unknown") + lines + (symbols ? " | " + escapeHtml(symbols) : "") + "</div></div>" +
+              "<div class=\"file-count\">" + formatNum(file.chunks || 0) + " chunks</div>" +
+              "</div>";
+          }).join("");
+        }
+
+        setStageText("stage-index-summary", formatNum(summary.indexed_files_total || 0) + " files, " + formatNum(summary.total_chunks || 0) + " chunks indexed.");
+        markStage("stage-index", (summary.total_chunks || 0) > 0 ? "done" : "");
+      }
+
+      function renderStageCards(pipeline) {
+        var stages = pipeline && pipeline.stages ? pipeline.stages : {};
+        var retrieve = stages.retrieve && stages.retrieve.summary ? stages.retrieve.summary : {};
+        var prune = stages.prune && stages.prune.summary ? stages.prune.summary : {};
+        var inject = stages.inject && stages.inject.summary ? stages.inject.summary : {};
+        var generate = stages.generate && stages.generate.summary ? stages.generate.summary : {};
+        var pruneStats = prune.stats || {};
+
+        setStageText("stage-retrieve-summary", formatNum(retrieve.candidate_chunks || 0) + " chunks from " + formatNum(retrieve.unique_files || 0) + " files.");
+        var budget = prune.token_budget || 0;
+        setStageText("stage-prune-summary", formatNum(pruneStats.kept_chunks || 0) + " kept, " + formatNum(pruneStats.dropped_chunks || 0) + " dropped, about " + formatNum(pruneStats.kept_est_tokens || 0) + " tokens (budget " + formatNum(budget) + ").");
+        setStageText("stage-inject-summary", formatNum(inject.total_chars || 0) + " prompt chars, about " + formatNum(inject.estimated_tokens || 0) + " tokens.");
+        setStageText("stage-generate-summary", formatNum(generate.output_chars || 0) + " output chars.");
+
+        ["stage-retrieve", "stage-prune", "stage-inject", "stage-generate"].forEach(function (id) {
+          markStage(id, "done");
+        });
+      }
+
+      function renderRetrieved(stage) {
+        var summary = stage && stage.summary ? stage.summary : {};
+        var chunks = summary.top_chunks || [];
+        if (!chunks.length) return "";
+        return "<div class=\"item\"><div class=\"item-title\">Retrieved " + formatNum(summary.candidate_chunks) + " chunks from " + formatNum(summary.unique_files) + " files</div>" +
+          chunks.map(function (chunk) {
+            return "<div class=\"item\" style=\"margin-top:0.6rem\">" +
+              "<div class=\"item-title\">" + escapeHtml(chunk.file) + "</div>" +
+              "<div class=\"item-meta\">" + escapeHtml(chunk.symbol || chunk.chunk_type || "chunk") +
+              " | lines " + escapeHtml(chunk.start_line) + "-" + escapeHtml(chunk.end_line) +
+              " | final " + escapeHtml(chunk.final_score) +
+              " | hybrid " + escapeHtml(chunk.hybrid_score) +
+              " | similarity " + escapeHtml(chunk.similarity) +
+              " | path_prior " + escapeHtml(chunk.path_prior) + "</div>" +
+              "<div class=\"snippet\">" + escapeHtml(chunk.preview || "") + "</div>" +
+              "</div>";
+          }).join("") +
+          rawDetails("Raw retrieval JSON", stage.raw) + "</div>";
+      }
+
+      function renderPruned(stage) {
+        var summary = stage && stage.summary ? stage.summary : {};
+        var stats = summary.stats || {};
+        var chunks = summary.kept_chunks || [];
+        return "<div class=\"item\"><div class=\"item-title\">Pruning under token budget</div>" +
+          "<div class=\"item-meta\">Original: " + formatNum(stats.original_chunks) + " chunks / " + formatNum(stats.original_est_tokens) +
+          " tokens. Kept: " + formatNum(stats.kept_chunks) + " chunks / " + formatNum(stats.kept_est_tokens) +
+          " tokens. Dropped: " + formatNum(stats.dropped_chunks) + ". Budget: " + formatNum(summary.token_budget || 0) + ".</div>" +
+          "<div class=\"item-meta\">" + escapeHtml(summary.decision_reason || "") + "</div>" +
+          chunks.map(function (chunk) {
+            return "<div class=\"item\" style=\"margin-top:0.6rem\">" +
+              "<div class=\"item-title\">" + escapeHtml(chunk.file) + "</div>" +
+              "<div class=\"item-meta\">" + escapeHtml(chunk.symbol || "focused window") +
+              " | start line " + escapeHtml(chunk.start_line || "?") +
+              " | about " + formatNum(chunk.estimated_tokens) + " tokens</div>" +
+              "<div class=\"snippet\">" + escapeHtml(chunk.preview || "") + "</div>" +
+              "</div>";
+          }).join("") +
+          rawDetails("Raw pruning JSON", stage.raw) + "</div>";
+      }
+
+      function renderInjected(stage) {
+        var summary = stage && stage.summary ? stage.summary : {};
+        return "<div class=\"item\"><div class=\"item-title\">Prompt injection</div>" +
+          "<div class=\"item-meta\">System: " + formatNum(summary.system_chars) + " chars. User: " + formatNum(summary.user_chars) +
+          " chars. Estimated total: " + formatNum(summary.estimated_tokens) + " tokens.</div>" +
+          "<div class=\"snippet\">" + escapeHtml(summary.user_preview || "") + "</div>" +
+          rawDetails("Raw prompt JSON", stage.raw) + "</div>";
+      }
+
+      function renderGenerated(stage) {
+        var summary = stage && stage.summary ? stage.summary : {};
+        return "<div class=\"item\"><div class=\"item-title\">Generation</div>" +
+          "<div class=\"item-meta\">Output type: " + escapeHtml(summary.output_type || "") +
+          " | " + formatNum(summary.output_chars) + " chars | " + formatNum(stage.duration_ms || 0) + " ms</div>" +
+          "<div class=\"snippet\">" + escapeHtml(summary.preview || "") + "</div>" +
+          rawDetails("Raw generation JSON", stage.raw) + "</div>";
+      }
+
+      function rawDetails(label, value) {
+        return "<details><summary>" + escapeHtml(label) + "</summary><pre>" + escapeHtml(prettyJson(value)) + "</pre></details>";
+      }
+
+      function renderEvidence(pipeline) {
+        var stages = pipeline && pipeline.stages ? pipeline.stages : {};
+        var html = [
+          renderRetrieved(stages.retrieve),
+          renderPruned(stages.prune),
+          renderInjected(stages.inject),
+          renderGenerated(stages.generate)
+        ].filter(Boolean).join("");
+        evidenceEl.innerHTML = html || "<div class=\"empty\">No stage evidence returned.</div>";
+      }
+
+      async function refreshIndexSummary(showStatus) {
+        if (showStatus) setStatus("Loading index summary...", "working");
+        try {
+          var data = await requestJson("GET", "/index/summary", undefined);
+          renderIndexSummary(data);
+          if (showStatus) setStatus("Index summary loaded.");
+          return data;
+        } catch (e) {
+          if (showStatus) setStatus("Index summary failed: " + (e.message || String(e)), "err");
+          throw e;
+        }
+      }
+
       async function runPipeline() {
         var promptNode = el("user-prompt");
-        if (!promptNode) {
-          setStatus("UI error: missing #user-prompt", "err");
-          return;
-        }
-        var prompt = promptNode.value.trim();
+        var prompt = promptNode ? promptNode.value.trim() : "";
         if (!prompt) {
           setStatus("Enter a prompt first.", "err");
           return;
         }
-        indexPanel.hidden = true;
         outputEl.classList.remove("empty");
-        outputEl.textContent = "Sending request to POST /generate …";
-        setWorking(true, "Running retrieve, prune, inject, Ollama (may take a while)…");
+        outputEl.textContent = "Running pipeline...";
+        evidenceEl.innerHTML = "<div class=\"empty\">Pipeline is running. Waiting for trace data...</div>";
+        ["stage-retrieve", "stage-prune", "stage-inject", "stage-generate"].forEach(function (id) {
+          markStage(id, "active");
+        });
+        setWorking(true, "Running retrieve, prune, inject, and Ollama...");
         try {
-          var data = await postJson("/generate", { prompt: prompt });
+          var data = await requestJson("POST", "/generate", { prompt: prompt });
           var out = data.output;
-          if (out == null || (typeof out === "string" && !out.length))
-            outputEl.textContent = "(empty output from server)";
-          else
-            outputEl.textContent =
-              typeof out === "string" ? out : JSON.stringify(out, null, 2);
-          setStatus("Done.");
+          outputEl.textContent = out == null || out === "" ? "(empty output from server)" : (typeof out === "string" ? out : prettyJson(out));
+          el("pipeline-raw").textContent = prettyJson(data);
+          renderStageCards(data.pipeline);
+          renderEvidence(data.pipeline);
+          setStatus("Pipeline finished.");
         } catch (e) {
           outputEl.classList.add("empty");
-          var hint =
-            e && e.message === "Failed to fetch"
-              ? " (Is the server running on this host/port? Try hard refresh: Ctrl+Shift+R.)"
-              : "";
+          var hint = e && e.message === "Failed to fetch" ? " Is the server running on this host/port?" : "";
           outputEl.textContent = "Request failed: " + (e.message || String(e)) + hint;
           setStatus(e.message || String(e), "err");
         } finally {
@@ -330,17 +767,17 @@
       }
 
       async function runIndex(query) {
-        indexPanel.hidden = false;
-        indexOut.textContent = "";
-        setWorking(true, "Indexing…");
+        setWorking(true, "Indexing repository...");
+        markStage("stage-index", "active");
         try {
           var url = query ? "/index?" + query : "/index";
-          var data = await postJson(url, {});
-          indexOut.textContent = JSON.stringify(data, null, 2);
-          setStatus("Index finished.");
+          var data = await requestJson("POST", url, {});
+          renderIndexSummary(data.index_summary || data);
+          el("index-raw").textContent = prettyJson(data);
+          setStatus("Index finished: " + formatNum(data.files_indexed || 0) + " files indexed, " + formatNum(data.chunks_added || 0) + " chunks added.");
         } catch (e) {
-          indexOut.textContent = e.message || String(e);
-          setStatus("Index failed.", "err");
+          markStage("stage-index", "");
+          setStatus("Index failed: " + (e.message || String(e)), "err");
         } finally {
           setWorking(false);
         }
@@ -349,28 +786,26 @@
       function init() {
         statusEl = el("status");
         outputEl = el("output");
-        indexPanel = el("index-panel");
-        indexOut = el("index-out");
+        evidenceEl = el("stage-evidence");
+        filesEl = el("indexed-files");
+        indexBreakdownEl = el("index-breakdown");
 
         if (!statusEl || !outputEl || !el("btn-generate")) {
           document.body.insertAdjacentHTML(
             "afterbegin",
-            "<p style=\"color:red;padding:1rem\">Context Engine UI failed to bind (missing elements). Hard-refresh the page.</p>"
+            "<p style=\"color:red;padding:1rem\">Context Engine UI failed to bind. Hard-refresh the page.</p>"
           );
           return;
         }
 
         if (window.location.protocol === "file:") {
-          var w = el("file-protocol-warn");
-          if (w) w.hidden = false;
+          var warning = el("file-protocol-warn");
+          if (warning) warning.hidden = false;
         }
 
-        el("btn-generate").addEventListener("click", function () {
-          runPipeline();
-        });
-        el("btn-index").addEventListener("click", function () {
-          runIndex("");
-        });
+        el("btn-generate").addEventListener("click", runPipeline);
+        el("btn-index").addEventListener("click", function () { runIndex(""); });
+        el("btn-refresh-index").addEventListener("click", function () { refreshIndexSummary(true); });
         el("btn-index-custom").addEventListener("click", function () {
           var p = el("repo-path").value.trim();
           if (!p) {
@@ -381,13 +816,16 @@
           runIndex(q.toString());
         });
 
+        refreshIndexSummary(false).catch(function () {
+          setStatus("Index summary unavailable. Start the API or run indexing first.", "err");
+        });
+
         window.ctxEngineRunPipeline = runPipeline;
+        window.ctxEngineRefreshIndex = refreshIndexSummary;
       }
 
-      if (document.readyState === "loading")
-        document.addEventListener("DOMContentLoaded", init);
-      else
-        init();
+      if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+      else init();
     })();
   </script>
 </body>
