@@ -1,0 +1,5 @@
+# Optional: LLM-as-judge metrics (faithfulness, relevancy, etc.)
+# Install with the same Python you use for the backend stack:
+#   python3.12 -m pip install -r backend/context_metrics/requirements.txt
+
+deepeval>=2.0

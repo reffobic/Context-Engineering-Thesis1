@@ -42,6 +42,7 @@ W_EXACT = float(os.getenv("EXACT_WEIGHT", "0.22"))
 W_KEYWORD = float(os.getenv("KEYWORD_WEIGHT", "0.08"))
 W_SOURCE = float(os.getenv("SOURCE_WEIGHT", "0.14"))
 W_PATH_MATCH = float(os.getenv("PATH_MATCH_WEIGHT", "0.32"))
+W_CLASS_DEF = float(os.getenv("CLASS_DEF_WEIGHT", "0.28"))
 
 # Long context config
 # How many candidates to fetch before re-ranking
@@ -58,6 +59,13 @@ EXACT_TOP_N = int(os.getenv("EXACT_TOP_N", "400"))
 RERANKER_ENABLED = os.getenv("RERANKER_ENABLED", "0").strip().lower() in {"1", "true", "yes"}
 RERANKER_MODEL = os.getenv("RERANKER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2")
 RERANK_TOP_N = int(os.getenv("RERANK_TOP_N", "80"))
+SYMBOL_STOPWORDS = {
+    "what", "where", "why", "how", "compare", "difference", "versus", "vs",
+    "context", "engineering", "pipeline", "superset", "source", "files", "file",
+    "does", "the", "and", "for", "from", "with", "about", "using", "used",
+    "requirements", "start", "provide", "add", "not", "none",
+}
+
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -164,14 +172,15 @@ def plan_query(query: str) -> dict[str, Any]:
     for phrase, symbol in domain_aliases.items():
         if re.search(r"\b" + re.escape(phrase) + r"\b", q_lower):
             symbol_candidates.append(symbol)
-    stop = {
-        "What", "Where", "Why", "How", "Compare", "Context", "Engineering",
-        "Pipeline", "Superset", "Source", "Files", "Does", "The",
-    }
     symbols = []
     for sym in symbol_candidates:
         sym = sym.strip("`'\".,:;()[]{}")
-        if sym and sym not in stop and sym not in symbols and not sym.endswith((".py", ".js", ".ts", ".tsx")):
+        if (
+            sym
+            and sym.lower() not in SYMBOL_STOPWORDS
+            and sym not in symbols
+            and not sym.endswith((".py", ".js", ".ts", ".tsx"))
+        ):
             symbols.append(sym)
 
     q = q_lower
@@ -215,6 +224,39 @@ def _source_score(file_path: str, query_plan: dict[str, Any]) -> float:
             return 0.72
         return 0.82
     return 0.35
+
+
+def _class_definition_score(item: dict[str, Any], query_plan: dict[str, Any]) -> float:
+    """
+    Promote class-definition chunks for definition/comparison prompts that
+    mention class-like symbols (e.g., Query, SavedQuery, Dashboard).
+    """
+    intents = set(query_plan.get("intent", []))
+    if not (intents & {"definition", "comparison"}):
+        return 0.0
+
+    symbols_raw = [str(s) for s in (query_plan.get("symbols") or [])]
+    class_like = [s for s in symbols_raw if s[:1].isupper()]
+    if not class_like:
+        return 0.0
+
+    meta = item.get("metadata", {}) or {}
+    name = str(meta.get("function", ""))
+    chunk_type = str(meta.get("chunk_type", "")).lower()
+    qualified = str(meta.get("qualified_name", ""))
+    symbol_list = _safe_json_list(meta.get("symbols"))
+    haystack = f"{name}\n{qualified}\n" + "\n".join(symbol_list)
+
+    exact_hits = sum(1 for s in class_like if re.search(rf"\b{re.escape(s)}\b", haystack))
+    if exact_hits <= 0:
+        return 0.0
+
+    # Strong preference for class chunks; degrade for function chunks.
+    if chunk_type == "class":
+        return 1.0
+    if chunk_type == "function":
+        return 0.25
+    return 0.5
 
 
 def _path_match_score(file_path: str, query_plan: dict[str, Any]) -> float:
@@ -485,6 +527,7 @@ def hybrid_retrieve(query: str, top_k: int = 5) -> list[dict]:
         file_path = item.get("metadata", {}).get("file", "")
         source_score = _source_score(file_path, query_plan)
         path_match_score = _path_match_score(file_path, query_plan)
+        class_def_score = _class_definition_score(item, query_plan)
         k_score     = keyword_match_score(query, doc)
 
         hybrid_score = (
@@ -494,6 +537,7 @@ def hybrid_retrieve(query: str, top_k: int = 5) -> list[dict]:
             + W_KEYWORD * k_score
             + W_SOURCE * source_score
             + W_PATH_MATCH * path_match_score
+            + W_CLASS_DEF * class_def_score
         )
 
         scored.append({
@@ -501,6 +545,7 @@ def hybrid_retrieve(query: str, top_k: int = 5) -> list[dict]:
             "code":         item["code"],
             "source_score": round(source_score, 4),
             "path_match_score": round(path_match_score, 4),
+            "class_def_score": round(class_def_score, 4),
             "hybrid_score": round(hybrid_score, 4)
         })
 

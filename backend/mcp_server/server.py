@@ -35,6 +35,28 @@ class GenerateRequest(BaseModel):
 
     prompt: str
 
+
+class EvaluateRequest(BaseModel):
+    """
+    Lightweight eval: retrieve + prune, structural stats, optional label-based P/R,
+    optional one-shot DeepEval contextual relevancy on retrieval (judge LLM).
+    """
+
+    prompt: str
+    top_k: int = 10
+    token_budget: int = 1800
+    relevant_files: Optional[List[str]] = None
+    judge_retrieval_relevancy: bool = False
+
+
+def _ensure_backend_on_path() -> None:
+    import sys
+
+    backend = Path(__file__).resolve().parent.parent
+    if str(backend) not in sys.path:
+        sys.path.insert(0, str(backend))
+
+
 logging.basicConfig(level=logging.INFO)
 
 # Confirm server is running
@@ -291,3 +313,69 @@ def index(
 @app.post("/generate")
 def generate(req: GenerateRequest):
     return run_pipeline(req.prompt)
+
+
+@app.post("/evaluate")
+def evaluate(req: EvaluateRequest) -> dict[str, Any]:
+    """
+    Does not run inject/generate unless you call ``POST /generate`` separately.
+    Install ``deepeval`` for ``judge_retrieval_relevancy`` (see ``backend/context_metrics/requirements.txt``).
+    """
+    _ensure_backend_on_path()
+    from context_metrics.run_pipeline_metrics import (
+        chunks_as_retrieval_context,
+        measure_contextual_relevancy_only,
+        precision_recall_at_k,
+        structural_pipeline_stats,
+    )
+
+    retrieved = call_tool("retrieve_context", req.prompt, req.top_k)
+    pruned, _stats = prune_context_with_stats(
+        req.prompt, retrieved, token_budget=req.token_budget
+    )
+    retrieve_ctx = chunks_as_retrieval_context(retrieved)
+
+    gold = [x.strip() for x in (req.relevant_files or []) if x and str(x).strip()]
+
+    out: dict[str, Any] = {
+        "prompt": req.prompt,
+        "top_k": req.top_k,
+        "token_budget": req.token_budget,
+        "pipeline_counts": {
+            "retrieved_chunks": len(retrieved),
+            "pruned_chunks": len(pruned),
+        },
+        "structural": structural_pipeline_stats(retrieved, pruned, req.top_k),
+    }
+
+    if gold:
+        pr = precision_recall_at_k(retrieved, req.top_k, gold)
+        pr["stage"] = "after_retrieval"
+        out["precision_at_k_retrieval"] = pr
+        if len(pruned) > 0:
+            pp = precision_recall_at_k(pruned, len(pruned), gold)
+            pp["stage"] = "after_prune"
+            pp["note"] = (
+                "k equals len(pruned); recall counts distinct gold files still present after pruning."
+            )
+            out["precision_at_k_pruned"] = pp
+        else:
+            out["precision_at_k_pruned"] = {
+                "skipped": True,
+                "reason": "No chunks after pruning.",
+                "stage": "after_prune",
+            }
+
+    if req.judge_retrieval_relevancy:
+        try:
+            out["contextual_relevancy_retrieval"] = measure_contextual_relevancy_only(
+                req.prompt, retrieve_ctx
+            )
+        except Exception as exc:  # pragma: no cover - missing deepeval / Ollama
+            logging.exception("evaluate: judge_retrieval_relevancy failed")
+            out["contextual_relevancy_retrieval"] = {
+                "error": str(exc),
+                "hint": "pip install -r backend/context_metrics/requirements.txt and ensure Ollama + EVAL_JUDGE_MODEL.",
+            }
+
+    return out

@@ -360,6 +360,49 @@
       font-size: 0.85em;
     }
     footer a { color: var(--accent); }
+    .tab-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-bottom: 1rem;
+    }
+    .tab-btn {
+      font-family: var(--font);
+      font-size: 0.88rem;
+      font-weight: 700;
+      padding: 0.45rem 0.95rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .tab-btn:hover { background: var(--surface-soft); }
+    .tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .quick-metrics {
+      font-size: 0.84rem;
+      color: var(--muted);
+      margin-top: 0.65rem;
+      padding: 0.55rem 0.75rem;
+      background: var(--surface-soft);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      line-height: 1.45;
+    }
+    .quick-metrics strong { color: var(--text); }
+    .eval-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      margin-top: 1rem;
+    }
+    @media (max-width: 900px) {
+      .eval-grid { grid-template-columns: 1fr; }
+    }
     @media (max-width: 980px) {
       .grid.two,
       .grid.metrics,
@@ -381,6 +424,13 @@
       <strong>Wrong URL.</strong> This page was opened as a local file, so <code>Run pipeline</code> cannot reach the API.
       Start the server, then open <code>http://127.0.0.1:8000/ui</code> in the browser.
     </div>
+
+    <div class="tab-bar" role="tablist" aria-label="Dashboard views">
+      <button type="button" class="tab-btn active" id="tab-btn-dash" role="tab" aria-selected="true">Dashboard</button>
+      <button type="button" class="tab-btn" id="tab-btn-eval" role="tab" aria-selected="false">Evaluation</button>
+    </div>
+
+    <div id="panel-dashboard">
 
     <header class="hero">
       <div>
@@ -426,6 +476,7 @@
           </details>
 
           <div class="status" id="status" aria-live="polite"></div>
+          <div class="quick-metrics" id="dash-quick-metrics" hidden aria-label="Quick retrieval stats from last pipeline run"></div>
         </div>
       </section>
 
@@ -500,9 +551,55 @@
     </div>
 
     <footer>
-      API: <code>POST /generate</code> · <code>POST /index</code> · <code>GET /index/summary</code> ·
+      API: <code>POST /generate</code> · <code>POST /evaluate</code> · <code>POST /index</code> · <code>GET /index/summary</code> ·
       Health: <a href="/">GET /</a>
     </footer>
+
+    </div><!-- #panel-dashboard -->
+
+    <div id="panel-eval" class="panel" hidden>
+      <div class="panel-h">
+        <h2>Evaluation</h2>
+        <small>POST /evaluate</small>
+      </div>
+      <div class="panel-body">
+        <p class="sub" style="margin:0 0 0.75rem">
+          <strong>Automatic (no gold):</strong> structural stats from retrieve + prune (counts, top paths, mean rank score on retrieved top-5).
+          <strong>Optional gold paths:</strong> one file path per line — computes precision@k and recall@k vs chunk metadata (see thesis / CLI docs).
+          <strong>Optional judge:</strong> one DeepEval contextual-relevancy call on retrieval (slow; needs <code>deepeval</code> + Ollama judge).
+        </p>
+        <label for="eval-prompt">Prompt / question</label>
+        <textarea id="eval-prompt" placeholder="Same style as the main dashboard prompt." rows="3"></textarea>
+        <div class="eval-grid" style="margin-top:0.85rem">
+          <div>
+            <label for="eval-top-k">top_k</label>
+            <input id="eval-top-k" type="number" min="1" max="50" value="10" />
+          </div>
+          <div>
+            <label for="eval-budget">Token budget (prune)</label>
+            <input id="eval-budget" type="number" min="200" max="8000" value="1800" />
+          </div>
+        </div>
+        <label for="eval-gold" style="margin-top:0.85rem">Gold file paths (optional, one per line)</label>
+        <textarea id="eval-gold" rows="4" placeholder="e.g. flask/app.py&#10;flask/blueprints.py"></textarea>
+        <div class="row" style="margin-top:0.65rem">
+          <label style="display:flex;align-items:center;gap:0.45rem;font-weight:600;color:var(--text)">
+            <input type="checkbox" id="eval-judge" />
+            Run DeepEval retrieval relevancy (judge LLM)
+          </label>
+        </div>
+        <div class="row">
+          <button type="button" class="primary" id="btn-eval-run">Run evaluation</button>
+          <button type="button" class="secondary" id="btn-eval-copy-prompt">Copy prompt from Dashboard</button>
+        </div>
+        <div class="status" id="eval-status" aria-live="polite"></div>
+        <details style="margin-top:1rem" open>
+          <summary>Results JSON</summary>
+          <pre id="eval-raw" style="margin-top:0.5rem">{}</pre>
+        </details>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -547,6 +644,84 @@
       function setStatus(msg, cls) {
         statusEl.textContent = msg || "";
         statusEl.className = "status" + (cls ? " " + cls : "");
+      }
+
+      function setEvalStatus(msg, cls) {
+        var n = el("eval-status");
+        if (!n) return;
+        n.textContent = msg || "";
+        n.className = "status" + (cls ? " " + cls : "");
+      }
+
+      function switchTab(which) {
+        var dash = el("panel-dashboard");
+        var ev = el("panel-eval");
+        var bd = el("tab-btn-dash");
+        var be = el("tab-btn-eval");
+        if (!dash || !ev) return;
+        var showDash = which === "dash";
+        dash.hidden = !showDash;
+        ev.hidden = showDash;
+        if (bd) {
+          bd.classList.toggle("active", showDash);
+          bd.setAttribute("aria-selected", showDash ? "true" : "false");
+        }
+        if (be) {
+          be.classList.toggle("active", !showDash);
+          be.setAttribute("aria-selected", showDash ? "false" : "true");
+        }
+      }
+
+      function renderQuickMetrics(pipeline) {
+        var box = el("dash-quick-metrics");
+        if (!box) return;
+        var st = pipeline && pipeline.stages && pipeline.stages.retrieve && pipeline.stages.retrieve.summary;
+        var chunks = st && st.top_chunks ? st.top_chunks : [];
+        var vals = [];
+        for (var i = 0; i < Math.min(5, chunks.length); i++) {
+          var v = chunks[i].final_score;
+          if (v != null && v !== "") vals.push(Number(v));
+        }
+        var mean = vals.length
+          ? (vals.reduce(function (a, b) { return a + b; }, 0) / vals.length).toFixed(4)
+          : "—";
+        box.hidden = false;
+        box.innerHTML =
+          "<strong>Quick retrieval snapshot</strong> — top-5 mean <code>final_score</code>: " +
+          escapeHtml(mean) +
+          " · candidate chunks: " +
+          escapeHtml(formatNum(st && st.candidate_chunks)) +
+          " · unique files (retrieval summary): " +
+          escapeHtml(formatNum(st && st.unique_files)) +
+          ". <span style=\"opacity:0.92\">Label-based precision/recall@k: use the <strong>Evaluation</strong> tab.</span>";
+      }
+
+      async function runEvaluate() {
+        var promptNode = el("eval-prompt");
+        var prompt = promptNode ? promptNode.value.trim() : "";
+        if (!prompt) {
+          setEvalStatus("Enter a prompt first.", "err");
+          return;
+        }
+        var goldRaw = el("eval-gold").value || "";
+        var goldLines = goldRaw.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
+        var judgeNode = el("eval-judge");
+        var body = {
+          prompt: prompt,
+          top_k: parseInt(el("eval-top-k").value, 10) || 10,
+          token_budget: parseInt(el("eval-budget").value, 10) || 1800,
+          relevant_files: goldLines.length ? goldLines : null,
+          judge_retrieval_relevancy: !!(judgeNode && judgeNode.checked)
+        };
+        setEvalStatus("Calling POST /evaluate...", "working");
+        try {
+          var data = await requestJson("POST", "/evaluate", body);
+          el("eval-raw").textContent = prettyJson(data);
+          setEvalStatus("Evaluation finished.");
+        } catch (err) {
+          el("eval-raw").textContent = "{}";
+          setEvalStatus(err.message || String(err), "err");
+        }
       }
 
       function setWorking(on, label) {
@@ -772,6 +947,7 @@
           el("pipeline-raw").textContent = prettyJson(data);
           renderStageCards(data.pipeline);
           renderEvidence(data.pipeline);
+          renderQuickMetrics(data.pipeline);
           setStatus("Pipeline finished.");
         } catch (e) {
           outputEl.classList.add("empty");
@@ -820,7 +996,22 @@
           if (warning) warning.hidden = false;
         }
 
+        var tbd = el("tab-btn-dash");
+        var tbe = el("tab-btn-eval");
+        if (tbd) tbd.addEventListener("click", function () { switchTab("dash"); });
+        if (tbe) tbe.addEventListener("click", function () { switchTab("eval"); });
         el("btn-generate").addEventListener("click", runPipeline);
+        var btnEval = el("btn-eval-run");
+        if (btnEval) btnEval.addEventListener("click", runEvaluate);
+        var btnCopy = el("btn-eval-copy-prompt");
+        if (btnCopy) {
+          btnCopy.addEventListener("click", function () {
+            var main = el("user-prompt");
+            var evp = el("eval-prompt");
+            if (main && evp) evp.value = main.value;
+            setEvalStatus("Copied prompt from Dashboard.", "");
+          });
+        }
         el("btn-index").addEventListener("click", function () { runIndex(""); });
         el("btn-refresh-index").addEventListener("click", function () { refreshIndexSummary(true); });
         el("btn-index-custom").addEventListener("click", function () {
