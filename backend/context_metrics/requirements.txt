@@ -1,5 +1,11 @@
 # Optional: LLM-as-judge metrics (faithfulness, relevancy, etc.)
 # Install with the same Python you use for the backend stack:
 #   python3.12 -m pip install -r backend/context_metrics/requirements.txt
+#
+# ``ollama`` is required by DeepEval's OllamaModel (HTTP client to your local Ollama server).
+#
+# Slow CPU judges: ``build_judge_model`` sets generous DeepEval timeouts if unset
+# (DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE / DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE).
 
 deepeval>=2.0
+ollama>=0.3.0

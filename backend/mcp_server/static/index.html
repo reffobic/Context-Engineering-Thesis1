@@ -566,7 +566,8 @@
         <p class="sub" style="margin:0 0 0.75rem">
           <strong>Automatic (no gold):</strong> structural stats from retrieve + prune (counts, top paths, mean rank score on retrieved top-5).
           <strong>Optional gold paths:</strong> one file path per line — computes precision@k and recall@k vs chunk metadata (see thesis / CLI docs).
-          <strong>Optional judge:</strong> one DeepEval contextual-relevancy call on retrieval (slow; needs <code>deepeval</code> + Ollama judge).
+          <strong>Optional judge:</strong> one DeepEval contextual-relevancy call on retrieval (slow; needs <code>deepeval</code> + PyPI <code>ollama</code> + Ollama judge).
+          <strong>Faithfulness:</strong> runs inject + your Ollama answer model, then scores whether claims match pruned CONTEXT (very slow; needs same deps). Judge uses <code>EVAL_JUDGE_MODEL</code> if set, otherwise the same model as Dashboard generation (<code>agent_endpoint</code>). CPU-bound judges are slow; the API bumps DeepEval per-call timeouts when unset (override with <code>DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE</code> if needed).
         </p>
         <label for="eval-prompt">Prompt / question</label>
         <textarea id="eval-prompt" placeholder="Same style as the main dashboard prompt." rows="3"></textarea>
@@ -586,6 +587,12 @@
           <label style="display:flex;align-items:center;gap:0.45rem;font-weight:600;color:var(--text)">
             <input type="checkbox" id="eval-judge" />
             Run DeepEval retrieval relevancy (judge LLM)
+          </label>
+        </div>
+        <div class="row" style="margin-top:0.35rem">
+          <label style="display:flex;align-items:center;gap:0.45rem;font-weight:600;color:var(--text)">
+            <input type="checkbox" id="eval-faithfulness" />
+            Run inject + generate + DeepEval faithfulness (answer vs pruned context)
           </label>
         </div>
         <div class="row">
@@ -706,21 +713,38 @@
         var goldRaw = el("eval-gold").value || "";
         var goldLines = goldRaw.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
         var judgeNode = el("eval-judge");
+        var faithNode = el("eval-faithfulness");
+        var runFaith = !!(faithNode && faithNode.checked);
         var body = {
           prompt: prompt,
           top_k: parseInt(el("eval-top-k").value, 10) || 10,
           token_budget: parseInt(el("eval-budget").value, 10) || 1800,
           relevant_files: goldLines.length ? goldLines : null,
-          judge_retrieval_relevancy: !!(judgeNode && judgeNode.checked)
+          judge_retrieval_relevancy: !!(judgeNode && judgeNode.checked),
+          faithfulness: runFaith
         };
-        setEvalStatus("Calling POST /evaluate...", "working");
+        var btnEv = el("btn-eval-run");
+        if (btnEv) btnEv.disabled = true;
+        setEvalStatus(
+          runFaith
+            ? "Running POST /evaluate (includes generation + faithfulness; can take several minutes)..."
+            : "Calling POST /evaluate...",
+          "working"
+        );
         try {
           var data = await requestJson("POST", "/evaluate", body);
           el("eval-raw").textContent = prettyJson(data);
-          setEvalStatus("Evaluation finished.");
+          var fs = data && data.faithfulness && data.faithfulness.score != null;
+          setEvalStatus(
+            fs
+              ? "Done. Faithfulness score: " + data.faithfulness.score + (data.faithfulness.success === false ? " (below threshold)" : "") + ". See JSON for reason."
+              : "Evaluation finished."
+          );
         } catch (err) {
           el("eval-raw").textContent = "{}";
           setEvalStatus(err.message || String(err), "err");
+        } finally {
+          if (btnEv) btnEv.disabled = false;
         }
       }
 

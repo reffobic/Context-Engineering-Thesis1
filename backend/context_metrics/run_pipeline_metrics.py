@@ -5,7 +5,7 @@ Run the MCP tool pipeline and score stages with DeepEval LLM-as-judge metrics.
 Judge model defaults to local Ollama (many metric calls per run — budget API usage accordingly).
 
 Environment:
-  EVAL_JUDGE_MODEL   Model tag for metrics only (default: llama3.2).
+  EVAL_JUDGE_MODEL   Ollama tag for the judge (default: same as ``agent_endpoint`` generation model, else qwen3.5:9b).
   OLLAMA_BASE_URL    Ollama HTTP API (default: http://localhost:11434).
 
 Examples:
@@ -200,12 +200,88 @@ def metric_result(metric: Any, stage: str) -> dict[str, Any]:
     }
 
 
-def build_judge_model():
-    from deepeval.models import OllamaModel
+def _default_judge_ollama_model() -> str:
+    """Prefer EVAL_JUDGE_MODEL, else the same model as ``OllamaAgent`` (generation), else a common default."""
+    env = (os.environ.get("EVAL_JUDGE_MODEL") or "").strip()
+    if env:
+        return env
+    try:
+        from agent.agent_endpoint import agent
 
-    model = os.environ.get("EVAL_JUDGE_MODEL", "llama3.2")
+        m = getattr(agent, "model", None)
+        if isinstance(m, str) and m.strip():
+            return m.strip()
+    except Exception:
+        pass
+    return "qwen3.5:9b"
+
+
+def _judge_generation_kwargs() -> dict[str, Any]:
+    """Wider context window helps Qwen return non-empty JSON for DeepEval schemas."""
+    ctx = os.environ.get("EVAL_OLLAMA_NUM_CTX") or os.environ.get("OLLAMA_NUM_CTX")
+    n = 8192
+    if ctx:
+        try:
+            n = int(str(ctx).strip())
+        except ValueError:
+            pass
+    return {"num_ctx": n}
+
+
+def _ensure_deepeval_judge_timeouts() -> None:
+    """
+    DeepEval defaults (~90s per Ollama call) are too tight for slow local judges (CPU Qwen).
+    Only sets env if unset so production can override.
+    """
+    os.environ.setdefault("DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE", "300")
+    os.environ.setdefault("DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE", "1800")
+    try:
+        from deepeval.config.settings import reset_settings
+
+        reset_settings()
+    except Exception:
+        pass
+
+
+def build_judge_model():
+    _ensure_deepeval_judge_timeouts()
+    from .ollama_judge import OllamaJudgeModel
+
+    model = _default_judge_ollama_model()
     base_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
-    return OllamaModel(model=model, base_url=base_url, temperature=0.0)
+    return OllamaJudgeModel(
+        model=model,
+        base_url=base_url,
+        temperature=0.0,
+        generation_kwargs=_judge_generation_kwargs(),
+    )
+
+
+def measure_faithfulness_only(
+    query: str,
+    pruned_items: list[dict[str, Any]],
+    answer: str,
+) -> dict[str, Any]:
+    """DeepEval faithfulness: whether answer claims are supported by pruned chunk strings."""
+    grounded = chunks_as_retrieval_context(pruned_items)
+    if not grounded:
+        return {"skipped": True, "reason": "No pruned chunks to use as retrieval_context."}
+    from deepeval.metrics import FaithfulnessMetric
+    from deepeval.test_case import LLMTestCase
+
+    judge = build_judge_model()
+    m = FaithfulnessMetric(model=judge, async_mode=False)
+    m.measure(
+        LLMTestCase(
+            input=query,
+            actual_output=answer,
+            retrieval_context=grounded,
+        )
+    )
+    row = metric_result(m, "after_generate")
+    row["judge_model"] = judge.get_model_name()
+    row["note"] = "Score reflects grounding in pruned CONTEXT only, not full-repo truth."
+    return row
 
 
 _VALID_METRICS = frozenset(

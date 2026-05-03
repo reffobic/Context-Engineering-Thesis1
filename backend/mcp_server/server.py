@@ -39,7 +39,7 @@ class GenerateRequest(BaseModel):
 class EvaluateRequest(BaseModel):
     """
     Lightweight eval: retrieve + prune, structural stats, optional label-based P/R,
-    optional one-shot DeepEval contextual relevancy on retrieval (judge LLM).
+    optional DeepEval contextual relevancy on retrieval, optional inject+generate+faithfulness.
     """
 
     prompt: str
@@ -47,6 +47,7 @@ class EvaluateRequest(BaseModel):
     token_budget: int = 1800
     relevant_files: Optional[List[str]] = None
     judge_retrieval_relevancy: bool = False
+    faithfulness: bool = False
 
 
 def _ensure_backend_on_path() -> None:
@@ -318,13 +319,14 @@ def generate(req: GenerateRequest):
 @app.post("/evaluate")
 def evaluate(req: EvaluateRequest) -> dict[str, Any]:
     """
-    Does not run inject/generate unless you call ``POST /generate`` separately.
-    Install ``deepeval`` for ``judge_retrieval_relevancy`` (see ``backend/context_metrics/requirements.txt``).
+    Runs inject+generate only when ``faithfulness`` is true (then scores answer vs pruned CONTEXT).
+    Install ``deepeval`` and PyPI ``ollama`` for judge metrics (see ``backend/context_metrics/requirements.txt``).
     """
     _ensure_backend_on_path()
     from context_metrics.run_pipeline_metrics import (
         chunks_as_retrieval_context,
         measure_contextual_relevancy_only,
+        measure_faithfulness_only,
         precision_recall_at_k,
         structural_pipeline_stats,
     )
@@ -375,7 +377,26 @@ def evaluate(req: EvaluateRequest) -> dict[str, Any]:
             logging.exception("evaluate: judge_retrieval_relevancy failed")
             out["contextual_relevancy_retrieval"] = {
                 "error": str(exc),
-                "hint": "pip install -r backend/context_metrics/requirements.txt and ensure Ollama + EVAL_JUDGE_MODEL.",
+                "hint": "404 = wrong model tag (`ollama list`, `EVAL_JUDGE_MODEL`). "
+                "Empty JSON / EOF = judge model returned no parseable JSON: try `EVAL_JUDGE_MODEL=llama3.2:3b`, "
+                "`export EVAL_OLLAMA_NUM_CTX=16384`, and ensure `pip install ollama deepeval`.",
+            }
+
+    if req.faithfulness:
+        try:
+            final_prompt = call_tool("inject_context", req.prompt, pruned)
+            answer = call_tool("ollama_generate", final_prompt)
+            if not isinstance(answer, str):
+                answer = str(answer)
+            out["generation_preview"] = _preview_text(answer, 480)
+            out["faithfulness"] = measure_faithfulness_only(req.prompt, pruned, answer)
+        except Exception as exc:  # pragma: no cover
+            logging.exception("evaluate: faithfulness path failed")
+            out["faithfulness"] = {
+                "error": str(exc),
+                "hint": "Judge uses agent model unless EVAL_JUDGE_MODEL is set. "
+                "EOF/invalid JSON: use a JSON-friendly judge (e.g. llama3.2:3b), "
+                "or `EVAL_OLLAMA_NUM_CTX=16384`. Needs deepeval + PyPI ollama.",
             }
 
     return out
