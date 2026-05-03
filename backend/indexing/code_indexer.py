@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Optional
 from dataclasses import dataclass, field, asdict
 
+
 # ─── third-party ─────────────────────────────────────────────────────────────
 try:
     import chromadb
@@ -203,9 +204,6 @@ def _chunk_python(source: str, rel_path: str, language: str, f_hash: str) -> lis
 
         chunk_type = "class" if isinstance(node, ast.ClassDef) else "function"
 
-        # FIX 3: include decorator lines when checking for API routes.
-        # node.lineno points to the "def" line; decorators sit on the lines
-        # immediately above it. Collect them so _is_api_route() can see them.
         decorator_start = start
         if hasattr(node, "decorator_list") and node.decorator_list:
             decorator_start = node.decorator_list[0].lineno
@@ -299,26 +297,10 @@ def _extract_imports(source: str, language: str) -> list[str]:
             pass
 
     else:
-        # FIX 2: handle all three ES module import styles plus require().
-        #
-        # Style A — default import:   import axios from 'axios'
-        # Style B — named imports:    import { useState, useEffect } from 'react'
-        # Style C — side-effect only: import 'some-polyfill'   (no binding, skip)
-        # Style D — require:          const x = require('module')
-        #
-        # The old single regex matched Style C / require but missed A and B
-        # because it expected the quote to come directly after import/require.
-        # The new approach uses two passes:
-        #   Pass 1: "... from 'pkg'" — covers styles A and B
-        #   Pass 2: require('pkg')   — unchanged
-
-        # Pass 1: any import statement ending with  from 'package-name'
         for m in re.finditer(r"""\bfrom\s+['"]([^'"]+)['"]""", source):
-            pkg = m.group(1).split("/")[-1]   # take last segment of scoped pkg
-            # strip @scope prefix if present: "@prisma/client" → "client"
+            pkg = m.group(1).split("/")[-1]
             names.append(pkg)
 
-        # Pass 2: require('package-name')
         for m in re.finditer(r"""\brequire\s*\(\s*['"]([^'"]+)['"]\s*\)""", source):
             pkg = m.group(1).split("/")[-1]
             names.append(pkg)
@@ -332,9 +314,6 @@ def _find_used_imports(code: str, all_imports: list[str]) -> list[str]:
 
 
 def _is_api_route(code: str) -> bool:
-    # FIX 1: A line that starts with # is a comment — never a real decorator.
-    # Strip out comment-only lines before running the pattern match so that
-    # "# @app.get('/users')  ← example" does not produce a false positive.
     non_comment_lines = "\n".join(
         line for line in code.splitlines()
         if not line.lstrip().startswith("#")
@@ -370,9 +349,6 @@ class CodeIndexer:
 
         self.model = get_sentence_transformer(model_name)
         self.model_name = model_name
-
-        # FIX 4: store db_path on self so _cache_path() can use it instead of
-        # the hardcoded DEFAULT_DB_PATH constant.
         self.db_path = db_path
 
         logger.info("Connecting to ChromaDB at: %s", db_path)
@@ -385,6 +361,10 @@ class CodeIndexer:
 
         self._hash_cache: dict[str, str] = self._load_hash_cache()
 
+        # ─── graph support ───
+        self.call_graph = None
+        self.graph_builder = None
+
     # ── index repository ──────────────────────────────────────────────────────
     def index_repository(
         self,
@@ -395,7 +375,7 @@ class CodeIndexer:
         repo_path = Path(repo_path).resolve()
         files     = scan_repository(repo_path, languages=languages)
         stats = {"files_scanned": len(files), "files_indexed": 0, "chunks_added": 0, "chunks_skipped": 0, "files_skipped": 0}
-        
+
         for fpath in files:
             rel   = str(fpath.relative_to(repo_path))
             fhash = _file_hash(fpath)
@@ -417,6 +397,15 @@ class CodeIndexer:
             stats["chunks_added"]  += len(chunks)
 
         self._save_hash_cache()
+
+        # ─── build and save call graph ───
+        try:
+            graph_stats = self.build_call_graph(repo_path)
+            stats.update(graph_stats)
+            self._save_graph(repo_path)
+        except Exception as e:
+            logger.warning("Failed to build call graph: %s. Continuing without graph.", e)
+
         logger.info("Indexing complete: %s", stats)
         return stats
 
@@ -474,9 +463,6 @@ class CodeIndexer:
 
     # ── incremental cache ─────────────────────────────────────────────────────
     def _cache_path(self) -> Path:
-        # FIX 4: was Path(DEFAULT_DB_PATH) / ".index_cache.json"
-        # which always wrote to ./chroma_db/ regardless of --db flag.
-        # Now uses self.db_path so the cache lives next to the actual DB.
         return Path(self.db_path) / ".index_cache.json"
 
     def _load_hash_cache(self) -> dict[str, str]:
@@ -492,6 +478,59 @@ class CodeIndexer:
         p = self._cache_path()
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(json.dumps(self._hash_cache, indent=2))
+
+    # ── graph building ────────────────────────────────────────────────────────
+    def build_call_graph(self, repo_path: str | Path) -> dict:
+        """
+        Build a call graph from the repository.
+        Returns stats about the graph (number of nodes, edges, etc.)
+        """
+        from .graph_builder import CallGraphBuilder
+        from .graph_embeddings import StructuralEmbeddingGenerator
+
+        repo_path = Path(repo_path).resolve()
+        logger.info("Building call graph for: %s", repo_path)
+
+        py_files = scan_repository(repo_path, languages=["python"])
+
+        builder = CallGraphBuilder()
+        graph = builder.build_from_files(py_files, repo_path)
+
+        self.call_graph = graph
+        self.graph_builder = builder
+
+        try:
+            emb_generator = StructuralEmbeddingGenerator(use_graphcodebert=False)
+            emb_generator.set_call_graph(graph)
+            self.structural_embedding_generator = emb_generator
+            logger.info("Structural embeddings generator initialized")
+        except Exception as e:
+            logger.warning("Failed to initialize structural embeddings: %s", e)
+            self.structural_embedding_generator = None
+
+        stats = {
+            "graph_nodes": len(graph.nodes),
+            "graph_edges": sum(
+                len(n.calls) + len(n.inherits_from)
+                for n in graph.nodes.values()
+            ),
+            "structural_embeddings_enabled": self.structural_embedding_generator is not None,
+        }
+
+        logger.info("Call graph built: %s", stats)
+        return stats
+
+    # ── graph saving ──────────────────────────────────────────────────────────
+    def _save_graph(self, repo_path: str | Path) -> None:
+        """Save the call graph to a JSON file for later retrieval."""
+        if not hasattr(self, 'call_graph') or not self.call_graph:
+            return
+
+        graph_path = Path(self.db_path) / "call_graph.json"
+        graph_path.parent.mkdir(parents=True, exist_ok=True)
+
+        self.call_graph.save(graph_path)
+        logger.info("Call graph saved to: %s", graph_path)
 
     # ── stats ─────────────────────────────────────────────────────────────────
     def index_stats(self) -> dict:
@@ -561,4 +600,3 @@ if __name__ == "__main__":
     else:
         parser.print_help()
         sys.exit(1)
-        
