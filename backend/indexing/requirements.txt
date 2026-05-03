@@ -3,6 +3,12 @@
 
 chromadb>=0.4.0
 sentence-transformers>=2.2.0
+numpy>=1.20.0
+
+# Graph-based embeddings (optional, for structural position understanding)
+# Uncomment to use GraphCodeBERT for enhanced code understanding
+# transformers>=4.30.0
+# torch>=2.0.0
 
 # Already used by P1 (listed here for completeness)
 fastapi>=0.100.0

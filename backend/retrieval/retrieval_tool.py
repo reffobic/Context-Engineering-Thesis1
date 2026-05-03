@@ -3,11 +3,13 @@
 
 import re
 import chromadb
+import json
 from collections import Counter
 from pathlib import Path
 from typing import Any, Optional
 
 from indexing.sentence_model import get_sentence_transformer
+from retrieval.hybrid_retrieval import enhance_ranking_with_structure
 
 # ══════════════════════════════════════════════════════════════════
 # CONFIG
@@ -17,10 +19,10 @@ CHROMA_PATH     = str(Path(__file__).resolve().parent.parent / "chroma_db")
 COLLECTION_NAME = "code_embeddings"
 
 # Ranking weights
-W_HYBRID    = 0.46
-W_PROXIMITY = 0.26
-W_FUNCTION  = 0.18
-W_SYMBOL    = 0.10  # boost when chunk body contains query’s C-style API symbol
+W_HYBRID    = 0.50      # Hybrid semantic + structural code importance
+W_PROXIMITY = 0.22      # File proximity (co-location)
+W_FUNCTION  = 0.15      # Function name relevance
+W_SYMBOL    = 0.13      # C-style symbol matching
 
 # Long context config
 # How many candidates to fetch before re-ranking
@@ -156,29 +158,35 @@ def keyword_match_score(query: str, text: str) -> float:
 
 # ══════════════════════════════════════════════════
 # STEP 3 — hybrid_retrieve()
+# Now with structural code importance from call graphs
 # ══════════════════════════════════════════════════
 
 def hybrid_retrieve(query: str, top_k: int = 5) -> list[dict]:
+    """
+    Hybrid retrieval combining semantic text similarity with structural code importance.
+    
+    Uses a call graph (if available) to understand function importance in the codebase,
+    giving higher scores to central hubs and frequently-called functions.
+    """
+    # Get candidates from vector search
     candidates = vector_retrieve_merged(query, top_k=top_k * 2)
 
-    scored = []
-    for item in candidates:
-        doc        = item["code"]
-        meta       = item["metadata"]
-        similarity = item["similarity"]
-        k_score    = keyword_match_score(query, doc)
+    # Enhance with structural importance from call graph
+    try:
+        candidates = enhance_ranking_with_structure(candidates, CHROMA_PATH)
+    except Exception as e:
+        print(f"[INFO] Structural enhancement skipped: {e}")
+        # Fall back to semantic + keyword scoring
+        for item in candidates:
+            doc        = item["code"]
+            similarity = item["similarity"]
+            k_score    = keyword_match_score(query, doc)
+            item["hybrid_score"] = (0.7 * similarity) + (0.3 * k_score)
 
-        hybrid_score = (0.7 * similarity) + (0.3 * k_score)
-
-        scored.append({
-            "code":         doc,
-            "metadata":     meta,
-            "similarity":   similarity,
-            "hybrid_score": round(hybrid_score, 4)
-        })
-
-    scored.sort(key=lambda x: x["hybrid_score"], reverse=True)
-    return scored
+    # Sort by hybrid score
+    candidates.sort(key=lambda x: x.get("hybrid_score", x.get("similarity", 0)), reverse=True)
+    
+    return candidates[:top_k]
 
 
 # ══════════════════════════════════════════════════
@@ -192,7 +200,7 @@ def rank_chunks(query: str, candidates: list[dict]) -> list[dict]:
     query_syms     = [s.lower() for s in _c_style_symbols(query)]
 
     for item in candidates:
-        f1_hybrid    = item["hybrid_score"]
+        f1_hybrid    = item.get("hybrid_score", (0.7 * item.get("similarity", 0.5)) + (0.3 * keyword_match_score(query, item.get("code", ""))))
         f2_proximity = file_counts[item["metadata"]["file"]] / max_file_count
 
         fn_raw      = str(item["metadata"].get("function") or "")
