@@ -1,18 +1,20 @@
 from mcp_server.tool_registry import call_tool
 
+query = "How does Flask handle routing?"
+
 # Step 1 — retrieve
 print("=== Retrieval ===")
-chunks = call_tool("retrieve_context", "function that handles routing")
+chunks = call_tool("retrieve_context", query)
 print(f"Got {len(chunks)} chunks")
 
-# Step 2 — prune (stub for now)
-print("\n=== Pruning (stub) ===")
-pruned = call_tool("prune_context", chunks)
-print("Passthrough — no pruning applied")
+# Step 2 — prune
+print("\n=== Pruning ===")
+pruned = call_tool("prune_context", query, chunks)
+print(f"Pruned to {len(pruned)} chunks")
 
 # Step 3 — inject
 print("\n=== Injection ===")
-prompt = call_tool("inject_context", "How does Flask handle routing?", pruned)
+prompt = call_tool("inject_context", query, pruned)
 if isinstance(prompt, dict):
     print(f"Prompt: system={len(prompt['system'])} chars, user={len(prompt['user'])} chars")
 else:

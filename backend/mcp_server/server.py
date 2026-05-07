@@ -35,6 +35,29 @@ class GenerateRequest(BaseModel):
 
     prompt: str
 
+
+class EvaluateRequest(BaseModel):
+    """
+    Lightweight eval: retrieve + prune, structural stats, optional label-based P/R,
+    optional DeepEval contextual relevancy on retrieval, optional inject+generate+faithfulness.
+    """
+
+    prompt: str
+    top_k: int = 10
+    token_budget: int = 1800
+    relevant_files: Optional[List[str]] = None
+    judge_retrieval_relevancy: bool = False
+    faithfulness: bool = False
+
+
+def _ensure_backend_on_path() -> None:
+    import sys
+
+    backend = Path(__file__).resolve().parent.parent
+    if str(backend) not in sys.path:
+        sys.path.insert(0, str(backend))
+
+
 logging.basicConfig(level=logging.INFO)
 
 # Confirm server is running
@@ -82,7 +105,10 @@ def _retrieval_summary(items: list[dict]) -> dict:
     files = []
     seen = set()
     top_chunks = []
+    diagnostics = {}
     for item in items:
+        if not diagnostics and item.get("retrieval_diagnostics"):
+            diagnostics = item.get("retrieval_diagnostics") or {}
         meta = item.get("metadata", {}) or {}
         file_path = meta.get("file") or "(unknown path)"
         if file_path not in seen:
@@ -97,9 +123,15 @@ def _retrieval_summary(items: list[dict]) -> dict:
                 "start_line": meta.get("start_line"),
                 "end_line": meta.get("end_line"),
                 "similarity": item.get("similarity"),
+                "dense_score": item.get("dense_score"),
+                "bm25_score": item.get("bm25_score"),
+                "exact_match_score": item.get("exact_match_score"),
+                "source_score": item.get("source_score"),
+                "path_match_score": item.get("path_match_score"),
                 "hybrid_score": item.get("hybrid_score"),
+                "rerank_score": item.get("rerank_score"),
                 "final_score": item.get("final_score"),
-                "path_prior": item.get("path_prior"),
+                "candidate_sources": item.get("candidate_sources", []),
                 "preview": _preview_text(item.get("code")),
                 "parent_context_chars": len(item.get("parent_context") or ""),
             }
@@ -109,6 +141,7 @@ def _retrieval_summary(items: list[dict]) -> dict:
         "unique_files": len(files),
         "files": files,
         "top_chunks": top_chunks,
+        "diagnostics": diagnostics,
     }
 
 
@@ -239,6 +272,20 @@ def index(
         None,
         description="Optional language filter passed to the indexer.",
     ),
+    include_dirs: Optional[List[str]] = Query(
+        None,
+        description="Optional repo-relative directories to scan, e.g. superset or superset-core/src.",
+    ),
+    max_files: Optional[int] = Query(
+        600,
+        ge=1,
+        le=10000,
+        description="Limit files per indexing run to avoid CPU spikes. Repeat indexing to continue.",
+    ),
+    rebuild_bm25: bool = Query(
+        False,
+        description="Rebuild BM25 from the whole Chroma collection. Slower; normally leave false.",
+    ),
 ):
     """
     One-time / batch indexing into ChromaDB (not part of /generate pipeline).
@@ -248,7 +295,14 @@ def index(
     logging.info("Indexing started")
     base_dir = Path(__file__).resolve().parent.parent  # backend/
     resolved = repo_path if repo_path else str(base_dir / "flask_test")
-    result = call_tool("index_codebase", repo_path=resolved, languages=languages)
+    result = call_tool(
+        "index_codebase",
+        repo_path=resolved,
+        languages=languages,
+        include_dirs=include_dirs,
+        max_files=max_files,
+        rebuild_bm25=rebuild_bm25,
+    )
     result = {
         **result,
         "repo_path": resolved,
@@ -260,3 +314,89 @@ def index(
 @app.post("/generate")
 def generate(req: GenerateRequest):
     return run_pipeline(req.prompt)
+
+
+@app.post("/evaluate")
+def evaluate(req: EvaluateRequest) -> dict[str, Any]:
+    """
+    Runs inject+generate only when ``faithfulness`` is true (then scores answer vs pruned CONTEXT).
+    Install ``deepeval`` and PyPI ``ollama`` for judge metrics (see ``backend/context_metrics/requirements.txt``).
+    """
+    _ensure_backend_on_path()
+    from context_metrics.run_pipeline_metrics import (
+        chunks_as_retrieval_context,
+        measure_contextual_relevancy_only,
+        measure_faithfulness_only,
+        precision_recall_at_k,
+        structural_pipeline_stats,
+    )
+
+    retrieved = call_tool("retrieve_context", req.prompt, req.top_k)
+    pruned, _stats = prune_context_with_stats(
+        req.prompt, retrieved, token_budget=req.token_budget
+    )
+    retrieve_ctx = chunks_as_retrieval_context(retrieved)
+
+    gold = [x.strip() for x in (req.relevant_files or []) if x and str(x).strip()]
+
+    out: dict[str, Any] = {
+        "prompt": req.prompt,
+        "top_k": req.top_k,
+        "token_budget": req.token_budget,
+        "pipeline_counts": {
+            "retrieved_chunks": len(retrieved),
+            "pruned_chunks": len(pruned),
+        },
+        "structural": structural_pipeline_stats(retrieved, pruned, req.top_k),
+    }
+
+    if gold:
+        pr = precision_recall_at_k(retrieved, req.top_k, gold)
+        pr["stage"] = "after_retrieval"
+        out["precision_at_k_retrieval"] = pr
+        if len(pruned) > 0:
+            pp = precision_recall_at_k(pruned, len(pruned), gold)
+            pp["stage"] = "after_prune"
+            pp["note"] = (
+                "k equals len(pruned); recall counts distinct gold files still present after pruning."
+            )
+            out["precision_at_k_pruned"] = pp
+        else:
+            out["precision_at_k_pruned"] = {
+                "skipped": True,
+                "reason": "No chunks after pruning.",
+                "stage": "after_prune",
+            }
+
+    if req.judge_retrieval_relevancy:
+        try:
+            out["contextual_relevancy_retrieval"] = measure_contextual_relevancy_only(
+                req.prompt, retrieve_ctx
+            )
+        except Exception as exc:  # pragma: no cover - missing deepeval / Ollama
+            logging.exception("evaluate: judge_retrieval_relevancy failed")
+            out["contextual_relevancy_retrieval"] = {
+                "error": str(exc),
+                "hint": "404 = wrong model tag (`ollama list`, `EVAL_JUDGE_MODEL`). "
+                "Empty JSON / EOF = judge model returned no parseable JSON: try `EVAL_JUDGE_MODEL=llama3.2:3b`, "
+                "`export EVAL_OLLAMA_NUM_CTX=16384`, and ensure `pip install ollama deepeval`.",
+            }
+
+    if req.faithfulness:
+        try:
+            final_prompt = call_tool("inject_context", req.prompt, pruned)
+            answer = call_tool("ollama_generate", final_prompt)
+            if not isinstance(answer, str):
+                answer = str(answer)
+            out["generation_preview"] = _preview_text(answer, 480)
+            out["faithfulness"] = measure_faithfulness_only(req.prompt, pruned, answer)
+        except Exception as exc:  # pragma: no cover
+            logging.exception("evaluate: faithfulness path failed")
+            out["faithfulness"] = {
+                "error": str(exc),
+                "hint": "Judge uses agent model unless EVAL_JUDGE_MODEL is set. "
+                "EOF/invalid JSON: use a JSON-friendly judge (e.g. llama3.2:3b), "
+                "or `EVAL_OLLAMA_NUM_CTX=16384`. Needs deepeval + PyPI ollama.",
+            }
+
+    return out

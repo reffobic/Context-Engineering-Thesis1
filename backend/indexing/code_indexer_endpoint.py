@@ -7,8 +7,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent  # goes up to backend/
 
 indexer = CodeIndexer(db_path=str(BASE_DIR / "chroma_db"))
 
-def index_codebase(repo_path: str, languages: list[str] = None, incremental: bool = True) -> dict:
-    return indexer.index_repository(repo_path, languages=languages, incremental=incremental)
+def index_codebase(
+    repo_path: str,
+    languages: list[str] = None,
+    incremental: bool = True,
+    max_files: int | None = None,
+    rebuild_bm25: bool = False,
+    include_dirs: list[str] | None = None,
+) -> dict:
+    return indexer.index_repository(
+        repo_path,
+        languages=languages,
+        incremental=incremental,
+        max_files=max_files,
+        rebuild_bm25=rebuild_bm25,
+        include_dirs=include_dirs,
+    )
 
 
 def _language_from_path(path: str) -> str:
@@ -84,6 +98,8 @@ def get_index_summary(file_limit: int = 500) -> dict:
     return {
         "db_path": str(indexer.db_path),
         "cache_path": str(indexer._cache_path()),
+        "bm25_path": stats.get("bm25_path"),
+        "bm25_exists": stats.get("bm25_exists"),
         "collection": "code_embeddings",
         "model": stats.get("model"),
         "total_chunks": stats.get("total_chunks", 0),

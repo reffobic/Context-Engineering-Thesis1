@@ -219,10 +219,44 @@ Base URL example: `http://127.0.0.1:8000`
 | `GET`  | `/`         | Health: JSON includes `"Context Engine Running"` and **`"ui": "/ui"`** for the browser prompt page.                                                                      |
 | `GET`  | `/ui`       | **Simple web UI** — prompt box, **Run pipeline** (`POST /generate`), **Index** (`POST /index`). Same origin as the API (open after starting uvicorn).                    |
 | `POST` | `/generate` | **JSON body** `{"prompt": "<user text>"}` → `{"output": "<model response>"}`                                                                                            |
-| `POST` | `/index`    | **Query parameters** `repo_path` (optional), `languages` (optional). If `repo_path` is omitted, defaults to `**backend/flask_test`** under the server’s backend layout. |
+| `POST` | `/index`    | **Query parameters** `repo_path` (optional), `languages` (optional), `include_dirs` (optional), `max_files` (default `600`), `rebuild_bm25` (default `false`). If `repo_path` is omitted, defaults to `**backend/flask_test`** under the server’s backend layout. |
 
 
 **Inconsistency:** `/generate` uses **JSON body**; `/index` uses **query string**. Documented here so API clients are not surprised.
+
+---
+
+## Fast Superset Indexing
+
+For the Superset thesis demo, indexing the whole checkout can be slow because it includes docs, tests, frontend assets, and generated-looking support files. Prefer source-first indexing:
+
+```bash
+curl -sS -X POST \
+  "http://127.0.0.1:8000/index?repo_path=/home/g7/Documents/ThesisProject/apache-superset&languages=python&include_dirs=superset&include_dirs=superset-core/src&max_files=800"
+```
+
+Repeat the same command until `files_indexed` becomes `0`. The indexer is incremental, so repeated runs skip files already processed for the current contextual-index schema.
+
+Useful speed knobs:
+
+- `INDEX_CPU_THREADS=4` controls PyTorch CPU thread usage.
+- `INDEX_EMBED_BATCH_SIZE=32` controls embedding batch size.
+- `max_files=800` limits work per run so the machine stays responsive.
+- Leave `rebuild_bm25=false` for normal runs; BM25 is updated only for touched chunks.
+- Use `rebuild_bm25=true` only when you intentionally want a slower full lexical rebuild.
+
+---
+
+## Retrieval Upgrade Resources
+
+The retrieval upgrade follows these references:
+
+- [Anthropic: Contextual Retrieval](https://www.anthropic.com/news/contextual-retrieval) for contextual chunk/file headers before embedding and BM25 indexing.
+- [rank-bm25 on PyPI](https://pypi.org/project/rank-bm25/) and [rank-bm25 source](https://github.com/dorianbrown/rank_bm25) for the BM25 lexical retrieval stream.
+- [Okapi BM25 overview](https://en.wikipedia.org/wiki/Okapi_BM25) for the ranking function background.
+- [Sentence-Transformers CrossEncoder docs](https://www.sbert.net/examples/applications/cross-encoder/README.html) for optional reranking.
+- [cross-encoder/ms-marco-MiniLM-L-6-v2](https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-6-v2) as the compact optional reranker model.
+- [Chroma docs](https://docs.trychroma.com/) for the persistent vector store and metadata search.
 
 ---
 
