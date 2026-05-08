@@ -26,11 +26,12 @@ from .graph_embeddings import HybridEmbeddingManager
 
 logger = logging.getLogger("code_indexer")
 
-CHROMA_PATH      = os.getenv("CHROMA_PATH", "./chroma_db")
-COLLECTION_NAME  = "code_embeddings"
-EMBEDDING_MODEL  = "all-MiniLM-L6-v2"
-MAX_CHUNK_TOKENS = 512
-CACHE_FILE       = ".index_cache.json"
+CHROMA_PATH           = os.getenv("CHROMA_PATH", "./chroma_db")
+COLLECTION_NAME       = "code_embeddings"
+EMBEDDING_MODEL       = "all-MiniLM-L6-v2"
+MAX_CHUNK_TOKENS      = 512
+CACHE_FILE            = ".index_cache.json"
+EMBEDDING_CACHE_FILE  = ".embedding_cache.json"
 
 
 # ── CodeChunk (unchanged) ────────────────────────────────────────────────────
@@ -89,7 +90,7 @@ class CodeIndexer:
             use_graphcodebert=use_graphcodebert,
         )
 
-        # Incremental cache
+        # File-level cache (chunk state tracking)
         cache_path = Path(db_path) / CACHE_FILE
         self._cache: dict = {}
         if cache_path.exists():
@@ -98,6 +99,16 @@ class CodeIndexer:
             except Exception:
                 pass
         self._cache_path = cache_path
+
+        # Embedding-level cache (precomputed 384D vectors)
+        embedding_cache_path = Path(db_path) / EMBEDDING_CACHE_FILE
+        self._embedding_cache: dict = {}  # chunk_id -> [384D vector as list]
+        if embedding_cache_path.exists():
+            try:
+                self._embedding_cache = json.loads(embedding_cache_path.read_text())
+            except Exception:
+                pass
+        self._embedding_cache_path = embedding_cache_path
 
     # ── public API ───────────────────────────────────────────────────────────
 
@@ -121,6 +132,8 @@ class CodeIndexer:
             files_indexed=0,
             chunks_added=0,
             chunks_skipped=0,
+            embeddings_cached=0,
+            embeddings_computed=0,
             graph_nodes=0,
             graph_edges=0,
         )
@@ -155,6 +168,8 @@ class CodeIndexer:
         if all_chunks:
             added = self._upsert_chunks(all_chunks)
             stats["chunks_added"] = added
+            stats["embeddings_cached"] = len([c for c in all_chunks if c.chunk_id in self._embedding_cache])
+            stats["embeddings_computed"] = added - stats["embeddings_cached"]
 
         self._save_cache()
         return stats
@@ -175,22 +190,38 @@ class CodeIndexer:
     def _upsert_chunks(self, chunks: list[CodeChunk]) -> int:
         """Embed each chunk with COMBINED (semantic + structural) vector."""
         ids, docs, metas, embeddings = [], [], [], []
+        cached_count = 0
+        computed_count = 0
 
         for chunk in chunks:
-            result = self.hybrid_manager.embed_code(
-                code=chunk.code,
-                file_path=chunk.file_path,
-                func_name=chunk.name,
-            )
-            vec = result["combined"]
-            if vec is None:
-                # Fallback: pure semantic if structural failed
-                vec = self.semantic_model.encode([chunk.code])[0]
+            # Check embedding cache first
+            if chunk.chunk_id in self._embedding_cache:
+                vec = self._embedding_cache[chunk.chunk_id]
+                cached_count += 1
+            else:
+                # Compute embedding if not cached
+                result = self.hybrid_manager.embed_code(
+                    code=chunk.code,
+                    file_path=chunk.file_path,
+                    func_name=chunk.name,
+                )
+                vec_obj = result["combined"]
+                if vec_obj is None:
+                    # Fallback: pure semantic if structural failed
+                    vec_obj = self.semantic_model.encode([chunk.code])[0]
+                vec = vec_obj.tolist() if hasattr(vec_obj, 'tolist') else vec_obj
+                
+                # Store in cache for future use
+                self._embedding_cache[chunk.chunk_id] = vec
+                computed_count += 1
 
             ids.append(chunk.chunk_id)
             docs.append(chunk.code)
             metas.append(chunk.to_metadata())
-            embeddings.append(vec.tolist())
+            embeddings.append(vec)
+
+        if cached_count > 0:
+            logger.info(f"Embedding cache hit: {cached_count} chunks (computed: {computed_count})")
 
         if ids:
             self.collection.upsert(
@@ -214,8 +245,15 @@ class CodeIndexer:
         logger.info(f"Call graph saved → {out} ({len(graph.nodes)} nodes)")
 
     def _save_cache(self) -> None:
+        """Save both file-level and embedding-level caches."""
         self._cache_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Save file-level cache (chunk state)
         self._cache_path.write_text(json.dumps(self._cache, indent=2))
+        
+        # Save embedding-level cache (precomputed vectors)
+        self._embedding_cache_path.write_text(json.dumps(self._embedding_cache, indent=2))
+        logger.info(f"Caches saved: {len(self._cache)} files, {len(self._embedding_cache)} embeddings")
 
 
 # ── module-level helpers (unchanged signatures) ───────────────────────────────
