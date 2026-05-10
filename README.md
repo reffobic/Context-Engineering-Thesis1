@@ -277,9 +277,8 @@ Tier B asserts **`output`** exists on **`200`** responses; it does not require *
 
 End-to-end checks against the **running** server (`curl` to `/`, `/generate`, `/index`) plus **`backend/smoke_test.py`** are documented in **[`TESTCASES.md`](TESTCASES.md)** at the repository root. That file holds:
 
-- **TC-01–TC-11** — baseline API and RAG checks
-- **TC-12–TC-20** — harder pipeline tests (including Subversion-focused scenarios); **§2.1** on designing cases from an indexed tree
-- Additional suites where documented (e.g. natural prompts for indexed apps)
+- **TC-01–TC-11** — baseline API checks, **Apache Superset–oriented** RAG prompts, indexing, smoke script
+- **TC-12–TC-20** — deeper Superset pipeline and source-first retrieval checks; **§4.1** natural user prompts
 - **Execution record** — summary table and per-TC evidence (update when you re-test)
 - **Verdict rubric** — Pass / Partial / Fail
 
@@ -386,7 +385,7 @@ Do **not** commit `chroma_db` contents unless your team explicitly wants a froze
 
 ## Quick reference
 
-Manual test cases and execution record: **`TESTCASES.md`** (repo root).
+Manual test cases (**TC-01–TC-20**, Superset-focused) and execution record: **`TESTCASES.md`** (repo root).
 
 ```bash
 # Smoke test (Tier A always; Tier B if Chroma stack installed)
