@@ -375,12 +375,7 @@ def evaluate(req: EvaluateRequest) -> dict[str, Any]:
             )
         except Exception as exc:  # pragma: no cover - missing deepeval / Ollama
             logging.exception("evaluate: judge_retrieval_relevancy failed")
-            out["contextual_relevancy_retrieval"] = {
-                "error": str(exc),
-                "hint": "404 = wrong model tag (`ollama list`, `EVAL_JUDGE_MODEL`). "
-                "Empty JSON / EOF = judge model returned no parseable JSON: try `EVAL_JUDGE_MODEL=llama3.2:3b`, "
-                "`export EVAL_OLLAMA_NUM_CTX=16384`, and ensure `pip install ollama deepeval`.",
-            }
+            out["contextual_relevancy_retrieval"] = {"error": str(exc)}
 
     if req.faithfulness:
         try:
@@ -392,11 +387,6 @@ def evaluate(req: EvaluateRequest) -> dict[str, Any]:
             out["faithfulness"] = measure_faithfulness_only(req.prompt, pruned, answer)
         except Exception as exc:  # pragma: no cover
             logging.exception("evaluate: faithfulness path failed")
-            out["faithfulness"] = {
-                "error": str(exc),
-                "hint": "Judge uses agent model unless EVAL_JUDGE_MODEL is set. "
-                "EOF/invalid JSON: use a JSON-friendly judge (e.g. llama3.2:3b), "
-                "or `EVAL_OLLAMA_NUM_CTX=16384`. Needs deepeval + PyPI ollama.",
-            }
+            out["faithfulness"] = {"error": str(exc)}
 
     return out
