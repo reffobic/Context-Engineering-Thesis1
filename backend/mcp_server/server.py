@@ -16,10 +16,12 @@ try:
     from tool_registry import call_tool
     from indexing.code_indexer_endpoint import get_index_summary
     from pruning.file import prune_context as prune_context_with_stats
+    from diamond.sufficiency_assessor import assess_sufficiency
 except ModuleNotFoundError:  # when running as package: python -m uvicorn mcp_server.server:app
     from mcp_server.tool_registry import call_tool
     from indexing.code_indexer_endpoint import get_index_summary
     from pruning.file import prune_context as prune_context_with_stats
+    from diamond.sufficiency_assessor import assess_sufficiency
 
 app = FastAPI()
 # Lets the UI work from file:// or another port during local demos (not for public deployment).
@@ -68,10 +70,14 @@ def _persist_eval_metrics(
         return None, str(exc)
 
 
-class GenerateRequest(BaseModel):
-    """JSON body for POST /generate (matches `run_demo.py` and `requests.post(..., json={...})`)."""
+# class GenerateRequest(BaseModel):
+#     """JSON body for POST /generate (matches `run_demo.py` and `requests.post(..., json={...})`)."""
 
+#     prompt: str
+
+class GenerateRequest(BaseModel):
     prompt: str
+    mode: Literal["RAG", "LC", "SELF_ROUTE"] = "SELF_ROUTE"
 
 
 class EvaluateRequest(BaseModel):
@@ -241,12 +247,12 @@ def _stage(name: str, duration_ms: int, summary: dict, raw: Any = None) -> dict:
 
 
 # Current pipeline
-def run_pipeline(user_prompt: str) -> dict:
+def run_pipeline(user_prompt: str, mode: str = "SELF_ROUTE") -> dict:
     token_budget = 1800
     pipeline = {
         "prompt": user_prompt,
         "stages": {},
-        "stage_order": ["retrieve", "prune", "inject", "generate"],
+        "stage_order": ["retrieve", "prune", "assess", "inject", "generate"],
     }
 
     logging.info("Retrieval started")
@@ -271,9 +277,78 @@ def run_pipeline(user_prompt: str) -> dict:
         {"chunks": pruned_context, "stats": asdict(pruning_stats)},
     )
 
+    # ── SELF-ROUTE mode logic ─────────────────────────────────────────────────
+    def _build_lc_chunks(raw_retrieved: list[dict]) -> list[dict]:
+        """Convert retrieved chunks to ContextChunk format using parent_context."""
+        lc_chunks = []
+        for item in raw_retrieved:
+            pc = item.get("parent_context") or item.get("code") or ""
+            if not pc.strip():
+                continue
+            meta = item.get("metadata") or {}
+            lc_chunks.append({
+                "text":     pc,
+                "path":     meta.get("file") or "",
+                "symbol":   meta.get("function") or "",
+                "language": meta.get("language") or "",
+            })
+        return lc_chunks
+
+    if mode == "SELF_ROUTE":
+        logging.info("Sufficiency assessment started")
+        decision, duration_ms = _time_stage(
+            lambda: assess_sufficiency(user_prompt, pruned_context)
+        )
+        pipeline["stages"]["assess"] = _stage(
+            "Sufficiency assessment",
+            duration_ms,
+            {
+                "route":      decision["route"],
+                "sufficient": decision["sufficient"],
+                "confidence": decision["confidence"],
+                "reason":     decision["reason"],
+            },
+        )
+        logging.info(
+            "Route decision: %s (confidence=%s)", decision["route"], decision["confidence"]
+        )
+        if decision["route"] == "LC":
+            logging.info("Escalating to LC — using parent_context")
+            context_for_injection = _build_lc_chunks(context)
+        else:
+            logging.info("Staying on RAG path — using pruned_context")
+            context_for_injection = pruned_context
+
+    elif mode == "LC":
+        logging.info("LC mode forced — using parent_context, skipping assessment")
+        pipeline["stages"]["assess"] = _stage(
+            "Sufficiency assessment", 0,
+            {
+                "route":      "LC",
+                "sufficient": False,
+                "confidence": "high",
+                "reason":     "LC mode forced — assessment skipped.",
+            },
+        )
+        context_for_injection = _build_lc_chunks(context)
+
+    else:  # RAG
+        logging.info("RAG mode forced — using pruned_context, skipping assessment")
+        pipeline["stages"]["assess"] = _stage(
+            "Sufficiency assessment", 0,
+            {
+                "route":      "RAG",
+                "sufficient": True,
+                "confidence": "high",
+                "reason":     "RAG mode forced — assessment skipped.",
+            },
+        )
+        context_for_injection = pruned_context
+    # ─────────────────────────────────────────────────────────────────────────
+
     logging.info("Injection started")
     final_prompt, duration_ms = _time_stage(
-        lambda: call_tool("inject_context", user_prompt, pruned_context)
+        lambda: call_tool("inject_context", user_prompt, context_for_injection)
     )
     pipeline["stages"]["inject"] = _stage(
         "Build final prompt",
@@ -355,7 +430,7 @@ def index(
 
 @app.post("/generate")
 def generate(req: GenerateRequest):
-    return run_pipeline(req.prompt)
+    return run_pipeline(req.prompt, mode=req.mode)
 
 
 @app.post("/evaluate")

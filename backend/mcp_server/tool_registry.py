@@ -3,6 +3,7 @@ from retrieval.retrieval_tool_endpoint import retrieve_context
 from pruning.pruning_tool_endpoint import prune_context
 from injection.prompt_builder_endpoint import inject_context
 from agent.agent_endpoint import ollama_generate 
+from diamond.sufficiency_assessor import assess_sufficiency
 
 tools = {} # Populated dynamically  
 
@@ -27,7 +28,11 @@ register_tool("index_codebase", index_codebase)
 register_tool("retrieve_context", retrieve_context)
 #--------------------------------------------------------------------------
 
+# Sufficiency Assessment ---------------------------------------------------
+register_tool("assess_sufficiency", assess_sufficiency)
+#--------------------------------------------------------------------------
 
+# Pruning ----------------------------------------------------------------
 register_tool("prune_context", prune_context)
 #--------------------------------------------------------------------------
 
