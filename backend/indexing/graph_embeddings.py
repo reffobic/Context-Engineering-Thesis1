@@ -193,30 +193,71 @@ class StructuralEmbeddingGenerator:
             "num_callees": len(node.calls),
         }
     
-    def _compute_depth(self, node_id: str, memo: Optional[dict] = None, visited: Optional[set] = None) -> int:
-        """Compute depth in call tree."""
+    def _compute_depth(self, start_node_id: str, memo: Optional[dict] = None, visited: Optional[set] = None) -> int:
+        """
+        Compute depth in call tree iteratively to avoid RecursionError on cyclic graphs.
+
+        Uses an explicit post-order DFS stack. A node's depth is 0 if it has no
+        callees (or all callees are part of a cycle back to an ancestor).
+        Cycles are broken by tracking nodes that are 'on the current path'.
+
+        The `memo` and `visited` parameters are accepted for API compatibility but
+        only `memo` is used (as a shared results cache across multiple calls).
+        """
+        if not self.graph:
+            return 0
+
         if memo is None:
             memo = {}
-            visited = set()
-        
-        if node_id in memo:
-            return memo[node_id]
-        
-        if node_id in visited or not self.graph:
-            return 0
-        
-        visited.add(node_id)
-        node = self.graph.nodes.get(node_id)
-        if not node or not node.calls:
-            return 0
-        
-        max_depth = max(
-            (self._compute_depth(callee_id, memo, visited) for callee_id in node.calls),
-            default=0
-        )
-        
-        memo[node_id] = max_depth + 1
-        return memo[node_id]
+
+        if start_node_id in memo:
+            return memo[start_node_id]
+
+        # Iterative post-order DFS.
+        # Stack frames: [node_id, child_iterator, running_max_child_depth]
+        # on_stack tracks the active DFS path for cycle detection (back-edges).
+        on_stack: set = set()
+        stack: list = []
+
+        def _push(nid: str) -> None:
+            node = self.graph.nodes.get(nid)
+            children = list(node.calls) if (node and node.calls) else []
+            stack.append([nid, iter(children), 0])
+            on_stack.add(nid)
+
+        _push(start_node_id)
+
+        while stack:
+            frame = stack[-1]
+            nid, children_iter, _ = frame
+
+            if nid in memo:
+                # Resolved by a nested push — pop and propagate upward
+                stack.pop()
+                on_stack.discard(nid)
+                if stack:
+                    stack[-1][2] = max(stack[-1][2], memo[nid] + 1)
+                continue
+
+            try:
+                child_id = next(children_iter)
+                if child_id in on_stack:
+                    # Back-edge → cycle; skip to avoid infinite loop
+                    continue
+                if child_id in memo:
+                    # Already computed; propagate without pushing
+                    frame[2] = max(frame[2], memo[child_id] + 1)
+                else:
+                    _push(child_id)
+            except StopIteration:
+                # All children visited — finalise this node
+                memo[nid] = frame[2]
+                stack.pop()
+                on_stack.discard(nid)
+                if stack:
+                    stack[-1][2] = max(stack[-1][2], memo[nid] + 1)
+
+        return memo.get(start_node_id, 0)
     
     def _metrics_to_vector(self, metrics: dict) -> np.ndarray:
         """Convert metrics dict to a short feature vector."""
@@ -279,6 +320,21 @@ class HybridEmbeddingManager:
             "structural_features": structural_features,
         }
     
+    def _project_structural(self, structural_emb: np.ndarray, target_dim: int) -> np.ndarray:
+        """
+        Project a structural embedding (e.g. 64-d) up to target_dim (e.g. 384-d)
+        using a deterministic random projection so the weighted sum is shape-compatible.
+        The projection matrix is fixed (seed=42) so results are reproducible.
+        """
+        src_dim = structural_emb.shape[0]
+        if src_dim == target_dim:
+            return structural_emb
+        rng = np.random.default_rng(seed=42)
+        # Projection matrix: (src_dim, target_dim), columns normalised
+        proj = rng.standard_normal((src_dim, target_dim)).astype(np.float32)
+        proj /= np.linalg.norm(proj, axis=0, keepdims=True) + 1e-8
+        return structural_emb @ proj  # (target_dim,)
+
     def embed_code(self, code: str, file_path: str, func_name: str) -> dict:
         """
         Generate both semantic and structural embeddings for code.
@@ -295,9 +351,13 @@ class HybridEmbeddingManager:
         # Combine: weighted average of normalized embeddings
         combined = None
         if semantic_emb is not None and structural_emb is not None:
+            # Project structural embedding to the same dimension as semantic
+            # (e.g. STRUCTURAL_DIM=64 → 384 for all-MiniLM-L6-v2)
+            structural_projected = self._project_structural(structural_emb, semantic_emb.shape[0])
+
             # Normalize both to unit length
-            semantic_normalized = semantic_emb / (np.linalg.norm(semantic_emb) + 1e-8)
-            structural_normalized = structural_emb / (np.linalg.norm(structural_emb) + 1e-8)
+            semantic_normalized    = semantic_emb        / (np.linalg.norm(semantic_emb)        + 1e-8)
+            structural_normalized  = structural_projected / (np.linalg.norm(structural_projected) + 1e-8)
             
             # Weighted combination
             combined = (
@@ -308,7 +368,7 @@ class HybridEmbeddingManager:
         
         return {
             "semantic": semantic_emb,
-            "structural": structural_emb,
+            "structural": structural_emb,   # kept at original dim for introspection
             "combined": combined,
         }
     
