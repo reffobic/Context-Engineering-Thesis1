@@ -26,10 +26,9 @@ Related materials in the repo:
 13. [Ollama](#ollama)
 14. [Paths, data, and ignores](#paths-data-and-ignores)
 15. [Import paths and `PYTHONPATH`](#import-paths-and-pythonpath)
-16. [Retrieval modes (vector vs graph)](#retrieval-modes-vector-vs-graph)
-17. [Branches and integration](#branches-and-integration)
-18. [Known limitations](#known-limitations)
-19. [Troubleshooting](#troubleshooting)
+16. [Branches and integration](#branches-and-integration)
+17. [Known limitations](#known-limitations)
+18. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -120,13 +119,13 @@ There is **no** top-level `src/` package in this layout; runnable code lives und
 
 `backend/mcp_server/tool_registry.py` registers tools by name. `call_tool(name, *args, **kwargs)` dispatches to the registered function. Missing tools raise **`ValueError`**.
 
-| Registered name      | Role                                                                                                                       |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `index_codebase`     | Index a repository into Chroma + write `call_graph.json` sidecar (see `code_indexer_endpoint`)                              |
-| `retrieve_context`   | Retrieve ranked chunks for a query. Accepts `mode={"vector","graph"}` — see [Retrieval modes](#retrieval-modes-vector-vs-graph) |
-| `prune_context`      | Structure-aware pruning (P4) → PromptBuilder-compatible chunks                                                              |
-| `inject_context`     | Build `{"system": str, "user": str}` for the LLM                                                                            |
-| `ollama_generate`    | Call Ollama (**chat** when `system` + `user` are present)                                                                   |
+| Registered name      | Role                                                           |
+| -------------------- | -------------------------------------------------------------- |
+| `index_codebase`     | Index a repository into Chroma (see `code_indexer_endpoint`)   |
+| `retrieve_context`   | Retrieve ranked chunks for a query (hybrid pipeline)         |
+| `prune_context`      | Structure-aware pruning (P4) → PromptBuilder-compatible chunks |
+| `inject_context`     | Build `{"system": str, "user": str}` for the LLM               |
+| `ollama_generate`    | Call Ollama (**chat** when `system` + `user` are present)       |
 
 **Note:** Importing `tool_registry` pulls in `code_indexer_endpoint`, which constructs a global **`CodeIndexer`** at import time. That loads the embedding model and opens Chroma—expect a **cold start** cost.
 
@@ -227,9 +226,8 @@ Base URL example: `http://127.0.0.1:8000`
 | `GET`  | `/`               | Health: JSON `message` (e.g. **Context Engine Running**) and **`ui`: `/ui`**. |
 | `GET`  | `/ui`             | Serves **`static/index.html`** — pipeline dashboard (see [Web UI](#web-ui-ui)). |
 | `GET`  | `/index/summary`  | Indexed file/chunk summary for the dashboard. Query: **`file_limit`** (default `500`, max `5000`). |
-| `POST` | `/generate`       | **JSON body** `{"prompt": "<user text>", "retrieval_mode": "vector"\|"graph"}`. Success body includes **`output`** and **`pipeline`** (per-stage summaries, timing, optional raw traces, plus `retrieval_mode`). |
-| `POST` | `/evaluate`       | **JSON body** with `prompt`, `top_k`, `token_budget`, `retrieval_mode` (`"vector"` or `"graph"`), optional `relevant_files`, `judge_retrieval_relevancy`, `faithfulness`, `save_metrics_json`. Persists JSON to `results/<retrieval_mode>/json/` when enabled. |
-| `POST` | `/index`          | **Query parameters** `repo_path` (optional), `languages` (optional list). If `repo_path` is omitted, defaults to **`backend/flask_test`**. Response includes indexer fields plus **`index_summary`** and a `graph_path` for the `call_graph.json` sidecar. |
+| `POST` | `/generate`       | **JSON body** `{"prompt": "<user text>"}`. Success body includes **`output`** (model text) and **`pipeline`** (per-stage summaries, timing, and optional raw traces). |
+| `POST` | `/index`          | **Query parameters** `repo_path` (optional), `languages` (optional list). If `repo_path` is omitted, defaults to **`backend/flask_test`**. Response includes indexer fields plus **`index_summary`**. |
 
 **Inconsistency by design:** `/generate` uses a **JSON body**; `/index` uses **query string** parameters. Callers should not mix these styles by mistake.
 
@@ -348,55 +346,6 @@ Do **not** commit `chroma_db` contents unless your team explicitly wants a froze
   ```bash
   export PYTHONPATH=/path/to/Context-Engineering-Thesis1/backend
   ```
-
----
-
-## Retrieval modes (vector vs graph)
-
-The pipeline ships with two switchable retrieval backends so they can be A/B compared on the same prompts:
-
-| Mode    | What it does                                                                                                                  |
-| ------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `vector` (default) | Hybrid dense + BM25 + exact-symbol search, cross-encoder rerank, late-chunking file context reconstruction. No graph signal. |
-| `graph` | Same candidate set as `vector`, then a final **structural rerank** that blends `final_score` with PageRank / in-degree from `call_graph.json`. Falls back to `vector` if the sidecar is missing. |
-
-### Artifacts produced by indexing
-
-Indexing (`POST /index` or `CodeIndexer.index_repository`) writes three things under `backend/chroma_db/`:
-
-- `code_embeddings` (Chroma collection) — pure semantic vectors. Unchanged by mode.
-- `bm25_index.json` — lexical index used by the hybrid stage.
-- `call_graph.json` — **new** sidecar produced by `backend/indexing/graph_builder.py` (multi-language call graph: Python AST + regex for JS/TS/Java/Go/C/C++). Consumed by `graph` mode.
-
-The same index serves both modes, so you only re-index once after pulling this branch on a new machine.
-
-### Switching modes
-
-- **Web UI** — both the **Dashboard** tab (next to *Run pipeline*) and the **Evaluation** tab have a *Retrieval mode* dropdown. The active mode shows up in the pipeline output card and in the quick-metrics line.
-- **HTTP** — `POST /generate` and `POST /evaluate` accept `"retrieval_mode": "vector" | "graph"` in the JSON body (default `"vector"`).
-- **CLI** — `python -m context_metrics.run_pipeline_metrics --retrieval-mode {vector,graph} ...`. Add `--save-json` to persist the payload to `results/<mode>/json/`, mirroring the `/evaluate` endpoint.
-
-### Tuning the graph rerank
-
-The graph rerank has three knobs, all adjustable per-run from UI / API / CLI without restarting the server:
-
-| Knob          | Range / meaning                                                                                       | UI / API field        | CLI flag                  | Env-var default              |
-| ------------- | ----------------------------------------------------------------------------------------------------- | --------------------- | ------------------------- | ---------------------------- |
-| `alpha`       | `0..1`. Weight on the hybrid score; `(1 - alpha)` goes to the structural score.                       | `graph_alpha`         | `--graph-alpha`           | `GRAPH_RERANK_ALPHA=0.65`    |
-| `w_pagerank`  | `≥ 0`. PageRank weight inside the structural score. Auto-normalized with `w_indegree` so they sum to 1.| `graph_w_pagerank`    | `--graph-w-pagerank`      | `GRAPH_RERANK_W_PAGERANK=0.65` |
-| `w_indegree`  | `≥ 0`. Normalized in-degree weight inside the structural score. Same auto-normalization.              | `graph_w_indegree`    | `--graph-w-indegree`      | `GRAPH_RERANK_W_INDEGREE=0.35` |
-
-- **UI** — both the Dashboard and Evaluation tabs have a collapsed *Graph rerank weights* panel that expands automatically when you pick graph mode. Empty fields keep the env defaults.
-- **HTTP** — pass any subset of `graph_alpha`, `graph_w_pagerank`, `graph_w_indegree` in the JSON body for `/generate` or `/evaluate`. Omitted (or `null`) fields keep the env defaults.
-- **CLI** — `python -m context_metrics.run_pipeline_metrics -q "…" --retrieval-mode graph --graph-alpha 0.7 --graph-w-pagerank 0.8 --graph-w-indegree 0.2 --save-json`.
-
-Effective weights are echoed back on each response (`pipeline.rerank_weights` for `/generate`, `rerank_weights` for `/evaluate` / CLI, and on every candidate as `item.rerank_weights`) so the metrics JSON is fully self-describing.
-
-If `call_graph.json` is missing or unreadable, `graph` mode logs a one-shot warning and behaves like `vector` mode for the rest of the process.
-
-### Metrics layout
-
-Both `/evaluate` and the CLI write to `results/<retrieval_mode>/json/eval-<timestamp>-<id>.json`, so head-to-head diffs are just `diff results/vector/json/<file>.json results/graph/json/<file>.json`.
 
 ---
 
