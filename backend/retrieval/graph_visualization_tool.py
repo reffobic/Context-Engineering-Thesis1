@@ -94,30 +94,58 @@ def _generate_d3_html(graph_data: dict) -> Path:
             continue
         node_map[str(node_id)] = idx
 
-        pagerank   = node.get("pagerank",   0) or 0
-        in_degree  = node.get("in_degree",  0) or 0
-        out_degree = node.get("out_degree", 0) or 0
-        callers    = node.get("callers", []) or []
-        calls      = node.get("calls",   []) or []
+        pagerank      = node.get("pagerank",   0) or 0
+        in_degree     = node.get("in_degree",  0) or 0
+        out_degree    = node.get("out_degree", 0) or 0
+        callers       = node.get("callers",       []) or []
+        calls         = node.get("calls",         []) or []
+        inherits_from = node.get("inherits_from", []) or []
+        inherited_by  = node.get("inherited_by",  []) or []
+        imports       = node.get("imports",       []) or []
+        imported_by   = node.get("imported_by",   []) or []
+        node_type     = node.get("node_type", "function")   # "class" | "function" | …
+        language      = node.get("language", "")
+        start_line    = node.get("start_line", None)
+        end_line      = node.get("end_line",   None)
 
-        if out_degree > 0.5:
-            color = "#e07b54"   # hub — coral
-        elif in_degree > 0.5:
-            color = "#5bb8a0"   # popular — teal
+        is_class = node_type == "class"
+
+        # Base hue: class = purple family, function = blue/teal/coral family
+        if is_class:
+            if out_degree > 0.5:
+                color = "#c47ed4"   # class hub — violet
+            elif in_degree > 0.5:
+                color = "#a78bfa"   # class popular — purple
+            else:
+                color = "#7c6fcd"   # class leaf — muted purple
         else:
-            color = "#7b8ab8"   # leaf — muted blue
+            if out_degree > 0.5:
+                color = "#e07b54"   # func hub — coral
+            elif in_degree > 0.5:
+                color = "#5bb8a0"   # func popular — teal
+            else:
+                color = "#7b8ab8"   # func leaf — muted blue
 
         nodes_list.append({
-            "id":         idx,
-            "label":      node.get("name", str(node_id)),
-            "size":       max(8, pagerank * 60 + 10),
-            "color":      color,
-            "file":       node.get("file_path", "—"),
-            "pagerank":   round(pagerank,   5),
-            "in_degree":  round(in_degree,  4),
-            "out_degree": round(out_degree, 4),
-            "callers":    len(callers) if isinstance(callers, list) else callers,
-            "calls":      len(calls)   if isinstance(calls,   list) else calls,
+            "id":           idx,
+            "label":        node.get("name", str(node_id)),
+            "size":         max(8, pagerank * 60 + 10),
+            "color":        color,
+            "file":         node.get("file_path", "—"),
+            "pagerank":     round(pagerank,   5),
+            "in_degree":    round(in_degree,  4),
+            "out_degree":   round(out_degree, 4),
+            "callers":      len(callers)       if isinstance(callers,       list) else callers,
+            "calls":        len(calls)         if isinstance(calls,         list) else calls,
+            "inherits_from":len(inherits_from) if isinstance(inherits_from, list) else inherits_from,
+            "inherited_by": len(inherited_by)  if isinstance(inherited_by,  list) else inherited_by,
+            "imports":      len(imports)       if isinstance(imports,       list) else imports,
+            "imported_by":  len(imported_by)   if isinstance(imported_by,   list) else imported_by,
+            "node_type":    node_type,
+            "language":     language,
+            "start_line":   start_line,
+            "end_line":     end_line,
+            "is_class":     is_class,
         })
 
     links_list = []
@@ -129,16 +157,31 @@ def _generate_d3_html(graph_data: dict) -> Path:
             s = str(edge.get("source", ""))
             t = str(edge.get("target", ""))
             if s in node_map and t in node_map:
-                links_list.append({"source": node_map[s], "target": node_map[t]})
+                links_list.append({
+                    "source":   node_map[s],
+                    "target":   node_map[t],
+                    "rel_type": edge.get("rel_type", edge.get("type", "calls")),
+                })
     else:
+        # Derive edges from node metadata, tagging by relationship kind
         for node_id, node in raw_nodes.items():
             if not isinstance(node, dict):
                 continue
             src = node_map.get(str(node_id))
+            if src is None:
+                continue
             for call_id in (node.get("calls") or []):
                 tgt = node_map.get(str(call_id))
-                if src is not None and tgt is not None:
-                    links_list.append({"source": src, "target": tgt})
+                if tgt is not None:
+                    links_list.append({"source": src, "target": tgt, "rel_type": "calls"})
+            for inh_id in (node.get("inherits_from") or []):
+                tgt = node_map.get(str(inh_id))
+                if tgt is not None:
+                    links_list.append({"source": src, "target": tgt, "rel_type": "inherits"})
+            for imp_id in (node.get("imports") or []):
+                tgt = node_map.get(str(imp_id))
+                if tgt is not None:
+                    links_list.append({"source": src, "target": tgt, "rel_type": "imports"})
 
     graph_json = json.dumps({"nodes": nodes_list, "links": links_list})
 
@@ -163,6 +206,14 @@ def _generate_d3_html(graph_data: dict) -> Path:
     --leaf:      #7b8ab8;
     --highlight: #f0d060;
     --radius:    10px;
+    /* class palette */
+    --cls-hub:   #c47ed4;
+    --cls-pop:   #a78bfa;
+    --cls-leaf:  #7c6fcd;
+    /* edge types */
+    --edge-calls:    rgba(255,255,255,.12);
+    --edge-inherits: rgba(167,139,250,.55);
+    --edge-imports:  rgba(91,184,160,.35);
   }}
 
   body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -275,13 +326,17 @@ def _generate_d3_html(graph_data: dict) -> Path:
   }}
 
   /* ── graph elements ── */
-  .link {{ stroke: rgba(255,255,255,.1); stroke-width: 1px; }}
-  .link.highlight {{ stroke: var(--highlight); stroke-width: 2px; opacity: .9; }}
-  .link.dimmed {{ opacity: .05; }}
+  .link {{ stroke-width: 1.2px; fill: none; }}
+  .link.calls    {{ stroke: var(--edge-calls); }}
+  .link.inherits {{ stroke: var(--edge-inherits); stroke-width: 1.8px; stroke-dasharray: 5,3; }}
+  .link.imports  {{ stroke: var(--edge-imports);  stroke-width: 1.4px; stroke-dasharray: 2,4; }}
+  .link.highlight {{ stroke: var(--highlight); stroke-width: 2.5px; opacity: .95; stroke-dasharray: none !important; }}
+  .link.dimmed {{ opacity: .04; }}
 
   .node {{ cursor: pointer; transition: opacity .15s; }}
   .node.dimmed {{ opacity: .15; }}
-  .node.selected circle {{ stroke: #fff; stroke-width: 2.5px; }}
+  .node.selected circle,
+  .node.selected polygon {{ stroke: #fff !important; stroke-width: 2.5px; }}
 
   .label {{ font-size: 10px; fill: var(--text); text-anchor: middle;
             pointer-events: none; paint-order: stroke;
@@ -295,6 +350,24 @@ def _generate_d3_html(graph_data: dict) -> Path:
     font-size: 12px; cursor: pointer; z-index: 10; transition: all .15s;
   }}
   #clear-btn:hover {{ border-color: var(--accent); color: var(--accent); }}
+
+  /* legend */
+  #legend {{
+    position: absolute; bottom: 20px; left: 296px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px;
+    font-size: 11px; color: var(--muted); z-index: 9; line-height: 1.7;
+    min-width: 210px;
+  }}
+  #legend h4 {{ font-size: 10px; text-transform: uppercase; letter-spacing: .5px;
+                color: var(--muted); margin-bottom: 6px; }}
+  .legend-row {{ display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }}
+  .leg-dot {{ width: 11px; height: 11px; border-radius: 50%; flex-shrink:0; }}
+  .leg-diamond {{ width: 11px; height: 11px; flex-shrink:0;
+                  transform: rotate(45deg); border-radius: 2px; }}
+  .leg-line {{ width: 22px; height: 2px; flex-shrink:0; border-radius:2px; }}
+  .leg-dashed {{ width: 22px; height: 0; border-top: 2px dashed; flex-shrink:0; }}
+  .leg-dotted  {{ width: 22px; height: 0; border-top: 2px dotted; flex-shrink:0; }}
 </style>
 </head>
 <body>
@@ -314,6 +387,8 @@ def _generate_d3_html(graph_data: dict) -> Path:
       <div class="pill hub"    data-type="hub">Hubs</div>
       <div class="pill"        data-type="popular">Popular</div>
       <div class="pill leaf"   data-type="leaf">Leaves</div>
+      <div class="pill"        data-type="class" style="border-color:var(--cls-leaf)">Classes</div>
+      <div class="pill"        data-type="function">Functions</div>
     </div>
     <div id="stats">
       <div class="stat"><div class="stat-num" id="st-nodes">0</div><div class="stat-lbl">Nodes</div></div>
@@ -333,12 +408,33 @@ def _generate_d3_html(graph_data: dict) -> Path:
 <!-- Detail panel -->
 <div id="detail">
   <h3 id="d-name"></h3>
-  <div class="detail-row"><span class="detail-key">PageRank</span>  <span class="detail-val" id="d-pr"></span></div>
-  <div class="detail-row"><span class="detail-key">Callers</span>   <span class="detail-val" id="d-callers"></span></div>
-  <div class="detail-row"><span class="detail-key">Calls</span>     <span class="detail-val" id="d-calls"></span></div>
-  <div class="detail-row"><span class="detail-key">In-degree</span> <span class="detail-val" id="d-in"></span></div>
-  <div class="detail-row"><span class="detail-key">Out-degree</span><span class="detail-val" id="d-out"></span></div>
+  <div id="d-type-badge" style="font-size:11px;margin-bottom:8px;"></div>
+  <div class="detail-row"><span class="detail-key">PageRank</span>    <span class="detail-val" id="d-pr"></span></div>
+  <div class="detail-row"><span class="detail-key">Callers</span>     <span class="detail-val" id="d-callers"></span></div>
+  <div class="detail-row"><span class="detail-key">Calls</span>       <span class="detail-val" id="d-calls"></span></div>
+  <div class="detail-row"><span class="detail-key">In-degree</span>   <span class="detail-val" id="d-in"></span></div>
+  <div class="detail-row"><span class="detail-key">Out-degree</span>  <span class="detail-val" id="d-out"></span></div>
+  <div class="detail-row" id="row-inherits" style="display:none"><span class="detail-key">Inherits from</span><span class="detail-val" id="d-inherits"></span></div>
+  <div class="detail-row" id="row-inherited" style="display:none"><span class="detail-key">Inherited by</span><span class="detail-val" id="d-inherited"></span></div>
+  <div class="detail-row" id="row-imports" style="display:none"><span class="detail-key">Imports</span>     <span class="detail-val" id="d-imports"></span></div>
+  <div class="detail-row" id="row-importedby" style="display:none"><span class="detail-key">Imported by</span><span class="detail-val" id="d-importedby"></span></div>
+  <div class="detail-row" id="row-lines" style="display:none"><span class="detail-key">Lines</span>       <span class="detail-val" id="d-lines"></span></div>
   <div id="detail-file"></div>
+</div>
+
+<!-- Legend -->
+<div id="legend">
+  <h4>Node Shape</h4>
+  <div class="legend-row"><div class="leg-dot" style="background:#7b8ab8"></div><span>Function (leaf)</span></div>
+  <div class="legend-row"><div class="leg-dot" style="background:#5bb8a0"></div><span>Function (popular)</span></div>
+  <div class="legend-row"><div class="leg-dot" style="background:#e07b54"></div><span>Function (hub)</span></div>
+  <div class="legend-row"><div class="leg-diamond" style="background:#7c6fcd"></div><span>Class (leaf)</span></div>
+  <div class="legend-row"><div class="leg-diamond" style="background:#a78bfa"></div><span>Class (popular)</span></div>
+  <div class="legend-row"><div class="leg-diamond" style="background:#c47ed4"></div><span>Class (hub)</span></div>
+  <h4 style="margin-top:10px">Edge Type</h4>
+  <div class="legend-row"><div class="leg-line" style="background:rgba(255,255,255,.35)"></div><span>Calls</span></div>
+  <div class="legend-row"><div class="leg-dashed" style="border-color:#a78bfa"></div><span>Inherits</span></div>
+  <div class="legend-row"><div class="leg-dotted" style="border-color:#5bb8a0"></div><span>Imports</span></div>
 </div>
 
 <!-- Hints -->
@@ -351,7 +447,8 @@ def _generate_d3_html(graph_data: dict) -> Path:
 
 <script>
 const graphData = {graph_json};
-const HUB_COLOR = "#e07b54", POP_COLOR = "#5bb8a0", LEAF_COLOR = "#7b8ab8";
+const HUB_COLOR  = "#e07b54", POP_COLOR  = "#5bb8a0", LEAF_COLOR  = "#7b8ab8";
+const CHUB_COLOR = "#c47ed4", CPOP_COLOR = "#a78bfa", CLEAF_COLOR = "#7c6fcd";
 
 document.getElementById("st-nodes").textContent = graphData.nodes.length;
 document.getElementById("st-edges").textContent = graphData.links.length;
@@ -373,12 +470,13 @@ const sim = d3.forceSimulation(graphData.nodes)
     .force("center",  d3.forceCenter(W()/2, H()/2))
     .force("collide", d3.forceCollide().radius(d => d.size + 6));
 
-// ── Links ─────────────────────────────────────────────────
+// ── Links — coloured by relationship type ─────────────────
 const linkSel = g.selectAll(".link")
     .data(graphData.links).enter()
-    .append("line").attr("class", "link");
+    .append("line")
+    .attr("class", l => "link " + (l.rel_type || "calls"));
 
-// ── Nodes ─────────────────────────────────────────────────
+// ── Nodes — circles for functions, diamonds for classes ───
 const nodeG = g.selectAll(".node")
     .data(graphData.nodes).enter()
     .append("g").attr("class", "node")
@@ -387,10 +485,23 @@ const nodeG = g.selectAll(".node")
         .on("drag",  (ev, d) => {{ d.fx=ev.x; d.fy=ev.y; }})
         .on("end",   (ev, d) => {{ if (!ev.active) sim.alphaTarget(0); d.fx=null; d.fy=null; }}));
 
-nodeG.append("circle")
+// Functions → circle
+nodeG.filter(d => !d.is_class)
+    .append("circle")
     .attr("r",    d => d.size)
     .attr("fill", d => d.color)
     .attr("stroke", "rgba(255,255,255,.25)")
+    .attr("stroke-width", 1.5);
+
+// Classes → rotated square (diamond)
+nodeG.filter(d => d.is_class)
+    .append("polygon")
+    .attr("points", d => {{
+        const s = d.size * 1.35;
+        return `0,${{-s}} ${{s}},0 0,${{s}} ${{-s}},0`;
+    }})
+    .attr("fill", d => d.color)
+    .attr("stroke", "rgba(255,255,255,.3)")
     .attr("stroke-width", 1.5);
 
 nodeG.append("text")
@@ -417,13 +528,15 @@ let activeFilter = "all";
 let searchTerm   = "";
 
 function nodeType(d) {{
-    if (d.color === HUB_COLOR)  return "hub";
-    if (d.color === POP_COLOR)  return "popular";
+    if (d.color === HUB_COLOR  || d.color === CHUB_COLOR)  return "hub";
+    if (d.color === POP_COLOR  || d.color === CPOP_COLOR)  return "popular";
     return "leaf";
 }}
 
 function matchesFilter(d) {{
-    if (activeFilter === "all") return true;
+    if (activeFilter === "all")      return true;
+    if (activeFilter === "class")    return d.is_class === true;
+    if (activeFilter === "function") return !d.is_class;
     return nodeType(d) === activeFilter;
 }}
 
@@ -464,6 +577,30 @@ function applySelection(d) {{
     document.getElementById("d-calls").textContent   = d.calls;
     document.getElementById("d-in").textContent      = d.in_degree;
     document.getElementById("d-out").textContent     = d.out_degree;
+
+    // type badge
+    const badge = document.getElementById("d-type-badge");
+    const isClass = d.is_class;
+    badge.innerHTML = `<span style="background:${{isClass?"rgba(124,111,205,.25)":"rgba(91,184,160,.15)"}};color:${{isClass?"#a78bfa":"#5bb8a0"}};padding:2px 8px;border-radius:10px;font-size:10px;text-transform:uppercase;letter-spacing:.4px">${{d.node_type || (isClass?"class":"function")}}</span>` +
+        (d.language ? `<span style="margin-left:6px;color:var(--muted);font-size:11px">${{d.language}}</span>` : "");
+
+    // optional rows
+    function showRow(rowId, valId, val) {{
+        const show = val != null && val !== 0 && val !== "";
+        document.getElementById(rowId).style.display = show ? "" : "none";
+        if (show) document.getElementById(valId).textContent = val;
+    }}
+    showRow("row-inherits",   "d-inherits",   d.inherits_from);
+    showRow("row-inherited",  "d-inherited",  d.inherited_by);
+    showRow("row-imports",    "d-imports",    d.imports);
+    showRow("row-importedby", "d-importedby", d.imported_by);
+    if (d.start_line != null && d.end_line != null) {{
+        document.getElementById("row-lines").style.display = "";
+        document.getElementById("d-lines").textContent = `${{d.start_line}}–${{d.end_line}} (${{d.end_line - d.start_line + 1}} lines)`;
+    }} else {{
+        document.getElementById("row-lines").style.display = "none";
+    }}
+
     document.getElementById("detail-file").textContent = d.file !== "\u2014" ? d.file : "";
     document.getElementById("detail").classList.add("show");
     document.getElementById("clear-btn").style.display = "block";
@@ -495,13 +632,14 @@ function renderList() {{
 
     if (visible.length === 0) {{
         results.innerHTML = `<div style="padding:20px 8px;color:var(--muted);text-align:center;font-size:12px">No matches found</div>`;
-        label.textContent = "Functions";
+        label.textContent = "Nodes";
         return;
     }}
 
-    label.textContent = `Functions (${{visible.length}})`;
+    label.textContent = `Nodes (${{visible.length}})`;
 
     const sorted = [...visible].sort((a,b) => {{
+        // classes first within each tier, then by pagerank
         const ta = nodeType(a), tb = nodeType(b);
         if (ta === "hub" && tb !== "hub") return -1;
         if (tb === "hub" && ta !== "hub") return 1;
@@ -509,15 +647,18 @@ function renderList() {{
     }});
 
     results.innerHTML = sorted.map(d => {{
-        const badge = nodeType(d) === "hub"
+        const typeBadge = d.is_class
+            ? `<span class="result-badge" style="background:rgba(124,111,205,.2);color:#a78bfa">class</span>`
+            : `<span class="result-badge" style="background:rgba(91,184,160,.1);color:var(--muted)">fn</span>`;
+        const tierBadge = nodeType(d) === "hub"
             ? `<span class="result-badge" style="background:rgba(224,123,84,.2);color:var(--hub)">hub</span>`
             : nodeType(d) === "popular"
             ? `<span class="result-badge" style="background:rgba(91,184,160,.2);color:var(--accent)">pop</span>`
             : "";
         return `<div class="result-item${{d.id===selectedId?" selected":""}}" data-id="${{d.id}}" title="${{d.file}}">
-          <div class="result-dot" style="background:${{d.color}}"></div>
+          <div class="result-dot" style="background:${{d.color}};${{d.is_class?"border-radius:2px;transform:rotate(45deg);width:9px;height:9px":""}}"></div>
           <span class="result-name">${{d.label}}</span>
-          ${{badge}}
+          ${{typeBadge}}${{tierBadge}}
         </div>`;
     }}).join("");
 
@@ -654,4 +795,4 @@ def _generate_ascii(graph_data: dict) -> dict:
     for ep in entry_points[:5]:
         output += f"{ep.get('name', '')} (PageRank: {ep.get('pagerank', 0):.2f})\n"
 
-    return {"status": "success", "format": "ascii", "output": output}
+    return {"status": "success", "format": "ascii", "output": output} 
