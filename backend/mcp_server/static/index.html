@@ -452,11 +452,39 @@
         <div class="panel-body">
           <label for="user-prompt">User request</label>
           <textarea id="user-prompt" name="user_prompt" placeholder="e.g. Explain how retrieval finds code for a Flask route." autocomplete="off"></textarea>
-          <div class="row">
+          <div class="row" style="align-items:center;gap:0.6rem;flex-wrap:wrap">
             <button type="button" class="primary" id="btn-generate">Run pipeline</button>
+            <label for="dash-retrieval-mode" style="display:flex;align-items:center;gap:0.4rem;font-weight:600;color:var(--text);margin:0">
+              Retrieval mode
+              <select id="dash-retrieval-mode" title="Switch retrieval backend. Graph mode requires call_graph.json from a recent /index run.">
+                <option value="vector" selected>vector (hybrid baseline)</option>
+                <option value="graph">graph (hybrid + call-graph rerank)</option>
+              </select>
+            </label>
             <button type="button" class="secondary" id="btn-index">Index default repo</button>
             <button type="button" class="secondary" id="btn-refresh-index">Refresh index summary</button>
           </div>
+
+          <details class="advanced" id="dash-graph-weights" hidden>
+            <summary>Graph rerank weights (graph mode only)</summary>
+            <div class="advanced-inner" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.6rem">
+              <div>
+                <label for="dash-graph-alpha">alpha (hybrid weight)</label>
+                <input id="dash-graph-alpha" type="number" min="0" max="1" step="0.05" placeholder="0.65" />
+                <small style="display:block;color:var(--muted)">1 - alpha goes to the structural score.</small>
+              </div>
+              <div>
+                <label for="dash-graph-w-pagerank">w_pagerank</label>
+                <input id="dash-graph-w-pagerank" type="number" min="0" step="0.05" placeholder="0.65" />
+                <small style="display:block;color:var(--muted)">Auto-normalized with w_indegree to sum 1.</small>
+              </div>
+              <div>
+                <label for="dash-graph-w-indegree">w_indegree</label>
+                <input id="dash-graph-w-indegree" type="number" min="0" step="0.05" placeholder="0.35" />
+                <small style="display:block;color:var(--muted)">Leave blank for the env default.</small>
+              </div>
+            </div>
+          </details>
 
           <details class="advanced">
             <summary>API and indexing options</summary>
@@ -576,14 +604,35 @@
             <input id="eval-budget" type="number" min="200" max="8000" value="1800" />
           </div>
           <div>
-            <label for="eval-retrieval-mode">Metrics folder (<code>results/…/json/</code>)</label>
-            <select id="eval-retrieval-mode">
-              <option value="hybrid" selected>hybrid</option>
-              <option value="vector">vector</option>
-              <option value="graph">graph</option>
+            <label for="eval-retrieval-mode">Retrieval mode (also picks <code>results/…/json/</code>)</label>
+            <select id="eval-retrieval-mode" title="Selects both the retrieval backend and the metrics output folder.">
+              <option value="vector" selected>vector (hybrid baseline)</option>
+              <option value="graph">graph (hybrid + call-graph rerank)</option>
             </select>
           </div>
         </div>
+
+        <details class="advanced" id="eval-graph-weights" hidden>
+          <summary>Graph rerank weights (graph mode only)</summary>
+          <div class="advanced-inner" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.6rem">
+            <div>
+              <label for="eval-graph-alpha">alpha (hybrid weight)</label>
+              <input id="eval-graph-alpha" type="number" min="0" max="1" step="0.05" placeholder="0.65" />
+              <small style="display:block;color:var(--muted)">1 - alpha goes to the structural score.</small>
+            </div>
+            <div>
+              <label for="eval-graph-w-pagerank">w_pagerank</label>
+              <input id="eval-graph-w-pagerank" type="number" min="0" step="0.05" placeholder="0.65" />
+              <small style="display:block;color:var(--muted)">Auto-normalized with w_indegree to sum 1.</small>
+            </div>
+            <div>
+              <label for="eval-graph-w-indegree">w_indegree</label>
+              <input id="eval-graph-w-indegree" type="number" min="0" step="0.05" placeholder="0.35" />
+              <small style="display:block;color:var(--muted)">Leave blank for the env default.</small>
+            </div>
+          </div>
+        </details>
+
         <div class="row" style="margin-top:0.35rem">
           <label style="display:flex;align-items:center;gap:0.45rem;font-weight:600;color:var(--text)">
             <input type="checkbox" id="eval-save-json" checked />
@@ -701,9 +750,19 @@
         var mean = vals.length
           ? (vals.reduce(function (a, b) { return a + b; }, 0) / vals.length).toFixed(4)
           : "—";
+        var mode = (pipeline && pipeline.retrieval_mode) || (st && st.retrieval_mode) || "vector";
+        var weights = (pipeline && pipeline.rerank_weights) || (st && st.rerank_weights) || null;
+        var weightsHtml = "";
+        if (mode === "graph" && weights) {
+          weightsHtml = " · weights: <code>α=" + escapeHtml(weights.alpha) +
+            ", w_pr=" + escapeHtml(weights.w_pagerank) +
+            ", w_id=" + escapeHtml(weights.w_indegree) + "</code>";
+        }
         box.hidden = false;
         box.innerHTML =
-          "<strong>Quick retrieval snapshot</strong> — top-5 mean <code>final_score</code>: " +
+          "<strong>Quick retrieval snapshot</strong> — mode: <code>" + escapeHtml(mode) + "</code>" +
+          weightsHtml +
+          " · top-5 mean <code>final_score</code>: " +
           escapeHtml(mean) +
           " · candidate chunks: " +
           escapeHtml(formatNum(st && st.candidate_chunks)) +
@@ -725,7 +784,7 @@
         var faithNode = el("eval-faithfulness");
         var runFaith = !!(faithNode && faithNode.checked);
         var modeNode = el("eval-retrieval-mode");
-        var mode = modeNode && modeNode.value ? modeNode.value : "hybrid";
+        var mode = modeNode && modeNode.value ? modeNode.value : "vector";
         var saveJsonNode = el("eval-save-json");
         var body = {
           prompt: prompt,
@@ -737,6 +796,12 @@
           retrieval_mode: mode,
           save_metrics_json: !!(saveJsonNode && saveJsonNode.checked)
         };
+        if (mode === "graph") {
+          var evalWeights = readGraphWeights("eval");
+          if (evalWeights.graph_alpha !== null) body.graph_alpha = evalWeights.graph_alpha;
+          if (evalWeights.graph_w_pagerank !== null) body.graph_w_pagerank = evalWeights.graph_w_pagerank;
+          if (evalWeights.graph_w_indegree !== null) body.graph_w_indegree = evalWeights.graph_w_indegree;
+        }
         var btnEv = el("btn-eval-run");
         if (btnEv) btnEv.disabled = true;
         setEvalStatus(
@@ -858,7 +923,11 @@
         var generate = stages.generate && stages.generate.summary ? stages.generate.summary : {};
         var pruneStats = prune.stats || {};
 
-        setStageText("stage-retrieve-summary", formatNum(retrieve.candidate_chunks || 0) + " chunks from " + formatNum(retrieve.unique_files || 0) + " files.");
+        var activeMode = (pipeline && pipeline.retrieval_mode) || retrieve.retrieval_mode || "vector";
+        setStageText(
+          "stage-retrieve-summary",
+          formatNum(retrieve.candidate_chunks || 0) + " chunks from " + formatNum(retrieve.unique_files || 0) + " files · mode: " + activeMode
+        );
         var budget = prune.token_budget || 0;
         setStageText("stage-prune-summary", formatNum(pruneStats.kept_chunks || 0) + " kept, " + formatNum(pruneStats.dropped_chunks || 0) + " dropped, about " + formatNum(pruneStats.kept_est_tokens || 0) + " tokens (budget " + formatNum(budget) + ").");
         setStageText("stage-inject-summary", formatNum(inject.total_chars || 0) + " prompt chars, about " + formatNum(inject.estimated_tokens || 0) + " tokens.");
@@ -971,6 +1040,22 @@
         }
       }
 
+      function readGraphWeights(prefix) {
+        function num(id) {
+          var n = el(prefix + id);
+          if (!n) return null;
+          var v = String(n.value || "").trim();
+          if (v === "") return null;
+          var f = Number(v);
+          return isFinite(f) ? f : null;
+        }
+        return {
+          graph_alpha: num("-graph-alpha"),
+          graph_w_pagerank: num("-graph-w-pagerank"),
+          graph_w_indegree: num("-graph-w-indegree"),
+        };
+      }
+
       async function runPipeline() {
         var promptNode = el("user-prompt");
         var prompt = promptNode ? promptNode.value.trim() : "";
@@ -978,15 +1063,24 @@
           setStatus("Enter a prompt first.", "err");
           return;
         }
+        var dashModeNode = el("dash-retrieval-mode");
+        var dashMode = dashModeNode && dashModeNode.value ? dashModeNode.value : "vector";
         outputEl.classList.remove("empty");
-        outputEl.textContent = "Running pipeline...";
+        outputEl.textContent = "Running pipeline (" + dashMode + " mode)...";
         evidenceEl.innerHTML = "<div class=\"empty\">Pipeline is running. Waiting for trace data...</div>";
         ["stage-retrieve", "stage-prune", "stage-inject", "stage-generate"].forEach(function (id) {
           markStage(id, "active");
         });
-        setWorking(true, "Running retrieve, prune, inject, and Ollama...");
+        setWorking(true, "Running retrieve (" + dashMode + "), prune, inject, and Ollama...");
         try {
-          var data = await requestJson("POST", "/generate", { prompt: prompt });
+          var body = { prompt: prompt, retrieval_mode: dashMode };
+          if (dashMode === "graph") {
+            var dashWeights = readGraphWeights("dash");
+            if (dashWeights.graph_alpha !== null) body.graph_alpha = dashWeights.graph_alpha;
+            if (dashWeights.graph_w_pagerank !== null) body.graph_w_pagerank = dashWeights.graph_w_pagerank;
+            if (dashWeights.graph_w_indegree !== null) body.graph_w_indegree = dashWeights.graph_w_indegree;
+          }
+          var data = await requestJson("POST", "/generate", body);
           var out = data.output;
           outputEl.textContent = out == null || out === "" ? "(empty output from server)" : (typeof out === "string" ? out : prettyJson(out));
           el("pipeline-raw").textContent = prettyJson(data);
@@ -1045,6 +1139,22 @@
         var tbe = el("tab-btn-eval");
         if (tbd) tbd.addEventListener("click", function () { switchTab("dash"); });
         if (tbe) tbe.addEventListener("click", function () { switchTab("eval"); });
+
+        function toggleGraphWeights(selectId, panelId) {
+          var sel = el(selectId);
+          var panel = el(panelId);
+          if (!sel || !panel) return;
+          var sync = function () {
+            var isGraph = sel.value === "graph";
+            panel.hidden = !isGraph;
+            if (isGraph) panel.open = true;
+          };
+          sel.addEventListener("change", sync);
+          sync();
+        }
+        toggleGraphWeights("dash-retrieval-mode", "dash-graph-weights");
+        toggleGraphWeights("eval-retrieval-mode", "eval-graph-weights");
+
         el("btn-generate").addEventListener("click", runPipeline);
         var btnEval = el("btn-eval-run");
         if (btnEval) btnEval.addEventListener("click", runEvaluate);

@@ -578,6 +578,27 @@ class CodeIndexer:
             else self._update_bm25_index(bm25_chunks)
         )
         self._save_hash_cache()
+
+        # Phase 2: build a call-graph sidecar so graph-mode retrieval can
+        # rerank candidates by structural signal (PageRank / in-degree).
+        # Best-effort: a failure here must not break vector-mode indexing.
+        try:
+            from .graph_builder import build_call_graph
+            graph_path = Path(self.db_path) / "call_graph.json"
+            graph_stats = build_call_graph(
+                repo_path,
+                languages=languages,
+                output_path=graph_path,
+                files=files,
+            )
+            stats["graph_path"] = graph_stats["output_path"]
+            stats["graph_nodes"] = graph_stats["nodes"]
+            stats["graph_edges"] = graph_stats["edges"]
+        except Exception as exc:
+            logger.warning("Call graph build failed: %s", exc)
+            stats["graph_path"] = None
+            stats["graph_error"] = str(exc)
+
         logger.info("Indexing complete: %s", stats)
         return stats
 

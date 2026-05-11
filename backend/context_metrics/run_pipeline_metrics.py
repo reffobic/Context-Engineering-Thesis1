@@ -26,11 +26,44 @@ from pathlib import Path
 from typing import Any
 
 BACKEND = Path(__file__).resolve().parent.parent
+_REPO_ROOT = BACKEND.parent
 
 
 def _ensure_sys_path() -> None:
     if str(BACKEND) not in sys.path:
         sys.path.insert(0, str(BACKEND))
+
+
+def _save_results_json(payload: dict[str, Any], retrieval_mode: str) -> str | None:
+    """Persist ``payload`` under ``results/<retrieval_mode>/json/``.
+
+    Mirrors :func:`backend.mcp_server.server._persist_eval_metrics` so the CLI
+    and the HTTP endpoint produce the same on-disk layout.
+    """
+    from datetime import datetime, timezone
+    import uuid
+
+    safe_mode = retrieval_mode if retrieval_mode in {"vector", "graph"} else "vector"
+    out_dir = _REPO_ROOT / "results" / safe_mode / "json"
+    try:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        fname = f"eval-{ts}-{uuid.uuid4().hex[:8]}.json"
+        rel = f"results/{safe_mode}/json/{fname}"
+        saved_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        blob = {
+            **payload,
+            "metrics_json_path": rel,
+            "metrics_saved_at_utc": saved_at,
+            "retrieval_mode": safe_mode,
+        }
+        (out_dir / fname).write_text(
+            json.dumps(blob, indent=2, ensure_ascii=False, default=str),
+            encoding="utf-8",
+        )
+        return rel
+    except OSError:
+        return None
 
 
 def chunk_text(item: dict[str, Any]) -> str:
@@ -315,7 +348,21 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             judge_holder.append(build_judge_model())
         return judge_holder[0]
 
-    retrieved = call_tool("retrieve_context", query, args.top_k)
+    mode = (getattr(args, "retrieval_mode", "vector") or "vector").lower()
+    if mode not in {"vector", "graph"}:
+        mode = "vector"
+    graph_alpha = getattr(args, "graph_alpha", None)
+    graph_w_pr = getattr(args, "graph_w_pagerank", None)
+    graph_w_id = getattr(args, "graph_w_indegree", None)
+    retrieved = call_tool(
+        "retrieve_context",
+        query,
+        args.top_k,
+        mode=mode,
+        alpha=graph_alpha,
+        w_pagerank=graph_w_pr,
+        w_indegree=graph_w_id,
+    )
     pruned = call_tool(
         "prune_context",
         query,
@@ -328,6 +375,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 
     result: dict[str, Any] = {
         "query": query,
+        "retrieval_mode": mode,
         "pipeline_counts": {
             "retrieved_chunks": len(retrieved),
             "pruned_chunks": len(pruned),
@@ -336,6 +384,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         },
         "metrics": {},
     }
+    if mode == "graph" and retrieved:
+        rw = retrieved[0].get("rerank_weights") if isinstance(retrieved[0], dict) else None
+        if rw:
+            result["rerank_weights"] = rw
 
     needs_answer = {"faithfulness", "answer_relevancy", "hallucination"}
 
@@ -497,6 +549,55 @@ def main() -> None:
         help="Only score retrieval with contextual_relevancy (no Ollama answer or post-generate metrics).",
     )
     parser.add_argument(
+        "--retrieval-mode",
+        choices=["vector", "graph"],
+        default="vector",
+        help=(
+            "Retrieval backend. 'vector' = hybrid dense+BM25+exact+rerank (no graph). "
+            "'graph' = same candidates plus call-graph PageRank/in-degree rerank "
+            "(requires call_graph.json from a recent /index run)."
+        ),
+    )
+    parser.add_argument(
+        "--graph-alpha",
+        type=float,
+        default=None,
+        metavar="ALPHA",
+        help=(
+            "Graph-mode only. Weight on the hybrid score in the blend "
+            "alpha*hybrid + (1-alpha)*structural. Omit to use the env default "
+            "(GRAPH_RERANK_ALPHA, 0.65 unless overridden)."
+        ),
+    )
+    parser.add_argument(
+        "--graph-w-pagerank",
+        type=float,
+        default=None,
+        metavar="W",
+        help=(
+            "Graph-mode only. Weight on PageRank inside the structural score. "
+            "Auto-normalized with --graph-w-indegree to sum to 1."
+        ),
+    )
+    parser.add_argument(
+        "--graph-w-indegree",
+        type=float,
+        default=None,
+        metavar="W",
+        help=(
+            "Graph-mode only. Weight on normalized in-degree inside the structural score. "
+            "Auto-normalized with --graph-w-pagerank to sum to 1."
+        ),
+    )
+    parser.add_argument(
+        "--save-json",
+        action="store_true",
+        help=(
+            "Also persist the full result payload to results/<retrieval-mode>/json/ "
+            "(repo-root relative). Mirrors the /evaluate endpoint."
+        ),
+    )
+    parser.add_argument(
         "--compact-json",
         action="store_true",
         help="Single-line JSON (default is indented).",
@@ -505,6 +606,10 @@ def main() -> None:
     if not parse_metrics_arg(args.metrics) and not (args.relevant_file):
         parser.error("Nothing to score: set --metrics or pass at least one --relevant-file.")
     payload = run(args)
+    if args.save_json:
+        saved = _save_results_json(payload, args.retrieval_mode)
+        if saved:
+            payload["metrics_json_path"] = saved
     print(json.dumps(payload, indent=None if args.compact_json else 2, default=str))
 
 

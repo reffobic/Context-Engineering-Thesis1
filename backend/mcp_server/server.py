@@ -38,14 +38,14 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 def _persist_eval_metrics(
     metrics: dict[str, Any],
     *,
-    retrieval_mode: Literal["hybrid", "vector", "graph"],
+    retrieval_mode: Literal["vector", "graph"],
 ) -> tuple[Optional[str], Optional[str]]:
     """
     Write evaluate payload to ``results/{retrieval_mode}/json/eval-{timestamp}-{id}.json``.
     Returns ``(relative_posix_path, error_message)``.
     """
     try:
-        safe_mode = retrieval_mode if retrieval_mode in ("hybrid", "vector", "graph") else "hybrid"
+        safe_mode = retrieval_mode if retrieval_mode in ("vector", "graph") else "vector"
         out_dir = _REPO_ROOT / "results" / safe_mode / "json"
         out_dir.mkdir(parents=True, exist_ok=True)
         ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -72,6 +72,19 @@ class GenerateRequest(BaseModel):
     """JSON body for POST /generate (matches `run_demo.py` and `requests.post(..., json={...})`)."""
 
     prompt: str
+    #: Retrieval strategy. ``"vector"`` = hybrid dense + BM25 + exact + rerank
+    #: (no call graph). ``"graph"`` = same candidates plus a structural rerank
+    #: that consumes ``call_graph.json``.
+    retrieval_mode: Literal["vector", "graph"] = "vector"
+    #: Graph-mode only. Weight on the hybrid score in the blend
+    #: ``alpha * hybrid + (1 - alpha) * structural``. ``None`` keeps the
+    #: env-var default (``GRAPH_RERANK_ALPHA``, 0.65 unless overridden).
+    graph_alpha: Optional[float] = None
+    #: Graph-mode only. Weight on PageRank inside the structural score. The
+    #: server auto-normalizes ``w_pagerank + w_indegree`` to 1.0.
+    graph_w_pagerank: Optional[float] = None
+    #: Graph-mode only. Weight on normalized in-degree inside the structural score.
+    graph_w_indegree: Optional[float] = None
 
 
 class EvaluateRequest(BaseModel):
@@ -86,8 +99,15 @@ class EvaluateRequest(BaseModel):
     relevant_files: Optional[List[str]] = None
     judge_retrieval_relevancy: bool = False
     faithfulness: bool = False
-    #: Where to store metrics JSON (``results/{mode}/json/``). Retrieval path in code may still be hybrid until vector/graph backends exist.
-    retrieval_mode: Literal["hybrid", "vector", "graph"] = "hybrid"
+    #: Selects the retrieval backend AND the metrics output folder
+    #: (``results/{mode}/json/``). ``"vector"`` is the hybrid baseline,
+    #: ``"graph"`` adds the call-graph rerank.
+    retrieval_mode: Literal["vector", "graph"] = "vector"
+    #: Graph-mode rerank knobs (ignored when ``retrieval_mode == "vector"``).
+    #: ``None`` keeps the env-var defaults; see ``GenerateRequest`` for details.
+    graph_alpha: Optional[float] = None
+    graph_w_pagerank: Optional[float] = None
+    graph_w_indegree: Optional[float] = None
     #: If true (default), persist full evaluate response under ``results/{retrieval_mode}/json/``.
     save_metrics_json: bool = True
 
@@ -241,20 +261,44 @@ def _stage(name: str, duration_ms: int, summary: dict, raw: Any = None) -> dict:
 
 
 # Current pipeline
-def run_pipeline(user_prompt: str) -> dict:
+def run_pipeline(
+    user_prompt: str,
+    retrieval_mode: str = "vector",
+    graph_alpha: Optional[float] = None,
+    graph_w_pagerank: Optional[float] = None,
+    graph_w_indegree: Optional[float] = None,
+) -> dict:
     token_budget = 1800
+    mode = retrieval_mode if retrieval_mode in {"vector", "graph"} else "vector"
     pipeline = {
         "prompt": user_prompt,
+        "retrieval_mode": mode,
         "stages": {},
         "stage_order": ["retrieve", "prune", "inject", "generate"],
     }
 
-    logging.info("Retrieval started")
-    context, duration_ms = _time_stage(lambda: call_tool("retrieve_context", user_prompt))
+    logging.info("Retrieval started (mode=%s)", mode)
+    context, duration_ms = _time_stage(
+        lambda: call_tool(
+            "retrieve_context",
+            user_prompt,
+            mode=mode,
+            alpha=graph_alpha,
+            w_pagerank=graph_w_pagerank,
+            w_indegree=graph_w_indegree,
+        )
+    )
+    retrieval_summary = _retrieval_summary(context)
+    retrieval_summary["retrieval_mode"] = mode
+    if mode == "graph" and context:
+        rerank_weights = context[0].get("rerank_weights") if isinstance(context[0], dict) else None
+        if rerank_weights:
+            retrieval_summary["rerank_weights"] = rerank_weights
+            pipeline["rerank_weights"] = rerank_weights
     pipeline["stages"]["retrieve"] = _stage(
         "Retrieve context",
         duration_ms,
-        _retrieval_summary(context),
+        retrieval_summary,
         context,
     )
 
@@ -355,7 +399,13 @@ def index(
 
 @app.post("/generate")
 def generate(req: GenerateRequest):
-    return run_pipeline(req.prompt)
+    return run_pipeline(
+        req.prompt,
+        retrieval_mode=req.retrieval_mode,
+        graph_alpha=req.graph_alpha,
+        graph_w_pagerank=req.graph_w_pagerank,
+        graph_w_indegree=req.graph_w_indegree,
+    )
 
 
 @app.post("/evaluate")
@@ -373,7 +423,15 @@ def evaluate(req: EvaluateRequest) -> dict[str, Any]:
         structural_pipeline_stats,
     )
 
-    retrieved = call_tool("retrieve_context", req.prompt, req.top_k)
+    retrieved = call_tool(
+        "retrieve_context",
+        req.prompt,
+        req.top_k,
+        mode=req.retrieval_mode,
+        alpha=req.graph_alpha,
+        w_pagerank=req.graph_w_pagerank,
+        w_indegree=req.graph_w_indegree,
+    )
     pruned, _stats = prune_context_with_stats(
         req.prompt, retrieved, token_budget=req.token_budget
     )
@@ -385,12 +443,17 @@ def evaluate(req: EvaluateRequest) -> dict[str, Any]:
         "prompt": req.prompt,
         "top_k": req.top_k,
         "token_budget": req.token_budget,
+        "retrieval_mode": req.retrieval_mode,
         "pipeline_counts": {
             "retrieved_chunks": len(retrieved),
             "pruned_chunks": len(pruned),
         },
         "structural": structural_pipeline_stats(retrieved, pruned, req.top_k),
     }
+    if req.retrieval_mode == "graph" and retrieved:
+        rerank_weights = retrieved[0].get("rerank_weights") if isinstance(retrieved[0], dict) else None
+        if rerank_weights:
+            out["rerank_weights"] = rerank_weights
 
     if gold:
         pr = precision_recall_at_k(retrieved, req.top_k, gold)
