@@ -16,7 +16,7 @@ from retrieval.hybrid_retrieval import enhance_ranking_with_structure
 # ══════════════════════════════════════════════════════════════════
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 
-CHROMA_PATH     = r"C:\Users\hodam\Downloads\Context-Engineering-Thesis1\backend\superset_chroma_db"
+CHROMA_PATH     = "backend\superset_chroma_db"
 
 
 COLLECTION_NAME = "code_embeddings"
