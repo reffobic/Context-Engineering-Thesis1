@@ -17,18 +17,19 @@ Related materials in the repo:
 4. [Major components](#major-components)
 5. [Python environment](#python-environment)
 6. [Installation](#installation)
-7. [Running the MCP server](#running-the-mcp-server)
-8. [HTTP API](#http-api)
-9. [Web UI (`/ui`)](#web-ui-ui)
-10. [Smoke tests](#smoke-tests)
-11. [Manual test cases (`TESTCASES.md`)](#manual-test-cases-testcasesmd)
-12. [Manual and integration scripts](#manual-and-integration-scripts)
-13. [Ollama](#ollama)
-14. [Paths, data, and ignores](#paths-data-and-ignores)
-15. [Import paths and `PYTHONPATH`](#import-paths-and-pythonpath)
-16. [Branches and integration](#branches-and-integration)
-17. [Known limitations](#known-limitations)
-18. [Troubleshooting](#troubleshooting)
+7. [Graph-aware Chroma index (one-time setup)](#graph-aware-chroma-index-one-time-setup)
+8. [Running the MCP server](#running-the-mcp-server)
+9. [HTTP API](#http-api)
+10. [Web UI (`/ui`)](#web-ui-ui)
+11. [Smoke tests](#smoke-tests)
+12. [Manual test cases (`TESTCASES.md`)](#manual-test-cases-testcasesmd)
+13. [Manual and integration scripts](#manual-and-integration-scripts)
+14. [Ollama](#ollama)
+15. [Paths, data, and ignores](#paths-data-and-ignores)
+16. [Import paths and `PYTHONPATH`](#import-paths-and-pythonpath)
+17. [Branches and integration](#branches-and-integration)
+18. [Known limitations](#known-limitations)
+19. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -199,6 +200,35 @@ From the **repository root**:
    Optionally add **`httpx`** if you use tooling that expects it alongside FastAPI’s test client elsewhere.
 
 3. **Ollama** — install separately on the host; see [Ollama](#ollama).
+
+---
+
+## Graph-aware Chroma index (one-time setup)
+
+The retrieval code on `main` is unchanged: same hybrid pipeline (dense + BM25 + exact-symbol + rerank). What's different is **what is stored in Chroma**. The embeddings live in `backend/chroma_db/` and were produced by a graph-aware indexer that folds call-graph signal into each chunk vector before persistence, so a normal vector query already returns graph-aware neighbors — no retrieval-side toggle required.
+
+The Chroma bundle is **not committed** (it's ~530 MB and gitignored). To set it up on a new machine:
+
+1. **Copy the bundle** (delivered out-of-band via Drive/USB/scp) into `backend/chroma_db/`. After the copy you should have:
+
+   ```text
+   backend/chroma_db/
+   ├── chroma.sqlite3
+   ├── <uuid>/                       # HNSW segment files
+   ├── call_graph.json               # call-graph sidecar (used by future viz work)
+   ├── .embedding_cache.json
+   └── .index_cache.json
+   ```
+
+2. **Rebuild BM25** once, since the bundle ships only the vector store. The helper walks Chroma and writes `backend/chroma_db/bm25_index.json` — no file scan, no re-embedding:
+
+   ```bash
+   cd backend && python rebuild_bm25.py
+   ```
+
+3. Start the server normally (next section). The collection is named `code_embeddings`, embedding dim is `384` (`all-MiniLM-L6-v2`), so no code config changes are needed.
+
+If the bundle is missing on disk, indexing/retrieval will fall back to whatever local Chroma you build with `POST /index`, just like before this branch.
 
 ---
 

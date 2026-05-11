@@ -1,5 +1,6 @@
 flask_test/
 backend/chroma_db/
+backend/chroma_db.bak.*/
 .deps/
 
 # Local virtual environments (never commit)
