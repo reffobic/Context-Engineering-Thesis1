@@ -720,22 +720,67 @@ def reconstruct_file_context(ranked_chunks: list[dict]) -> list[dict]:
 # PUBLIC API
 # ══════════════════════════════════════════════════════════════════
 
-def retrieve_context(query: str, top_k: int = 5) -> list[dict]:
+def retrieve_context(
+    query: str,
+    top_k: int = 5,
+    mode: str = "vector",
+    alpha: Optional[float] = None,
+    w_pagerank: Optional[float] = None,
+    w_indegree: Optional[float] = None,
+) -> list[dict]:
     """
     Full retrieval pipeline:
-      vector search → hybrid scoring → ranking → late chunking context
+      vector search → hybrid scoring → ranking → (optional graph rerank) → late chunking
+
+    Parameters
+    ----------
+    query:
+        Natural-language or code query.
+    top_k:
+        Final number of stitched results to return.
+    mode:
+        ``"vector"`` (default) — the standard hybrid pipeline (dense + BM25 +
+        exact-symbol + cross-encoder rerank) without any call-graph signal.
+        ``"graph"`` — same candidate set, plus a final structural rerank that
+        blends ``final_score`` with PageRank / in-degree from
+        ``call_graph.json``. Falls back to ``"vector"`` semantics if the
+        sidecar is missing.
+    alpha:
+        ``graph`` mode only. Weight on the hybrid score in the blend
+        ``alpha * hybrid + (1 - alpha) * structural``. ``None`` → env default.
+    w_pagerank, w_indegree:
+        ``graph`` mode only. Split of the structural score between PageRank and
+        normalized in-degree. Auto-normalized to sum to 1.
 
     Each returned dict contains:
       "code"           — the matched chunk (exact function/block)
       "metadata"       — file_path, function name, start/end line, language
       "similarity"     — raw vector similarity score
       "hybrid_score"   — vector + keyword combined score
-      "final_score"    — final ranked score
+      "final_score"    — final ranked score (graph-blended when mode="graph")
+      "graph_score"    — structural score (graph mode only)
+      "rerank_weights" — {alpha, w_pagerank, w_indegree} actually used (graph)
       "parent_context" — all chunks from the same file stitched in line order
                          Pass this to the LLM for full surrounding context.
     """
+    mode_normalized = (mode or "vector").strip().lower()
+    if mode_normalized not in {"vector", "graph"}:
+        mode_normalized = "vector"
+
     candidates = hybrid_retrieve(query, top_k=top_k * CHILD_FETCH_MULTIPLIER)
     ranked     = rank_chunks(query, candidates)
+
+    if mode_normalized == "graph":
+        from .graph_rerank import rerank_with_graph
+        ranked = rerank_with_graph(
+            ranked,
+            alpha=alpha,
+            w_pagerank=w_pagerank,
+            w_indegree=w_indegree,
+        )
+
     top        = ranked[:top_k]
     results    = reconstruct_file_context(top)
+    for item in results:
+        item["retrieval_mode"] = mode_normalized
     return results
