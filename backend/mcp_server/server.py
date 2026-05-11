@@ -97,6 +97,13 @@ class GenerateRequest(BaseModel):
     model: Optional[str] = None           # Ollama model for generation; None = use default
     #: When false, force hybrid ``retrieve_context`` even for lookup prompts (A/B cost ablation).
     use_lightweight_tools: bool = True
+    #: ``"vector"`` = hybrid dense + BM25 + exact + rerank (no call graph).
+    #: ``"graph"`` = same candidates plus structural rerank from ``call_graph.json``.
+    #: ``"hybrid"`` is accepted as an alias of ``"vector"`` for evaluate folder labels.
+    retrieval_mode: Literal["hybrid", "vector", "graph"] = "vector"
+    graph_alpha: Optional[float] = None
+    graph_w_pagerank: Optional[float] = None
+    graph_w_indegree: Optional[float] = None
 
 class EvaluateRequest(BaseModel):
     """
@@ -113,8 +120,12 @@ class EvaluateRequest(BaseModel):
     faithfulness: bool = False
     #: Ablation answer path: if set, also run full ``run_pipeline`` with this mode.
     generate_mode: Optional[Literal["RAG", "LC", "SELF_ROUTE", "GASR", "GAPA"]] = None
-    #: Where to store metrics JSON (``results/{mode}/json/``). Retrieval path in code may still be hybrid until vector/graph backends exist.
-    retrieval_mode: Literal["hybrid", "vector", "graph"] = "hybrid"
+    #: Selects retrieval backend AND metrics folder (``results/{mode}/json/``).
+    #: ``"hybrid"`` is treated as vector retrieval for ranking.
+    retrieval_mode: Literal["hybrid", "vector", "graph"] = "vector"
+    graph_alpha: Optional[float] = None
+    graph_w_pagerank: Optional[float] = None
+    graph_w_indegree: Optional[float] = None
     #: If true (default), persist full evaluate response under ``results/{retrieval_mode}/json/``.
     save_metrics_json: bool = True
 
@@ -342,10 +353,23 @@ def _lightweight_context(tool_name: str, result: Any) -> list[dict]:
     ]
 
 
+def _normalize_retrieval_mode(retrieval_mode: Optional[str]) -> str:
+    mode = (retrieval_mode or "vector").strip().lower()
+    if mode == "hybrid":
+        return "vector"
+    if mode in {"vector", "graph"}:
+        return mode
+    return "vector"
+
+
 def _retrieve_for_prompt(
     user_prompt: str,
     *,
     use_lightweight_tools: bool = True,
+    retrieval_mode: str = "vector",
+    graph_alpha: Optional[float] = None,
+    graph_w_pagerank: Optional[float] = None,
+    graph_w_indegree: Optional[float] = None,
 ) -> tuple[list[dict], Optional[str]]:
     """Retrieve hybrid chunks, or route lookup prompts to lightweight tools when enabled."""
     if use_lightweight_tools:
@@ -354,7 +378,15 @@ def _retrieve_for_prompt(
             tool_name, arguments = lightweight
             result = call_tool(tool_name, **arguments)
             return _lightweight_context(tool_name, result), tool_name
-    return call_tool("retrieve_context", user_prompt), None
+    mode = _normalize_retrieval_mode(retrieval_mode)
+    return call_tool(
+        "retrieve_context",
+        user_prompt,
+        mode=mode,
+        alpha=graph_alpha,
+        w_pagerank=graph_w_pagerank,
+        w_indegree=graph_w_indegree,
+    ), None
 
 
 def _pruning_summary(chunks: list[dict], stats: Any, token_budget: int) -> dict:
@@ -416,14 +448,20 @@ def run_pipeline(
     mode: str = "SELF_ROUTE",
     pruning_method: str = "heuristic",
     use_lightweight_tools: bool = True,
+    retrieval_mode: str = "vector",
+    graph_alpha: Optional[float] = None,
+    graph_w_pagerank: Optional[float] = None,
+    graph_w_indegree: Optional[float] = None,
 ) -> dict:
     import os
 
     token_budget = 1300
     gasr_hard_cap = int(os.environ.get("GASR_HARD_CAP", "2"))
+    retrieve_mode = _normalize_retrieval_mode(retrieval_mode)
     pipeline = {
         "prompt": user_prompt,
         "mode": mode,
+        "retrieval_mode": retrieve_mode,
         "stages": {},
         "stage_order": ["retrieve", "prune", "assess", "inject", "generate"],
         "tokens_injected_est": 0,
@@ -432,15 +470,26 @@ def run_pipeline(
         "use_lightweight_tools": use_lightweight_tools,
     }
 
-    logging.info("Retrieval started")
+    logging.info("Retrieval started (mode=%s)", retrieve_mode)
     (context, lightweight_tool), duration_ms = _time_stage(
         lambda: _retrieve_for_prompt(
-            user_prompt, use_lightweight_tools=use_lightweight_tools
+            user_prompt,
+            use_lightweight_tools=use_lightweight_tools,
+            retrieval_mode=retrieve_mode,
+            graph_alpha=graph_alpha,
+            graph_w_pagerank=graph_w_pagerank,
+            graph_w_indegree=graph_w_indegree,
         )
     )
     retrieval_summary = _retrieval_summary(context)
+    retrieval_summary["retrieval_mode"] = retrieve_mode
     if lightweight_tool:
         retrieval_summary["lightweight_tool"] = lightweight_tool
+    if retrieve_mode == "graph" and context:
+        rerank_weights = context[0].get("rerank_weights") if isinstance(context[0], dict) else None
+        if rerank_weights:
+            retrieval_summary["rerank_weights"] = rerank_weights
+            pipeline["rerank_weights"] = rerank_weights
     pipeline["stages"]["retrieve"] = _stage(
         "Retrieve context",
         duration_ms,
@@ -942,6 +991,10 @@ def generate(req: GenerateRequest):
         mode=req.mode,
         pruning_method=req.pruning_method,
         use_lightweight_tools=req.use_lightweight_tools,
+        retrieval_mode=req.retrieval_mode,
+        graph_alpha=req.graph_alpha,
+        graph_w_pagerank=req.graph_w_pagerank,
+        graph_w_indegree=req.graph_w_indegree,
     )
 
 
@@ -993,7 +1046,7 @@ def _run_pipeline_streaming(
     if str(backend) not in sys.path:
         sys.path.insert(0, str(backend))
 
-    token_budget = 1800
+    token_budget = 1300
 
     # ── File-scope short-circuit ──────────────────────────────────────────
     # When the user chose "Current File" in the extension, file_context holds
@@ -1262,7 +1315,16 @@ def evaluate(req: EvaluateRequest) -> dict[str, Any]:
         structural_pipeline_stats,
     )
 
-    retrieved = call_tool("retrieve_context", req.prompt, req.top_k)
+    retrieve_mode = _normalize_retrieval_mode(req.retrieval_mode)
+    retrieved = call_tool(
+        "retrieve_context",
+        req.prompt,
+        req.top_k,
+        mode=retrieve_mode,
+        alpha=req.graph_alpha,
+        w_pagerank=req.graph_w_pagerank,
+        w_indegree=req.graph_w_indegree,
+    )
     pruned, prune_stats = prune_context_with_stats(
         req.prompt, retrieved, token_budget=req.token_budget, method=req.pruning_method
     )
@@ -1274,6 +1336,7 @@ def evaluate(req: EvaluateRequest) -> dict[str, Any]:
         "prompt": req.prompt,
         "top_k": req.top_k,
         "token_budget": req.token_budget,
+        "retrieval_mode": req.retrieval_mode,
         # Method actually applied; "selective" falls back to "heuristic" if the model is unavailable.
         "pruning_method": prune_stats.method,
         "requested_pruning_method": req.pruning_method,
@@ -1284,6 +1347,10 @@ def evaluate(req: EvaluateRequest) -> dict[str, Any]:
         },
         "structural": structural_pipeline_stats(retrieved, pruned, req.top_k),
     }
+    if retrieve_mode == "graph" and retrieved:
+        rerank_weights = retrieved[0].get("rerank_weights") if isinstance(retrieved[0], dict) else None
+        if rerank_weights:
+            out["rerank_weights"] = rerank_weights
 
     if gold:
         pr = precision_recall_at_k(retrieved, req.top_k, gold)
