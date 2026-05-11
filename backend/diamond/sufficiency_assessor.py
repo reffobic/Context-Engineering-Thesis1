@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # ── tunables ──────────────────────────────────────────────────────────────────
 
 OLLAMA_BASE_URL = "http://localhost:11434"
-DEFAULT_MODEL   = "codellama"
+DEFAULT_MODEL = "llama3.2:3b"
 REQUEST_TIMEOUT = 120   # seconds — sufficiency call is short, but give extra space just in case
 
 # Queries whose top-chunk score falls below this are escalated immediately
@@ -172,21 +172,23 @@ def assess_sufficiency(
     )
 
     payload = {
-        "model":  model,
-        "system": _SYSTEM,
-        "prompt": user_msg,
-        "stream": False,
-        "options": {"temperature": 0.0, "num_ctx": 4096},
+    "model":  model,
+    "messages": [
+        {"role": "system", "content": _SYSTEM},
+        {"role": "user",   "content": user_msg},
+    ],
+    "stream": False,
+    "options": {"temperature": 0.0, "num_ctx": 4096},
     }
 
     try:
         resp = requests.post(
-            f"{OLLAMA_BASE_URL}/api/generate",
+            f"{OLLAMA_BASE_URL}/api/chat",    # ← changed
             json=payload,
             timeout=REQUEST_TIMEOUT,
         )
         resp.raise_for_status()
-        raw = resp.json().get("response", "")
+        raw = resp.json().get("message", {}).get("content", "")
     except requests.RequestException as exc:
         logger.warning("assess_sufficiency: Ollama call failed (%s) → defaulting to LC", exc)
         # Ollama call failed
