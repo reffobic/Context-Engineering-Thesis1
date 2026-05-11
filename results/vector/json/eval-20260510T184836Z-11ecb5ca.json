@@ -1,0 +1,83 @@
+{
+  "prompt": "Answer using only CONTEXT. For each claim, name the file and quote or say not shown. How is the Superset app factory create_app wired to config loading?",
+  "top_k": 10,
+  "token_budget": 1800,
+  "pipeline_counts": {
+    "retrieved_chunks": 10,
+    "pruned_chunks": 8
+  },
+  "structural": {
+    "retrieved_top_mean_rank_score": 0.64008,
+    "retrieved_unique_paths_in_top_k": 3,
+    "retrieved_top_paths": [
+      "tests/integration_tests/base_tests.py",
+      "superset/app.py",
+      "tests/integration_tests/base_tests.py",
+      "tests/integration_tests/thumbnails_tests.py",
+      "tests/integration_tests/base_tests.py"
+    ],
+    "pruned_chunk_count": 8,
+    "pruned_unique_paths": 3,
+    "pruned_paths": [
+      "superset/app.py",
+      "superset/app.py",
+      "superset/app.py",
+      "tests/integration_tests/base_tests.py",
+      "tests/integration_tests/base_tests.py",
+      "tests/integration_tests/thumbnails_tests.py",
+      "tests/integration_tests/base_tests.py",
+      "tests/integration_tests/base_tests.py"
+    ]
+  },
+  "precision_at_k_retrieval": {
+    "k": 10,
+    "n_ranked": 10,
+    "depth_evaluated": 10,
+    "gold_files_distinct": 2,
+    "precision_at_k": 0.3,
+    "recall_at_k": 0.5,
+    "relevant_chunks_in_top_depth": 3,
+    "gold_norm_hit": [
+      "superset/app.py"
+    ],
+    "gold_norm_missed": [
+      "superset/config.py"
+    ],
+    "definition": {
+      "precision_at_k": "relevant_chunks among first depth positions / k (missing ranks count as irrelevant).",
+      "recall_at_k": "distinct gold files with at least one chunk in top min(k,n) / |distinct gold|."
+    },
+    "stage": "after_retrieval"
+  },
+  "precision_at_k_pruned": {
+    "k": 8,
+    "n_ranked": 8,
+    "depth_evaluated": 8,
+    "gold_files_distinct": 2,
+    "precision_at_k": 0.375,
+    "recall_at_k": 0.5,
+    "relevant_chunks_in_top_depth": 3,
+    "gold_norm_hit": [
+      "superset/app.py"
+    ],
+    "gold_norm_missed": [
+      "superset/config.py"
+    ],
+    "definition": {
+      "precision_at_k": "relevant_chunks among first depth positions / k (missing ranks count as irrelevant).",
+      "recall_at_k": "distinct gold files with at least one chunk in top min(k,n) / |distinct gold|."
+    },
+    "stage": "after_prune",
+    "note": "k equals len(pruned); recall counts distinct gold files still present after pruning."
+  },
+  "contextual_relevancy_retrieval": {
+    "error": "RetryError[<Future at 0x7929017213d0 state=finished raised TimeoutError>]"
+  },
+  "generation_preview": "Based on the provided context, here is how the `create_app` factory function is wired to config loading: In `superset/app.py` (lines 47–57), the `create_app` function: 1. Initializes a `SupersetApp` instance with the current module name (`app = SupersetApp(__name__)`). 2. Determines the config module by checking the `superset_config_module` argument or the `SUPERSET_CONFIG` environment variable, defaulting to `\"superset.config\"` if neither is provided (lines 54–56). 3. Loa...",
+  "faithfulness": {
+    "error": "RetryError[<Future at 0x7928a876c950 state=finished raised TimeoutError>]"
+  },
+  "metrics_json_path": "results/vector/json/eval-20260510T184836Z-11ecb5ca.json",
+  "metrics_saved_at_utc": "2026-05-10T18:48:36.019359Z",
+  "retrieval_mode": "vector"
+}

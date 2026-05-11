@@ -1,0 +1,88 @@
+{
+  "prompt": "How does create_app work in this Superset codebase? Name files and functions you rely on.",
+  "top_k": 10,
+  "token_budget": 1800,
+  "pipeline_counts": {
+    "retrieved_chunks": 10,
+    "pruned_chunks": 8
+  },
+  "structural": {
+    "retrieved_top_mean_rank_score": 0.66698,
+    "retrieved_unique_paths_in_top_k": 3,
+    "retrieved_top_paths": [
+      "tests/integration_tests/base_tests.py",
+      "superset/app.py",
+      "tests/integration_tests/base_tests.py",
+      "tests/integration_tests/base_tests.py",
+      "tests/integration_tests/base_tests.py"
+    ],
+    "pruned_chunk_count": 8,
+    "pruned_unique_paths": 3,
+    "pruned_paths": [
+      "superset/app.py",
+      "tests/integration_tests/base_tests.py",
+      "tests/integration_tests/base_tests.py",
+      "tests/integration_tests/base_tests.py",
+      "tests/integration_tests/base_tests.py",
+      "tests/integration_tests/base_tests.py",
+      "tests/integration_tests/base_tests.py",
+      "tests/integration_tests/thumbnails_tests.py"
+    ]
+  },
+  "precision_at_k_retrieval": {
+    "k": 10,
+    "n_ranked": 10,
+    "depth_evaluated": 10,
+    "gold_files_distinct": 1,
+    "precision_at_k": 0.1,
+    "recall_at_k": 1.0,
+    "relevant_chunks_in_top_depth": 1,
+    "gold_norm_hit": [
+      "superset/app.py"
+    ],
+    "gold_norm_missed": [],
+    "definition": {
+      "precision_at_k": "relevant_chunks among first depth positions / k (missing ranks count as irrelevant).",
+      "recall_at_k": "distinct gold files with at least one chunk in top min(k,n) / |distinct gold|."
+    },
+    "stage": "after_retrieval"
+  },
+  "precision_at_k_pruned": {
+    "k": 8,
+    "n_ranked": 8,
+    "depth_evaluated": 8,
+    "gold_files_distinct": 1,
+    "precision_at_k": 0.125,
+    "recall_at_k": 1.0,
+    "relevant_chunks_in_top_depth": 1,
+    "gold_norm_hit": [
+      "superset/app.py"
+    ],
+    "gold_norm_missed": [],
+    "definition": {
+      "precision_at_k": "relevant_chunks among first depth positions / k (missing ranks count as irrelevant).",
+      "recall_at_k": "distinct gold files with at least one chunk in top min(k,n) / |distinct gold|."
+    },
+    "stage": "after_prune",
+    "note": "k equals len(pruned); recall counts distinct gold files still present after pruning."
+  },
+  "contextual_relevancy_retrieval": {
+    "score": 0.8518518518518519,
+    "success": true,
+    "reason": "The score is 0.85 because most of the retrieval context information is irrelevant or redundant, such as 'def create_fake_db(self):', 'database_name = \\\\",
+    "stage": "after_retrieval",
+    "judge_model": "llama3.2:3b (Ollama)"
+  },
+  "generation_preview": "In this Superset codebase, `create_app` is defined in **`superset/app.py`**. The snippet shows a function with the same name: ```python def create_app( superset_config_module: Optional[str] = None, superset_app_root: Optional[str] = None, ) -> Flask: app = SupersetApp(__name__) try: # Allow user to override our config completely config_module = superset_config_module or os.environ.get( \"SUPERSET_CONFIG\", \"superset.config\" ) app.config.from_object(config_module) # Allow app...",
+  "faithfulness": {
+    "score": 0.55,
+    "success": true,
+    "reason": "The score is 0.55 because there are several contradictions in the actual output that do not align with the information presented in the retrieval context, including multiple definitions of `create_app`, unclear instance type of `app`, and different lines of code for loading configuration and setting `app_root`.",
+    "stage": "after_generate",
+    "judge_model": "llama3.2:3b (Ollama)",
+    "note": "Score reflects grounding in pruned CONTEXT only, not full-repo truth."
+  },
+  "metrics_json_path": "results/vector/json/eval-20260510T172806Z-b0d48e37.json",
+  "metrics_saved_at_utc": "2026-05-10T17:28:06.098183Z",
+  "retrieval_mode": "vector"
+}

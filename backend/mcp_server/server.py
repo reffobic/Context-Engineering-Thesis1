@@ -1,8 +1,11 @@
+import json
 import logging
 import time
+import uuid
 from dataclasses import asdict
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, List, Literal, Optional
 
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,6 +31,41 @@ app.add_middleware(
 )
 
 _STATIC = Path(__file__).resolve().parent / "static"
+# Repo root: backend/mcp_server/server.py → parent → backend → project root
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+
+
+def _persist_eval_metrics(
+    metrics: dict[str, Any],
+    *,
+    retrieval_mode: Literal["hybrid", "vector", "graph"],
+) -> tuple[Optional[str], Optional[str]]:
+    """
+    Write evaluate payload to ``results/{retrieval_mode}/json/eval-{timestamp}-{id}.json``.
+    Returns ``(relative_posix_path, error_message)``.
+    """
+    try:
+        safe_mode = retrieval_mode if retrieval_mode in ("hybrid", "vector", "graph") else "hybrid"
+        out_dir = _REPO_ROOT / "results" / safe_mode / "json"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        fname = f"eval-{ts}-{uuid.uuid4().hex[:8]}.json"
+        rel = f"results/{safe_mode}/json/{fname}"
+        saved_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        blob = {
+            **metrics,
+            "metrics_json_path": rel,
+            "metrics_saved_at_utc": saved_at,
+            "retrieval_mode": safe_mode,
+        }
+        path = out_dir / fname
+        with path.open("w", encoding="utf-8") as fh:
+            json.dump(blob, fh, indent=2, ensure_ascii=False, default=str)
+        logging.info("evaluate: wrote metrics JSON %s", rel)
+        return rel, None
+    except OSError as exc:
+        logging.exception("evaluate: failed to write metrics JSON")
+        return None, str(exc)
 
 
 class GenerateRequest(BaseModel):
@@ -48,6 +86,10 @@ class EvaluateRequest(BaseModel):
     relevant_files: Optional[List[str]] = None
     judge_retrieval_relevancy: bool = False
     faithfulness: bool = False
+    #: Where to store metrics JSON (``results/{mode}/json/``). Retrieval path in code may still be hybrid until vector/graph backends exist.
+    retrieval_mode: Literal["hybrid", "vector", "graph"] = "hybrid"
+    #: If true (default), persist full evaluate response under ``results/{retrieval_mode}/json/``.
+    save_metrics_json: bool = True
 
 
 def _ensure_backend_on_path() -> None:
@@ -388,5 +430,12 @@ def evaluate(req: EvaluateRequest) -> dict[str, Any]:
         except Exception as exc:  # pragma: no cover
             logging.exception("evaluate: faithfulness path failed")
             out["faithfulness"] = {"error": str(exc)}
+
+    if req.save_metrics_json:
+        rel, err = _persist_eval_metrics(out, retrieval_mode=req.retrieval_mode)
+        if rel:
+            out["metrics_json_path"] = rel
+        if err:
+            out["metrics_json_error"] = err
 
     return out

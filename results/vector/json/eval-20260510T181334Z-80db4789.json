@@ -1,0 +1,39 @@
+{
+  "prompt": "Explain the function totally_fake_superset_api_xyz_999 in this tree.",
+  "top_k": 10,
+  "token_budget": 1800,
+  "pipeline_counts": {
+    "retrieved_chunks": 10,
+    "pruned_chunks": 5
+  },
+  "structural": {
+    "retrieved_top_mean_rank_score": 0.40778,
+    "retrieved_unique_paths_in_top_k": 1,
+    "retrieved_top_paths": [
+      "superset/models/helpers.py",
+      "superset/models/helpers.py",
+      "superset/models/helpers.py",
+      "superset/models/helpers.py",
+      "superset/models/helpers.py"
+    ],
+    "pruned_chunk_count": 5,
+    "pruned_unique_paths": 1,
+    "pruned_paths": [
+      "superset/models/helpers.py",
+      "superset/models/helpers.py",
+      "superset/models/helpers.py",
+      "superset/models/helpers.py",
+      "superset/models/helpers.py"
+    ]
+  },
+  "contextual_relevancy_retrieval": {
+    "error": "RetryError[<Future at 0x7928a9aee480 state=finished raised TimeoutError>]"
+  },
+  "generation_preview": "The function `totally_fake_superset_api_xyz_999` is not present in the provided code context. The context contains functions like `_apply_series_others_grouping`, `query`, `_normalize_prequery_result_type`, `_process_orderby_expression`, and `is_alias_used_in_orderby`, but none match the requested name. To analyze `totally_fake_superset_api_xyz_999`, additional information or code snippets containing that specific function definition are required.",
+  "faithfulness": {
+    "error": "RetryError[<Future at 0x79281523bfb0 state=finished raised TimeoutError>]"
+  },
+  "metrics_json_path": "results/vector/json/eval-20260510T181334Z-80db4789.json",
+  "metrics_saved_at_utc": "2026-05-10T18:13:34.317987Z",
+  "retrieval_mode": "vector"
+}

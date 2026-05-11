@@ -563,12 +563,7 @@
         <small>POST /evaluate</small>
       </div>
       <div class="panel-body">
-        <p class="sub" style="margin:0 0 0.75rem">
-          <strong>Automatic (no gold):</strong> structural stats from retrieve + prune (counts, top paths, mean rank score on retrieved top-5).
-          <strong>Optional gold paths:</strong> one file path per line — computes precision@k and recall@k vs chunk metadata (see thesis / CLI docs).
-          <strong>Optional judge:</strong> one DeepEval contextual-relevancy call on retrieval (slow; needs <code>deepeval</code> + PyPI <code>ollama</code> + Ollama judge).
-          <strong>Faithfulness:</strong> runs inject + your Ollama answer model, then scores whether claims match pruned CONTEXT (very slow; needs same deps). Judge uses <code>EVAL_JUDGE_MODEL</code> if set, otherwise the same model as Dashboard generation (<code>agent_endpoint</code>). CPU-bound judges are slow; the API bumps DeepEval per-call timeouts when unset (override with <code>DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE</code> if needed).
-        </p>
+        
         <label for="eval-prompt">Prompt / question</label>
         <textarea id="eval-prompt" placeholder="Same style as the main dashboard prompt." rows="3"></textarea>
         <div class="eval-grid" style="margin-top:0.85rem">
@@ -580,6 +575,20 @@
             <label for="eval-budget">Token budget (prune)</label>
             <input id="eval-budget" type="number" min="200" max="8000" value="1800" />
           </div>
+          <div>
+            <label for="eval-retrieval-mode">Metrics folder (<code>results/…/json/</code>)</label>
+            <select id="eval-retrieval-mode">
+              <option value="hybrid" selected>hybrid</option>
+              <option value="vector">vector</option>
+              <option value="graph">graph</option>
+            </select>
+          </div>
+        </div>
+        <div class="row" style="margin-top:0.35rem">
+          <label style="display:flex;align-items:center;gap:0.45rem;font-weight:600;color:var(--text)">
+            <input type="checkbox" id="eval-save-json" checked />
+            Save metrics JSON under <code>results/&lt;mode&gt;/json/</code>
+          </label>
         </div>
         <label for="eval-gold" style="margin-top:0.85rem">Gold file paths (optional, one per line)</label>
         <textarea id="eval-gold" rows="4" placeholder="e.g. flask/app.py&#10;flask/blueprints.py"></textarea>
@@ -715,13 +724,18 @@
         var judgeNode = el("eval-judge");
         var faithNode = el("eval-faithfulness");
         var runFaith = !!(faithNode && faithNode.checked);
+        var modeNode = el("eval-retrieval-mode");
+        var mode = modeNode && modeNode.value ? modeNode.value : "hybrid";
+        var saveJsonNode = el("eval-save-json");
         var body = {
           prompt: prompt,
           top_k: parseInt(el("eval-top-k").value, 10) || 10,
           token_budget: parseInt(el("eval-budget").value, 10) || 1800,
           relevant_files: goldLines.length ? goldLines : null,
           judge_retrieval_relevancy: !!(judgeNode && judgeNode.checked),
-          faithfulness: runFaith
+          faithfulness: runFaith,
+          retrieval_mode: mode,
+          save_metrics_json: !!(saveJsonNode && saveJsonNode.checked)
         };
         var btnEv = el("btn-eval-run");
         if (btnEv) btnEv.disabled = true;
@@ -735,10 +749,17 @@
           var data = await requestJson("POST", "/evaluate", body);
           el("eval-raw").textContent = prettyJson(data);
           var fs = data && data.faithfulness && data.faithfulness.score != null;
+          var saved = data && data.metrics_json_path;
+          var saveErr = data && data.metrics_json_error;
+          var tail = saved
+            ? " Saved: " + data.metrics_json_path + "."
+            : saveErr
+              ? " Metrics file not written: " + data.metrics_json_error + "."
+              : "";
           setEvalStatus(
-            fs
+            (fs
               ? "Done. Faithfulness score: " + data.faithfulness.score + (data.faithfulness.success === false ? " (below threshold)" : "") + ". See JSON for reason."
-              : "Evaluation finished."
+              : "Evaluation finished.") + tail
           );
         } catch (err) {
           el("eval-raw").textContent = "{}";

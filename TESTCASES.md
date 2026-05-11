@@ -6,7 +6,7 @@
 `retrieve_context` → `prune_context` → `inject_context` → `ollama_generate`  
 plus `GET /`, `POST /index`, and scripted `backend/smoke_test.py`.
 
-**Recorded run (default):** Ollama `qwen3.5:9b`, Chroma `backend/chroma_db`, **Apache Superset** checkout indexed (see TC-10). Update the **summary table** and **detail** subsections when you re-run tests.
+**Recorded run (default):** Ollama `qwen3.5:9b`, Chroma `backend/chroma_db`, **Apache Superset** checkout indexed (see TC-08). Update the **summary table** and **detail** subsections when you re-run tests.
 
 ---
 
@@ -15,7 +15,7 @@ plus `GET /`, `POST /index`, and scripted `backend/smoke_test.py`.
 | Action      | What to do                                                                                                               |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------ |
 | **Execute** | Start the server (§2), run the command for each **TC-ID** (§4).                                                          |
-| **Record**  | Add or edit a row in §5 (summary). For **`/evaluate`** runs, also fill **§5.1** (vector / hybrid / graph). Paste commands, HTTP status, body, and logs under §6 (detailed evidence per TC). |
+| **Record**  | Add or edit a row in §5 (summary). For **`/evaluate`** runs, fill the matching file under **`results/hybrid/`**, **`results/vector/`**, or **`results/graph/`** (see each `results.md`). Paste commands, HTTP status, body, and logs under §6 (detailed evidence per TC). |
 | **Verdict** | Use **Pass**, **Partial**, or **Fail** (§7). **Partial** = acceptable with documented caveats.                        |
 
 **Per-run capture (minimum):** exact command, HTTP status, response body (or error JSON), Ollama model name (`ollama list`), optional wall time.
@@ -37,7 +37,7 @@ PYTHONPATH=.. uvicorn server:app --host 127.0.0.1 --port 8000
 
 **Optional:** `OLLAMA_NUM_PREDICT` (default `8192` in code) if answers truncate.
 
-**Evaluation API:** With the MCP server branch that exposes `POST /evaluate`, use identical JSON bodies (prompt, `top_k`, `token_budget`, optional `relevant_files`, judge flags) for each retrieval mode, then transcribe scalars into **§5.1**. *Hybrid* matches the default `retrieve_context` pipeline today; *vector* and *graph* require separate retrieval backends when implemented.
+**Evaluation API:** Where `POST /evaluate` exists, transcribe outputs into **`results/hybrid/results.md`**, **`results/vector/results.md`**, or **`results/graph/results.md`**. The API can also **`save_metrics_json`** (default **true**) to **`results/{retrieval_mode}/json/eval-*.json`**; set **`retrieval_mode`** to `vector` when logging vector-only experiments. Use the **same** request body across modes when comparing; only the retrieval backend should differ once vector/graph are implemented. Today’s default pipeline is **hybrid** (`retrieve_context`).
 
 ---
 
@@ -51,26 +51,24 @@ Use **concrete filenames and symbols** from your checkout so retrieval can ancho
 
 | TC-ID     | Name                                            | Objective                                      | Preconditions              | Pass criteria                                                                                                                                 |
 | --------- | ----------------------------------------------- | ---------------------------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| **TC-01** | Health                                          | API process reachable                          | Server up                  | `GET /` → **200**; JSON includes service message (e.g. `message`).                                                                            |
-| **TC-02** | Minimal generate                                | End-to-end `/generate`                         | Ollama + Chroma            | **200**; `output` non-empty; logs show retrieve → prune → inject → generate without traceback.                                                |
-| **TC-03** | RAG — Superset symbol                           | Answers use indexed Superset code              | Superset index             | **200**; cites plausible Superset paths; notes if implementation absent from context.                                                         |
-| **TC-04** | RAG — fake symbol                               | No invented API                                | Same index                 | **200**; states symbol not in context; no fake full implementation.                                                                          |
-| **TC-05** | Citation discipline                             | Claims tied to CONTEXT                         | Same index                 | **200**; separates shown vs not shown; minimal wrong attribution.                                                                              |
-| **TC-06** | Long-form output                                | Token budget / structure                       | Same index                 | **200**; sections complete or clean ending; verify risky details vs source if **Partial**.                                                    |
-| **TC-07** | Corpus focus (two Superset areas)               | No cross-topic hallucination                   | Same index                 | **200** each; Topic A stays grounded in retrieved Superset snippets; Topic B likewise; minimal invented files.                               |
-| **TC-08** | Empty prompt                                    | Edge input                                     | —                          | **200** or clear **4xx**; not **500**.                                                                                                        |
-| **TC-09** | Invalid JSON                                    | Client validation                              | —                          | **422** (or clear **4xx**); no server crash.                                                                                                  |
-| **TC-10** | Index API                                       | Batch indexing                                 | `repo_path` exists         | **200**; JSON stats; incremental re-run may show `files_indexed: 0`.                                                                          |
-| **TC-11** | Smoke script                                    | Automated Tier A/B                             | venv + deps                | Tier A **PASS**; Tier B runs; note **200** vs **500** for `/generate`.                                                                        |
-| **TC-12** | Superset onboarding flow                        | Trace pipeline + concrete files/functions      | Superset indexed           | **200**; names concrete Superset files/functions; honest **NOT IN CONTEXT** when missing.                                                    |
-| **TC-13** | `create_app` deep trace                         | App factory + config/env/middleware            | Same                       | **200**; file references grounded in CONTEXT.                                                                                                  |
-| **TC-14** | Middleware extraction context                   | MCP middleware grounding                       | Same                       | **200**; `_extract_context_info` behavior accurate; no invented retrieval internals for that module.                                          |
-| **TC-15** | Serializer summary behavior                     | Tool-search serializer vs tests                | Same                       | **200**; matches tests where visible; separates fact from assumption.                                                                        |
-| **TC-16** | Supported vs unsupported claims (Superset)      | Explicit NOT IN CONTEXT                        | Same                       | **200**; supported vs unsupported lists; no fabricated classes/functions.                                                                       |
-| **TC-17** | Multi-topic Superset comparison               | Stress under broad query                       | Same                       | **200**; scope boundaries; minimal cross-topic drift.                                                                                         |
-| **TC-18** | Source-first `Query` vs `SavedQuery`            | Model defs over docs/tests                     | Same (post-retrieval work) | **200**; expects `superset-core/src/superset_core/queries/models.py` when indexed; honest if absent.                                           |
-| **TC-19** | Source-first dashboard/chart/dataset models     | Core model file retrieval                       | Same                       | **200**; points to defining files in CONTEXT or **NOT IN CONTEXT**.                                                                           |
-| **TC-20** | Source-first `superset/app.py` config behavior  | Config path + precedence                        | Same                       | **200**; `superset/app.py` in evidence when indexed; precedence/fallback from context.                                                         |
+| **TC-01** | RAG — Superset symbol                           | Answers use indexed Superset code              | Superset index             | **200**; cites plausible Superset paths; notes if implementation absent from context.                                                         |
+| **TC-02** | RAG — fake symbol                               | No invented API                                | Same index                 | **200**; states symbol not in context; no fake full implementation.                                                                          |
+| **TC-03** | Citation discipline                             | Claims tied to CONTEXT                         | Same index                 | **200**; separates shown vs not shown; minimal wrong attribution.                                                                              |
+| **TC-04** | Long-form output                                | Token budget / structure                       | Same index                 | **200**; sections complete or clean ending; verify risky details vs source if **Partial**.                                                    |
+| **TC-05** | Corpus focus (two Superset areas)               | No cross-topic hallucination                   | Same index                 | **200** each; Topic A stays grounded in retrieved Superset snippets; Topic B likewise; minimal invented files.                               |
+| **TC-06** | Empty prompt                                    | Edge input                                     | —                          | **200** or clear **4xx**; not **500**.                                                                                                        |
+| **TC-07** | Invalid JSON                                    | Client validation                              | —                          | **422** (or clear **4xx**); no server crash.                                                                                                  |
+| **TC-08** | Index API                                       | Batch indexing                                 | `repo_path` exists         | **200**; JSON stats; incremental re-run may show `files_indexed: 0`.                                                                          |
+| **TC-09** | Smoke script                                    | Automated Tier A/B                             | venv + deps                | Tier A **PASS**; Tier B runs; note **200** vs **500** for `/generate`.                                                                        |
+| **TC-10** | Superset onboarding flow                        | Trace pipeline + concrete files/functions      | Superset indexed           | **200**; names concrete Superset files/functions; honest **NOT IN CONTEXT** when missing.                                                    |
+| **TC-11** | `create_app` deep trace                         | App factory + config/env/middleware            | Same                       | **200**; file references grounded in CONTEXT.                                                                                                  |
+| **TC-12** | Middleware extraction context                   | MCP middleware grounding                       | Same                       | **200**; `_extract_context_info` behavior accurate; no invented retrieval internals for that module.                                          |
+| **TC-13** | Serializer summary behavior                     | Tool-search serializer vs tests                | Same                       | **200**; matches tests where visible; separates fact from assumption.                                                                        |
+| **TC-14** | Supported vs unsupported claims (Superset)      | Explicit NOT IN CONTEXT                        | Same                       | **200**; supported vs unsupported lists; no fabricated classes/functions.                                                                       |
+| **TC-15** | Multi-topic Superset comparison               | Stress under broad query                       | Same                       | **200**; scope boundaries; minimal cross-topic drift.                                                                                         |
+| **TC-16** | Source-first `Query` vs `SavedQuery`            | Model defs over docs/tests                     | Same (post-retrieval work) | **200**; expects `superset-core/src/superset_core/queries/models.py` when indexed; honest if absent.                                           |
+| **TC-17** | Source-first dashboard/chart/dataset models     | Core model file retrieval                       | Same                       | **200**; points to defining files in CONTEXT or **NOT IN CONTEXT**.                                                                           |
+| **TC-18** | Source-first `superset/app.py` config behavior  | Config path + precedence                        | Same                       | **200**; `superset/app.py` in evidence when indexed; precedence/fallback from context.                                                         |
 
 ---
 
@@ -78,21 +76,7 @@ Use **concrete filenames and symbols** from your checkout so retrieval can ancho
 
 Use a **full URL** and a complete `-d '{...}'` JSON string. If `curl` prompts for POST body and hangs, `-d` is incomplete — Ctrl+C and fix the line.
 
-### TC-01 — `GET /`
-
-```bash
-curl -sS http://127.0.0.1:8000/
-```
-
-### TC-02 — minimal `POST /generate`
-
-```bash
-curl -sS http://127.0.0.1:8000/generate \
-  -H 'Content-Type: application/json' \
-  -d '{"prompt":"Say hello in one short sentence."}'
-```
-
-### TC-03 — Superset / RAG (real symbol)
+### TC-01 — Superset / RAG (real symbol)
 
 ```bash
 curl -sS http://127.0.0.1:8000/generate \
@@ -100,7 +84,7 @@ curl -sS http://127.0.0.1:8000/generate \
   -d '{"prompt":"How does create_app work in this Superset codebase? Name files and functions you rely on."}'
 ```
 
-### TC-04 — fake API name
+### TC-02 — fake API name
 
 ```bash
 curl -sS http://127.0.0.1:8000/generate \
@@ -108,7 +92,7 @@ curl -sS http://127.0.0.1:8000/generate \
   -d '{"prompt":"Explain the function totally_fake_superset_api_xyz_999 in this tree."}'
 ```
 
-### TC-05 — citation discipline
+### TC-03 — citation discipline
 
 ```bash
 curl -sS http://127.0.0.1:8000/generate \
@@ -116,7 +100,7 @@ curl -sS http://127.0.0.1:8000/generate \
   -d '{"prompt":"Answer using only CONTEXT. For each claim, name the file and quote or say not shown. How is the Superset app factory create_app wired to config loading?"}'
 ```
 
-### TC-06 — long-form (four sections)
+### TC-04 — long-form (four sections)
 
 ```bash
 curl -sS http://127.0.0.1:8000/generate \
@@ -124,7 +108,7 @@ curl -sS http://127.0.0.1:8000/generate \
   -d '{"prompt":"Answer in 4 numbered sections: (1) purpose of create_app (2) typical initialization (3) errors or edge cases visible in CONTEXT (4) what is not in CONTEXT. Topic: Superset application startup."}'
 ```
 
-### TC-07 — two Superset prompts (run A and B)
+### TC-05 — two Superset prompts (run A and B)
 
 **A — App factory**
 
@@ -142,7 +126,7 @@ curl -sS http://127.0.0.1:8000/generate \
   -d '{"prompt":"Where does Superset extract MCP request context (middleware) and which fields are populated?"}'
 ```
 
-### TC-08 — empty prompt
+### TC-06 — empty prompt
 
 ```bash
 curl -sS http://127.0.0.1:8000/generate \
@@ -150,7 +134,7 @@ curl -sS http://127.0.0.1:8000/generate \
   -d '{"prompt":""}'
 ```
 
-### TC-09 — invalid JSON
+### TC-07 — invalid JSON
 
 ```bash
 curl -sS http://127.0.0.1:8000/generate \
@@ -158,13 +142,13 @@ curl -sS http://127.0.0.1:8000/generate \
   -d '{bad json}'
 ```
 
-### TC-10 — `POST /index` (set your path)
+### TC-08 — `POST /index` (set your path)
 
 ```bash
 curl -sS -X POST "http://127.0.0.1:8000/index?repo_path=/absolute/path/to/superset"
 ```
 
-### TC-11 — smoke test (no HTTP client)
+### TC-09 — smoke test (no HTTP client)
 
 From repository root (directory that contains `backend/`):
 
@@ -174,7 +158,7 @@ source .venv/bin/activate
 python backend/smoke_test.py
 ```
 
-### TC-12 — Superset onboarding flow (pipeline-focused)
+### TC-10 — Superset onboarding flow (pipeline-focused)
 
 ```bash
 curl -sS http://127.0.0.1:8000/generate \
@@ -182,7 +166,7 @@ curl -sS http://127.0.0.1:8000/generate \
   -d '{"prompt":"I am onboarding to Superset. Trace exactly how a user prompt flows through your context-engineering pipeline from API entry to final model response. Name concrete files/functions involved in indexing assumptions, retrieval scoring, pruning decisions, prompt injection, and generation. End with a short architecture summary. Use only CONTEXT and say NOT IN CONTEXT if a stage file is missing."}'
 ```
 
-### TC-13 — Superset `create_app` deep trace
+### TC-11 — Superset `create_app` deep trace
 
 ```bash
 curl -sS http://127.0.0.1:8000/generate \
@@ -190,7 +174,7 @@ curl -sS http://127.0.0.1:8000/generate \
   -d '{"prompt":"Explain what create_app does in Superset and how it connects to config loading, env overrides (SUPERSET_CONFIG / SUPERSET_APP_ROOT), middleware/path handling, CLI app factory usage, and test fixtures. Use section headings and file/function references only from CONTEXT."}'
 ```
 
-### TC-14 — Superset MCP middleware context extraction
+### TC-12 — Superset MCP middleware context extraction
 
 ```bash
 curl -sS http://127.0.0.1:8000/generate \
@@ -198,7 +182,7 @@ curl -sS http://127.0.0.1:8000/generate \
   -d '{"prompt":"In superset/mcp_service/middleware.py, explain _extract_context_info precisely: input sources (message, metadata), fallback order, extracted fields (agent_id, user_id, dashboard_id, slice_id, dataset_id), and one likely failure mode. Use only CONTEXT and cite file/function names."}'
 ```
 
-### TC-15 — Superset serializer summary behavior
+### TC-13 — Superset serializer summary behavior
 
 ```bash
 curl -sS http://127.0.0.1:8000/generate \
@@ -206,7 +190,7 @@ curl -sS http://127.0.0.1:8000/generate \
   -d '{"prompt":"Based only on CONTEXT, summarize how Superset tool search serializer summary mode works: include_schemas defaults, description truncation behavior, and parameters_hint generation. Cross-check against the relevant unit tests and separate guaranteed behavior from assumptions."}'
 ```
 
-### TC-16 — Superset supported vs unsupported discipline
+### TC-14 — Superset supported vs unsupported discipline
 
 ```bash
 curl -sS http://127.0.0.1:8000/generate \
@@ -214,7 +198,7 @@ curl -sS http://127.0.0.1:8000/generate \
   -d '{"prompt":"Two sections only. (A) Three claims about Superset MCP/RAG pipeline that are supported by CONTEXT with file/function evidence. (B) Three claims that are NOT IN CONTEXT. Do not invent functions, classes, or scores."}'
 ```
 
-### TC-17 — Superset multi-topic comparison stress
+### TC-15 — Superset multi-topic comparison stress
 
 ```bash
 curl -sS http://127.0.0.1:8000/generate \
@@ -222,7 +206,7 @@ curl -sS http://127.0.0.1:8000/generate \
   -d '{"prompt":"Compare in one answer: create_app initialization flow, config/env overrides, middleware/path handling, REST API decorator routing, and MCP serializer summary mode tests in Superset. Use markdown table + concise notes per row. If evidence is missing in CONTEXT, write NOT IN CONTEXT in that row."}'
 ```
 
-### TC-18 — Superset source-first `Query` vs `SavedQuery`
+### TC-16 — Superset source-first `Query` vs `SavedQuery`
 
 ```bash
 curl -sS http://127.0.0.1:8000/generate \
@@ -230,7 +214,7 @@ curl -sS http://127.0.0.1:8000/generate \
   -d '{"prompt":"Source-first check: What is the difference between Query and SavedQuery models in Superset? Prefer model definition files over tests/docs. The expected source file is superset-core/src/superset_core/queries/models.py. If that file is not in CONTEXT, start with NOT IN CONTEXT: superset-core/src/superset_core/queries/models.py, then summarize only what is visible."}'
 ```
 
-### TC-19 — Superset source-first dashboard/chart/dataset definitions
+### TC-17 — Superset source-first dashboard/chart/dataset definitions
 
 ```bash
 curl -sS http://127.0.0.1:8000/generate \
@@ -238,7 +222,7 @@ curl -sS http://127.0.0.1:8000/generate \
   -d '{"prompt":"Source-first check: Where are dashboards, charts, and datasets defined in Superset? Prefer core source model files over docs/tests. Expected source includes superset-core/src/superset_core/common/models.py. If that file is not in CONTEXT, say NOT IN CONTEXT for it and list the retrieved files that are visible."}'
 ```
 
-### TC-20 — Superset source-first `superset/app.py` exact path
+### TC-18 — Superset source-first `superset/app.py` exact path
 
 ```bash
 curl -sS http://127.0.0.1:8000/generate \
@@ -279,79 +263,26 @@ Use these as realistic, non-research user prompts. Keep wording natural.
 
 | TC-ID | Date | Model / tool | HTTP | Verdict | Summary |
 | ----- | ---- | ------------ | ---- | ------- | ------- |
-| TC-01 | — | — | — | Pending | |
-| TC-02 | — | — | — | Pending | |
-| TC-03 | — | — | — | Pending | |
-| TC-04 | — | — | — | Pending | |
-| TC-05 | — | — | — | Pending | |
-| TC-06 | — | — | — | Pending | |
-| TC-07 | — | — | — | Pending | |
-| TC-08 | — | — | — | Pending | |
-| TC-09 | — | — | — | Pending | |
-| TC-10 | — | — | — | Pending | |
-| TC-11 | — | — | — | Pending | |
-| TC-12 | — | — | — | Pending | Superset onboarding / pipeline trace |
-| TC-13 | — | — | — | Pending | `create_app` deep trace |
-| TC-14 | — | — | — | Pending | MCP middleware extraction |
-| TC-15 | — | — | — | Pending | Serializer summary vs tests |
-| TC-16 | — | — | — | Pending | Supported vs unsupported discipline |
-| TC-17 | — | — | — | Pending | Multi-topic comparison stress |
-| TC-18 | — | — | — | Pending | Source-first Query vs SavedQuery |
-| TC-19 | — | — | — | Pending | Source-first dashboard/chart/dataset |
-| TC-20 | — | — | — | Pending | Source-first `superset/app.py` |
+| TC-01 | — | — | — | Pending | RAG — Superset symbol |
+| TC-02 | — | — | — | Pending | RAG — fake symbol |
+| TC-03 | — | — | — | Pending | Citation discipline |
+| TC-04 | — | — | — | Pending | Long-form output |
+| TC-05 | — | — | — | Pending | Corpus focus (two areas) |
+| TC-06 | — | — | — | Pending | Empty prompt |
+| TC-07 | — | — | — | Pending | Invalid JSON |
+| TC-08 | — | — | — | Pending | Index API |
+| TC-09 | — | — | — | Pending | Smoke script |
+| TC-10 | — | — | — | Pending | Superset onboarding / pipeline trace |
+| TC-11 | — | — | — | Pending | `create_app` deep trace |
+| TC-12 | — | — | — | Pending | MCP middleware extraction |
+| TC-13 | — | — | — | Pending | Serializer summary vs tests |
+| TC-14 | — | — | — | Pending | Supported vs unsupported discipline |
+| TC-15 | — | — | — | Pending | Multi-topic comparison stress |
+| TC-16 | — | — | — | Pending | Source-first Query vs SavedQuery |
+| TC-17 | — | — | — | Pending | Source-first dashboard/chart/dataset |
+| TC-18 | — | — | — | Pending | Source-first `superset/app.py` |
 
----
-
-## 5.1 Final evaluation results — vector × hybrid × graph
-
-Aggregate **`POST /evaluate`** outputs here for side-by-side comparison. Use the **same** prompt, gold paths (`relevant_files`), `top_k`, `token_budget`, and optional flags (`judge_retrieval_relevancy`, `faithfulness`) for each column; only the **retrieval backend** should differ once *vector*-only and *graph* modes exist in code.
-
-**Column guide**
-
-| Column   | Intended backend |
-| -------- | ---------------- |
-| **Vector** | Dense / embedding-only retrieval (when exposed). |
-| **Hybrid** | Current default hybrid `retrieve_context` (dense + lexical / ranking stack). |
-| **Graph**  | Graph-augmented or graph-first retrieval (*reserved — fill when wired*). |
-
-Copy numbers or short strings from the JSON; for nested blocks (e.g. long path lists), summarize (e.g. `2 paths`) or point to a saved `evaluate-*.json` file.
-
-### Results table (fill per experiment)
-
-| Metric / field (`POST /evaluate`) | Vector | Hybrid | Graph |
-| --------------------------------- | ------ | ------ | ----- |
-| **Run metadata** — date | | | |
-| **Run metadata** — git commit / branch | | | |
-| **Run metadata** — TC-ID or prompt label | | | |
-| **`top_k`** | | | |
-| **`token_budget`** | | | |
-| **`relevant_files`** (gold count; list if few) | | | |
-| **`judge_retrieval_relevancy`** / **`faithfulness`** (on/off) | | | |
-| **Judge model** (`EVAL_JUDGE_MODEL` or default) | | | |
-| `pipeline_counts.retrieved_chunks` | | | |
-| `pipeline_counts.pruned_chunks` | | | |
-| `structural.retrieved_top_mean_rank_score` | | | |
-| `structural.retrieved_unique_paths_in_top_k` | | | |
-| `structural.pruned_chunk_count` | | | |
-| `structural.pruned_unique_paths` | | | |
-| `structural.retrieved_top_paths` (summary or first files) | | | |
-| `structural.pruned_paths` (summary or first files) | | | |
-| `precision_at_k_retrieval.precision_at_k` | | | |
-| `precision_at_k_retrieval.recall_at_k` | | | |
-| `precision_at_k_retrieval.relevant_chunks_in_top_depth` | | | |
-| `precision_at_k_pruned.precision_at_k` | | | |
-| `precision_at_k_pruned.recall_at_k` | | | |
-| `precision_at_k_pruned.relevant_chunks_in_top_depth` | | | |
-| `contextual_relevancy_retrieval.score` | | | |
-| `contextual_relevancy_retrieval.success` | | | |
-| `contextual_relevancy_retrieval.error` (if any) | | | |
-| `generation_preview` (first line / char count) | | | |
-| `faithfulness.score` | | | |
-| `faithfulness.success` | | | |
-| `faithfulness.error` (if any) | | | |
-| **Reviewer notes** (variance, failures, index hash) | | | |
-
-*Rows with no gold labels omit P/R fields; rows with judges off omit relevancy/faithfulness. Delete unused rows or mark N/A in all three columns.*
+**Evaluation spreadsheets:** Metric tables for **`POST /evaluate`** (per retrieval mode / per TC) live under **`results/hybrid/results.md`**, **`results/vector/results.md`**, and **`results/graph/results.md`** — copy the shared template or duplicate a TC subsection for extra runs.
 
 ---
 
@@ -360,34 +291,24 @@ Copy numbers or short strings from the JSON; for nested blocks (e.g. long path l
 For each TC: **command** (exact), **HTTP status**, **response** (full JSON or abridged), **server log** (representative lines), **reviewer verdict / notes**.  
 When you re-run a test, **replace or append** dated sub-bullets so this file stays the authoritative record.
 
-### TC-01 — Health check
+### TC-01 through TC-18 — Superset RAG, API edges, and stress
 
-- **Command:** `curl -sS http://127.0.0.1:8000/`
-- **Pass criteria:** `200`; JSON includes e.g. `message` and `ui`.
+- Add dated evidence here after each run (HTTP status, abridged `output`, pipeline stage notes, reviewer verdict). Match commands in §4.
 
-### TC-02 — Minimal `POST /generate`
-
-- **Command:** See §4 TC-02.
-- **Notes:** Confirms full pipeline completes without Python traceback. Retrieval still runs for a trivial prompt.
-
-### TC-03 through TC-20 — Superset RAG and stress
-
-- Add dated evidence here after each run (HTTP status, abridged `output`, pipeline stage notes, reviewer verdict).
-
-### TC-08 — Empty prompt
+### TC-06 — Empty prompt
 
 - **Pass criteria:** `200` or clear `4xx`, not `500`.
 
-### TC-09 — Invalid JSON
+### TC-07 — Invalid JSON
 
 - **Pass criteria:** `422` (or clear `4xx`); no crash.
 
-### TC-10 — `POST /index`
+### TC-08 — `POST /index`
 
 - **Command:** See §4; set `repo_path` to your Superset checkout.
 - **Notes:** `files_indexed: 0` on repeat runs usually means incremental mode and unchanged files. For a full rebuild, reset `backend/chroma_db` / hash cache per indexer docs.
 
-### TC-11 — `backend/smoke_test.py`
+### TC-09 — `backend/smoke_test.py`
 
 - **Command:** See §4.
 - **Notes:** Tier B uses in-process `TestClient`, not necessarily your live `:8000` socket. **200** vs **500** on `/generate` depends on Ollama + index state.
@@ -404,12 +325,3 @@ When you re-run a test, **replace or append** dated sub-bullets so this file sta
 | **Mixed**   | Multiple runs on the same TC disagree; document each run under §6.                         |
 
 **Reviewer checklist:** truncation, hallucination, wrong repository/corpus, citation mismatch, unexpected **500**.
-
----
-
-## 8. Related automation
-
-- `backend/smoke_test.py` — Tier A (no Chroma/Ollama for A) and Tier B (full app import + TestClient). Overlaps **TC-11**; does not replace live **curl** checks.
-- **`POST /evaluate`** (when enabled in `server.py`) — structural + optional gold P/R@k, contextual relevancy, faithfulness; tabulate cross-mode results in **§5.1**.
-- **Unit tests:** e.g. `pytest tests/backend/test_pruning.py` — not covered by this manual sheet.
-- Increase `OLLAMA_NUM_PREDICT` if long table answers truncate mid-response.
