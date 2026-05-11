@@ -312,7 +312,22 @@ def run_pipeline(user_prompt: str, mode: str = "SELF_ROUTE") -> dict:
         logging.info(
             "Route decision: %s (confidence=%s)", decision["route"], decision["confidence"]
         )
-        if decision["route"] == "LC":
+        if decision["route"] == "UNANSWERABLE":
+            logging.info("Query deemed unanswerable — returning early")
+            pipeline["stages"]["generate"] = _stage(
+                "Generate answer", 0,
+                {
+                    "output_type": "str",
+                    "output_chars": 0,
+                    "preview": "This question cannot be answered from the indexed codebase.",
+                },
+                "This question cannot be answered from the indexed codebase.",
+            )
+            return {
+                "output": "This question cannot be answered from the indexed codebase.",
+                "pipeline": pipeline,
+            }
+        elif decision["route"] == "LC":
             logging.info("Escalating to LC — using parent_context")
             context_for_injection = _build_lc_chunks(context)
         else:

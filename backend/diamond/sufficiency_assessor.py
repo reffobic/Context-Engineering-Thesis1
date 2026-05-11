@@ -41,30 +41,23 @@ SCORE_SHORTCUT_THRESHOLD = 0.30
 _SYSTEM = """\
 You are a routing judge for a code-search RAG system.
 You will be given a user query and a set of retrieved code chunks.
-Your job is to decide whether the chunks are sufficient to answer the query.
+Your job is to decide how to route the query.
 
 Reply ONLY with a JSON object — no markdown, no explanation outside the JSON.
 Schema:
 {
-  "sufficient": true | false,
+  "route": "RAG" | "LC" | "UNANSWERABLE",
   "confidence": "high" | "medium" | "low",
   "reason": "<one sentence>"
 }
 
 Rules:
-- sufficient=true  → the chunks contain enough information to answer the query directly.
-- sufficient=false → key information is missing; a broader search is needed.
+- RAG         → the chunks contain enough information to answer directly.
+- LC          → key information is missing but likely exists elsewhere in the codebase.
+- UNANSWERABLE → the query cannot be answered from this codebase at all
+                 (e.g. asking about a feature that doesn't exist, out-of-scope question,
+                 or requires external knowledge the code cannot provide).
 - confidence reflects how certain you are of your judgment.
-"""
-
-_USER_TEMPLATE = """\
-QUERY:
-{query}
-
-RETRIEVED CHUNKS ({n} chunks):
-{chunks}
-
-Is the context sufficient to answer the query? Reply with JSON only.
 """
 
 def _format_chunks(items: list[dict[str, Any]]) -> str:
@@ -91,37 +84,40 @@ def _top_score(items: list[dict[str, Any]]) -> float | None:
 
 
 def _parse_response(raw: str) -> dict[str, Any]:
-    """Extract JSON from the model reply, stripping think-tags and fences."""
     s = raw.strip()
 
-    # strip </think> and everything before it (Qwen-style reasoning)
     for marker in ("</think>", "</Think>"):
         if marker in s:
             s = s.split(marker, 1)[-1].strip()
 
-    # strip markdown fences
     if s.startswith("```"):
         lines = s.splitlines()
         s = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:]).strip()
 
-    # find first {...}
     m = re.search(r"\{[\s\S]*?\}", s)
     if m:
         s = m.group(0)
 
     data = json.loads(s)
 
-    sufficient = bool(data.get("sufficient", False))
+    route = str(data.get("route", "LC")).upper()
+    if route not in ("RAG", "LC", "UNANSWERABLE"):
+        route = "LC"
+
+    # backwards compat: if model returns sufficient=true/false instead of route
+    if "sufficient" in data and "route" not in data:
+        route = "RAG" if data["sufficient"] else "LC"
+
     confidence = str(data.get("confidence", "low")).lower()
     if confidence not in ("high", "medium", "low"):
         confidence = "low"
     reason = str(data.get("reason", ""))
 
     return {
-        "sufficient": sufficient,
+        "sufficient": route == "RAG",
         "confidence": confidence,
         "reason":     reason,
-        "route":      "RAG" if sufficient else "LC",
+        "route":      route,
     }
 
 
@@ -151,11 +147,14 @@ def assess_sufficiency(
 
     # ── score-based shortcut ──────────────────────────────────────────────────
     top = _top_score(chunks)
+    # score shortcut stays LC (not UNANSWERABLE — we don't know, just bad retrieval)
     if top is not None and top < SCORE_SHORTCUT_THRESHOLD:
-        logger.info(
-            "assess_sufficiency: top score %.3f < %.3f threshold → LC (no LLM call)",
-            top, SCORE_SHORTCUT_THRESHOLD,
-        )
+        return {
+            "sufficient": False,
+            "confidence": "high",
+            "reason":     f"Top retrieval score {top:.3f} is below threshold.",
+            "route":      "LC",
+        }
         return {
             "sufficient": False,
             "confidence": "high",
