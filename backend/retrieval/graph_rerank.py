@@ -120,6 +120,10 @@ def _ensure_loaded(graph_path: Optional[Path] = None) -> bool:
     global _NODE_INDEX, _LOAD_PATH
     target = Path(graph_path) if graph_path else DEFAULT_GRAPH_PATH
     if _NODE_INDEX is not None and _LOAD_PATH == target:
+        # First attempt may have failed (missing sidecar). Retry if indexing
+        # created ``call_graph.json`` while the server stayed up.
+        if _LOAD_FAILED and target.exists():
+            return _load_graph(target)
         return not _LOAD_FAILED
     return _load_graph(target)
 

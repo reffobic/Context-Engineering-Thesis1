@@ -1,7 +1,7 @@
 # Endpoint for tool_registry.py
 from pathlib import Path # For absolute path that is not machine specific
 
-from .code_indexer import CodeIndexer, LANGUAGE_MAP
+from .code_indexer import CHROMA_GET_BATCH_SIZE, CodeIndexer, LANGUAGE_MAP
 
 BASE_DIR = Path(__file__).resolve().parent.parent  # goes up to backend/
 
@@ -61,36 +61,51 @@ def get_index_summary(file_limit: int = 500) -> dict:
             "end_line": None,
         }
 
-    rows = indexer.collection.get(include=["metadatas"])
-    for meta in rows.get("metadatas", []) or []:
-        path = meta.get("file_path", "") or "(unknown path)"
-        entry = files.setdefault(
-            path,
-            {
-                "path": path,
-                "language": meta.get("language") or _language_from_path(path),
-                "extension": Path(path).suffix.lower() or "(none)",
-                "chunks": 0,
-                "chunk_types": {},
-                "symbols": [],
-                "start_line": None,
-                "end_line": None,
-            },
+    batch = max(1, CHROMA_GET_BATCH_SIZE)
+    offset = 0
+    while True:
+        rows = indexer.collection.get(
+            include=["metadatas"],
+            limit=batch,
+            offset=offset,
         )
-        entry["chunks"] += 1
-        chunk_type = meta.get("chunk_type") or "unknown"
-        entry["chunk_types"][chunk_type] = entry["chunk_types"].get(chunk_type, 0) + 1
+        metas = rows.get("metadatas") or []
+        if not metas:
+            break
+        for meta in metas:
+            if not meta:
+                continue
+            path = meta.get("file_path", "") or "(unknown path)"
+            entry = files.setdefault(
+                path,
+                {
+                    "path": path,
+                    "language": meta.get("language") or _language_from_path(path),
+                    "extension": Path(path).suffix.lower() or "(none)",
+                    "chunks": 0,
+                    "chunk_types": {},
+                    "symbols": [],
+                    "start_line": None,
+                    "end_line": None,
+                },
+            )
+            entry["chunks"] += 1
+            chunk_type = meta.get("chunk_type") or "unknown"
+            entry["chunk_types"][chunk_type] = entry["chunk_types"].get(chunk_type, 0) + 1
 
-        name = meta.get("name")
-        if name and name not in entry["symbols"] and len(entry["symbols"]) < 8:
-            entry["symbols"].append(name)
+            name = meta.get("name")
+            if name and name not in entry["symbols"] and len(entry["symbols"]) < 8:
+                entry["symbols"].append(name)
 
-        start = meta.get("start_line")
-        end = meta.get("end_line")
-        if isinstance(start, int):
-            entry["start_line"] = start if entry["start_line"] is None else min(entry["start_line"], start)
-        if isinstance(end, int):
-            entry["end_line"] = end if entry["end_line"] is None else max(entry["end_line"], end)
+            start = meta.get("start_line")
+            end = meta.get("end_line")
+            if isinstance(start, int):
+                entry["start_line"] = start if entry["start_line"] is None else min(entry["start_line"], start)
+            if isinstance(end, int):
+                entry["end_line"] = end if entry["end_line"] is None else max(entry["end_line"], end)
+        if len(metas) < batch:
+            break
+        offset += len(metas)
 
     file_list = sorted(files.values(), key=lambda item: item["path"])
     total_files = len(file_list)

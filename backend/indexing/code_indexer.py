@@ -60,6 +60,8 @@ DEFAULT_COLLECTION = "code_embeddings"
 MAX_CHUNK_TOKENS   = 512
 CONTEXT_SEPARATOR  = "\n\n--- RAW CODE ---\n"
 DEFAULT_INDEX_MAX_FILES = int(os.getenv("INDEX_MAX_FILES", "600"))
+# Chroma ``get()`` without a limit can hit SQLite "too many SQL variables" on large collections.
+CHROMA_GET_BATCH_SIZE = int(os.getenv("CHROMA_GET_BATCH_SIZE", "400"))
 DEFAULT_EMBED_BATCH_SIZE = int(os.getenv("INDEX_EMBED_BATCH_SIZE", "16"))
 DEFAULT_CACHE_SAVE_INTERVAL = int(os.getenv("INDEX_CACHE_SAVE_INTERVAL", "50"))
 INDEX_SCHEMA_VERSION = "contextual-v2"
@@ -750,27 +752,45 @@ class CodeIndexer:
         The retriever constructs the BM25 object at query time from this compact
         JSON so indexing owns freshness and retrieval stays dependency-light.
         """
-        rows = self.collection.get(include=["documents", "metadatas"])
-        docs = rows.get("documents", []) or []
-        metas = rows.get("metadatas", []) or []
-        records = []
-        for doc, meta in zip(docs, metas):
-            chunk_id = meta.get("chunk_id") or _sha256(
-                f"{meta.get('file_path', '')}:{meta.get('start_line', 0)}"
+        records: list[dict] = []
+        batch = max(1, CHROMA_GET_BATCH_SIZE)
+        offset = 0
+        logger.info(
+            "BM25 rebuild: reading Chroma in batches of %d (avoid SQLite variable limit)",
+            batch,
+        )
+        while True:
+            rows = self.collection.get(
+                include=["documents", "metadatas"],
+                limit=batch,
+                offset=offset,
             )
-            records.append({
-                "chunk_id": chunk_id,
-                "document": doc,
-                "tokens": tokenize_for_bm25(doc),
-                "metadata": {
-                    "file_path": meta.get("file_path", ""),
-                    "name": meta.get("name", ""),
-                    "language": meta.get("language", ""),
-                    "chunk_type": meta.get("chunk_type", ""),
-                    "start_line": meta.get("start_line", 0),
-                    "end_line": meta.get("end_line", 0),
-                },
-            })
+            docs = rows.get("documents") or []
+            metas = rows.get("metadatas") or []
+            if not docs and not metas:
+                break
+            for doc, meta in zip(docs, metas):
+                if meta is None:
+                    meta = {}
+                chunk_id = meta.get("chunk_id") or _sha256(
+                    f"{meta.get('file_path', '')}:{meta.get('start_line', 0)}"
+                )
+                records.append({
+                    "chunk_id": chunk_id,
+                    "document": doc,
+                    "tokens": tokenize_for_bm25(doc),
+                    "metadata": {
+                        "file_path": meta.get("file_path", ""),
+                        "name": meta.get("name", ""),
+                        "language": meta.get("language", ""),
+                        "chunk_type": meta.get("chunk_type", ""),
+                        "start_line": meta.get("start_line", 0),
+                        "end_line": meta.get("end_line", 0),
+                    },
+                })
+            if len(docs) < batch:
+                break
+            offset += len(docs)
 
         payload = {
             "version": 1,
@@ -785,11 +805,26 @@ class CodeIndexer:
     # ── stats ─────────────────────────────────────────────────────────────────
     def index_stats(self) -> dict:
         total   = self.collection.count()
-        results = self.collection.get(include=["metadatas"])
         langs, types = {}, {}
-        for m in results.get("metadatas", []):
-            l = m.get("language",   "?"); langs[l]  = langs.get(l,  0) + 1
-            t = m.get("chunk_type", "?"); types[t]  = types.get(t,  0) + 1
+        batch = max(1, CHROMA_GET_BATCH_SIZE)
+        offset = 0
+        while True:
+            results = self.collection.get(
+                include=["metadatas"],
+                limit=batch,
+                offset=offset,
+            )
+            metas = results.get("metadatas") or []
+            if not metas:
+                break
+            for m in metas:
+                if not m:
+                    continue
+                l = m.get("language",   "?"); langs[l]  = langs.get(l,  0) + 1
+                t = m.get("chunk_type", "?"); types[t]  = types.get(t,  0) + 1
+            if len(metas) < batch:
+                break
+            offset += len(metas)
         return {
             "total_chunks":  total,
             "by_language":   langs,
