@@ -60,6 +60,18 @@ def normalize_ollama_metric_json(raw: Optional[str]) -> str:
             s = m.group(0).strip()
 
     s = _strip_leading_fenced_json(s)
+
+    # Drop trailing characters after the JSON value (e.g. model reasoning appended
+    # after the closing brace).  raw_decode stops exactly at the end of the first
+    # valid JSON token so we can safely truncate anything that follows.
+    if s.startswith(("{", "[")):
+        try:
+            decoder = json.JSONDecoder()
+            _, end_idx = decoder.raw_decode(s)
+            s = s[:end_idx]
+        except json.JSONDecodeError:
+            pass
+
     return s.strip()
 
 

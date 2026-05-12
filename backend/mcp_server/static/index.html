@@ -452,6 +452,12 @@
         <div class="panel-body">
           <label for="user-prompt">User request</label>
           <textarea id="user-prompt" name="user_prompt" placeholder="e.g. Explain how retrieval finds code for a Flask route." autocomplete="off"></textarea>
+          <label for="generate-mode" style="margin-top:0.6rem">Context route</label>
+          <select id="generate-mode" name="mode">
+            <option value="SELF_ROUTE" selected>SELF (diamond — judge picks RAG vs LC)</option>
+            <option value="RAG">RAG (always pruned chunks)</option>
+            <option value="LC">LC (always parent / large context)</option>
+          </select>
           <div class="row">
             <button type="button" class="primary" id="btn-generate">Run pipeline</button>
             <button type="button" class="secondary" id="btn-index">Index default repo</button>
@@ -905,6 +911,7 @@
       }
 
       function renderPruned(stage) {
+        if (!stage) return "";
         var summary = stage && stage.summary ? stage.summary : {};
         var stats = summary.stats || {};
         var chunks = summary.kept_chunks || [];
@@ -926,6 +933,7 @@
       }
 
       function renderInjected(stage) {
+        if (!stage) return "";
         var summary = stage && stage.summary ? stage.summary : {};
         return "<div class=\"item\"><div class=\"item-title\">Prompt injection</div>" +
           "<div class=\"item-meta\">System: " + formatNum(summary.system_chars) + " chars. User: " + formatNum(summary.user_chars) +
@@ -935,6 +943,7 @@
       }
 
       function renderGenerated(stage) {
+        if (!stage) return "";
         var summary = stage && stage.summary ? stage.summary : {};
         return "<div class=\"item\"><div class=\"item-title\">Generation</div>" +
           "<div class=\"item-meta\">Output type: " + escapeHtml(summary.output_type || "") +
@@ -986,7 +995,9 @@
         });
         setWorking(true, "Running retrieve, prune, inject, and Ollama...");
         try {
-          var data = await requestJson("POST", "/generate", { prompt: prompt });
+          var modeNode = el("generate-mode");
+          var routeMode = modeNode && modeNode.value ? modeNode.value : "SELF_ROUTE";
+          var data = await requestJson("POST", "/generate", { prompt: prompt, mode: routeMode });
           var out = data.output;
           outputEl.textContent = out == null || out === "" ? "(empty output from server)" : (typeof out === "string" ? out : prettyJson(out));
           el("pipeline-raw").textContent = prettyJson(data);

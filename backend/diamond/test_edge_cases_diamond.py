@@ -233,17 +233,24 @@ PARSE_CASES = [
 
 THRESHOLDS = [0.10, 0.20, 0.30, 0.40, 0.50, 0.60]
 
+SWEEP_QUERY = "What class handles security and permission checks in Superset?"
+
 SWEEP_CHUNKS = [
     {"name": "score_0.15", "final_score": 0.15,
-     "text": "def foo(): pass", "path": "a.py", "symbol": "foo", "language": "python"},
+     "text": "class SupersetSecurityManager: handles all permission checks",
+     "path": "superset/security/manager.py", "symbol": "SupersetSecurityManager", "language": "python"},
     {"name": "score_0.25", "final_score": 0.25,
-     "text": "def foo(): pass", "path": "a.py", "symbol": "foo", "language": "python"},
+     "text": "class SupersetSecurityManager: handles all permission checks",
+     "path": "superset/security/manager.py", "symbol": "SupersetSecurityManager", "language": "python"},
     {"name": "score_0.35", "final_score": 0.35,
-     "text": "def foo(): pass", "path": "a.py", "symbol": "foo", "language": "python"},
+     "text": "class SupersetSecurityManager: handles all permission checks",
+     "path": "superset/security/manager.py", "symbol": "SupersetSecurityManager", "language": "python"},
     {"name": "score_0.45", "final_score": 0.45,
-     "text": "def foo(): pass", "path": "a.py", "symbol": "foo", "language": "python"},
+     "text": "class SupersetSecurityManager: handles all permission checks",
+     "path": "superset/security/manager.py", "symbol": "SupersetSecurityManager", "language": "python"},
     {"name": "score_0.55", "final_score": 0.55,
-     "text": "def foo(): pass", "path": "a.py", "symbol": "foo", "language": "python"},
+     "text": "class SupersetSecurityManager: handles all permission checks",
+     "path": "superset/security/manager.py", "symbol": "SupersetSecurityManager", "language": "python"},
 ]
 
 

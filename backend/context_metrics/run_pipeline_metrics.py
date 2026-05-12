@@ -201,19 +201,20 @@ def metric_result(metric: Any, stage: str) -> dict[str, Any]:
 
 
 def _default_judge_ollama_model() -> str:
-    """Prefer EVAL_JUDGE_MODEL, else the same model as ``OllamaAgent`` (generation), else a common default."""
+    """Judge model for DeepEval metrics.
+
+    Resolution order:
+      1. ``EVAL_JUDGE_MODEL`` env var (lets ops override without code changes).
+      2. Hardcoded default: ``llama3.2:3b`` — small, fast, returns clean JSON
+         (no ``<think>`` reasoning blocks like Qwen does).
+
+    The generation agent model is intentionally **not** used as a fallback so a
+    slow 9B thinking model doesn't get pulled into eval by accident.
+    """
     env = (os.environ.get("EVAL_JUDGE_MODEL") or "").strip()
     if env:
         return env
-    try:
-        from agent.agent_endpoint import agent
-
-        m = getattr(agent, "model", None)
-        if isinstance(m, str) and m.strip():
-            return m.strip()
-    except Exception:
-        pass
-    return "qwen3.5:9b"
+    return "llama3.2:3b"
 
 
 def _judge_generation_kwargs() -> dict[str, Any]:

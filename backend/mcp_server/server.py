@@ -319,12 +319,12 @@ def run_pipeline(user_prompt: str, mode: str = "SELF_ROUTE") -> dict:
                 {
                     "output_type": "str",
                     "output_chars": 0,
-                    "preview": "This question cannot be answered from the indexed codebase.",
+                    "preview": "This question cannot be answered from the indexed codebase. Please provide more relevant context to get a correct answer.",
                 },
-                "This question cannot be answered from the indexed codebase.",
+                "This question cannot be answered from the indexed codebase. Please provide more relevant context to get a correct answer.",
             )
             return {
-                "output": "This question cannot be answered from the indexed codebase.",
+                "output": "This question cannot be answered from the indexed codebase. Please provide more relevant context to get a correct answer.",
                 "pipeline": pipeline,
             }
         elif decision["route"] == "LC":

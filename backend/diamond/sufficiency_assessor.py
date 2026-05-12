@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # ── tunables ──────────────────────────────────────────────────────────────────
 
 OLLAMA_BASE_URL = "http://localhost:11434"
-DEFAULT_MODEL = "llama3.2:3b"
+DEFAULT_MODEL = "qwen3.5:4b"
 REQUEST_TIMEOUT = 120   # seconds — sufficiency call is short, but give extra space just in case
 
 # Queries whose top-chunk score falls below this are escalated immediately
@@ -43,7 +43,8 @@ You are a routing judge for a code-search RAG system.
 You will be given a user query and a set of retrieved code chunks.
 Your job is to decide how to route the query.
 
-Reply ONLY with a JSON object — no markdown, no explanation outside the JSON.
+Reply ONLY with valid JSON — no markdown, no explanation outside the JSON.
+Always quote string values properly.
 Schema:
 {
   "route": "RAG" | "LC" | "UNANSWERABLE",
@@ -52,12 +53,16 @@ Schema:
 }
 
 Rules:
-- RAG         → the chunks contain enough information to answer directly.
-- LC          → key information is missing but likely exists elsewhere in the codebase.
-- UNANSWERABLE → the query cannot be answered from this codebase at all
-                 (e.g. asking about a feature that doesn't exist, out-of-scope question,
-                 or requires external knowledge the code cannot provide).
-- confidence reflects how certain you are of your judgment.
+- RAG → chunks contain enough information to answer directly.
+- LC  → answer likely exists in the codebase but not in these chunks.
+        Use this when the query is about a real feature of this codebase
+        but the retrieved chunks missed the right file.
+- UNANSWERABLE → the query cannot be answered from this codebase at all.
+        Use this when:
+        * the query asks about a feature this software does not have
+        * the query is about a completely different technology or domain
+        * the query requires knowledge that no source file could contain
+        Do NOT use LC as a fallback when the question is out of scope.
 """
 
 def _format_chunks(items: list[dict[str, Any]]) -> str:
@@ -82,6 +87,14 @@ def _top_score(items: list[dict[str, Any]]) -> float | None:
                 pass
     return None
 
+def _clean_json(s: str) -> str:
+    # fix: "reason": Some text without opening quote"
+    s = re.sub(
+        r'"reason":\s*([^"\n{[][^\n]*)',
+        lambda m: '"reason": "' + m.group(1).strip().rstrip('"}') + '"',
+        s
+    )
+    return s
 
 def _parse_response(raw: str) -> dict[str, Any]:
     s = raw.strip()
@@ -98,7 +111,11 @@ def _parse_response(raw: str) -> dict[str, Any]:
     if m:
         s = m.group(0)
 
-    data = json.loads(s)
+    # try raw first, then cleaned
+    try:
+        data = json.loads(s)
+    except json.JSONDecodeError:
+        data = json.loads(_clean_json(s))
 
     route = str(data.get("route", "LC")).upper()
     if route not in ("RAG", "LC", "UNANSWERABLE"):
@@ -164,10 +181,10 @@ def assess_sufficiency(
 
     # ── LLM call ─────────────────────────────────────────────────────────────
     chunk_text = _format_chunks(chunks)
-    user_msg   = _USER_TEMPLATE.format(
-        query=query,
-        n=len(chunks),
-        chunks=chunk_text,
+    user_msg = (
+        f"QUERY:\n{query}\n\n"
+        f"RETRIEVED CHUNKS ({len(chunks)} chunks):\n{chunk_text}\n\n"
+        "Is the context sufficient to answer the query? Reply with JSON only."
     )
 
     payload = {
