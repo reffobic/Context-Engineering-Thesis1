@@ -4,8 +4,13 @@
 chromadb>=0.4.0
 sentence-transformers>=2.2.0
 rank-bm25>=0.2.2
+numpy>=1.20.0
 # Newer transformers need PIL.Image.Resampling (avoid Debian/Ubuntu system python3-pil shadowing).
 pillow>=10
+
+# Graph-based embeddings (optional GraphCodeBERT — leave commented unless needed)
+# transformers>=4.30.0
+# torch>=2.0.0
 
 # Already used by P1 (listed here for completeness)
 fastapi>=0.100.0

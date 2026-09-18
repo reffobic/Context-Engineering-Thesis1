@@ -3,12 +3,20 @@
 import json
 import os
 import re
+import logging
 import chromadb
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Optional
 
 from indexing.sentence_model import get_sentence_transformer
+
+try:
+    from retrieval.hybrid_retrieval import enhance_ranking_with_structure
+    _STRUCTURE_RERANK = True
+except ImportError:  # pragma: no cover
+    enhance_ranking_with_structure = None  # type: ignore[misc, assignment]
+    _STRUCTURE_RERANK = False
 
 try:
     from rank_bm25 import BM25Okapi
@@ -551,6 +559,17 @@ def hybrid_retrieve(query: str, top_k: int = 5) -> list[dict]:
 
     diagnostics = _retrieval_diagnostics(query_plan, streams, scored)
     scored.sort(key=lambda x: x["hybrid_score"], reverse=True)
+
+    # Optional PageRank / degree boost from call_graph.json (graph-embeddings).
+    if _STRUCTURE_RERANK and enhance_ranking_with_structure is not None:
+        try:
+            scored = enhance_ranking_with_structure(scored, CHROMA_PATH)
+            scored.sort(key=lambda x: x.get("hybrid_score", 0), reverse=True)
+        except Exception as exc:
+            logging.getLogger("retrieval_tool").debug(
+                "Structural re-rank skipped: %s", exc
+            )
+
     for item in scored:
         item["retrieval_diagnostics"] = diagnostics
     return scored

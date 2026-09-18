@@ -37,6 +37,20 @@ register_tool("prune_context", prune_context)
 #--------------------------------------------------------------------------
 
 
+# Graph visualization (from graph-embeddings) -----------------------------
+def _load_visualize_graph():
+    from retrieval.graph_visualization_tool import visualize_graph
+    return visualize_graph
+
+
+def visualize_graph_wrapper(*args, **kwargs):
+    return _load_visualize_graph()(*args, **kwargs)
+
+
+register_tool("visualize_graph", visualize_graph_wrapper)
+#--------------------------------------------------------------------------
+
+
 # Injection ----------------------------------------------------------------
 register_tool("inject_context", inject_context)
 #--------------------------------------------------------------------------
