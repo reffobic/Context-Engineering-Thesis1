@@ -776,23 +776,49 @@
       vscode.postMessage({ type: 'showError', text: 'Start the server first before indexing.' });
       return;
     }
+    const repoPath = state.workspacePath;
+    const shortPath = repoPath ? '...' + repoPath.split('/').slice(-2).join('/') : 'workspace';
     indexProgress.classList.remove('hidden');
-    document.getElementById('indexProgressText').textContent = 'Indexing workspace…';
+    const progressText = document.getElementById('indexProgressText');
+    progressText.textContent = `Indexing ${shortPath} (may take 1-5 min for large repos)...`;
 
     try {
       const url = new URL(`http://127.0.0.1:${state.port}/index`);
-      if (state.workspacePath) {
-        url.searchParams.set('repo_path', state.workspacePath);
-      }
-      const resp = await fetch(url.toString(), { method: 'POST' });
+      if (repoPath) { url.searchParams.set('repo_path', repoPath); }
+      // 10-minute timeout — large repos need time
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10 * 60 * 1000);
+      const resp = await fetch(url.toString(), { method: 'POST', signal: controller.signal });
+      clearTimeout(timer);
+      if (!resp.ok) { throw new Error('HTTP ' + resp.status); }
       const data = await resp.json();
-      const count = data.index_summary?.total_files || data.indexed_files || '?';
-      document.getElementById('indexProgressText').textContent = `✔ Indexed ${count} files`;
-      setTimeout(() => indexProgress.classList.add('hidden'), 3000);
+      const summary = data.index_summary || {};
+      const files = summary.total_files != null ? summary.total_files : (data.indexed_files || '?');
+      const chunks = summary.total_chunks != null ? summary.total_chunks : '?';
+      progressText.textContent = `Indexed ${files} files / ${chunks} chunks — Workspace queries ready!`;
+      setTimeout(() => indexProgress.classList.add('hidden'), 6000);
     } catch (err) {
-      document.getElementById('indexProgressText').textContent = `⚠ Index error: ${err.message}`;
-      setTimeout(() => indexProgress.classList.add('hidden'), 4000);
+      const msg = err.name === 'AbortError'
+        ? 'Indexing timed out (>10 min). Try a smaller directory.'
+        : 'Index error: ' + err.message;
+      progressText.textContent = msg;
+      setTimeout(() => indexProgress.classList.add('hidden'), 6000);
     }
+  }
+
+  async function checkIndexStatus() {
+    try {
+      const resp = await fetch(`http://127.0.0.1:${state.port}/index/summary`);
+      if (!resp.ok) { return; }
+      const data = await resp.json();
+      const chunks = data.total_chunks != null ? data.total_chunks : 0;
+      if (chunks === 0) {
+        const progressText = document.getElementById('indexProgressText');
+        indexProgress.classList.remove('hidden');
+        progressText.innerHTML = 'Workspace index is empty. Click <strong>+</strong> in the header to index first.';
+        setTimeout(() => indexProgress.classList.add('hidden'), 10000);
+      }
+    } catch { /* server not ready yet */ }
   }
 
   // ── Utilities ─────────────────────────────────────────────────────────
@@ -846,6 +872,7 @@
           state.port = msg.port || state.port;
           setServerUI(true);
           fetchModels();
+          checkIndexStatus();  // warn if workspace index is empty
         } else if (msg.status === 'starting') {
           setServerUI(false, true);
         } else {
@@ -916,7 +943,13 @@
 
   // Probe the server on load
   fetch(`http://127.0.0.1:${state.port}/`)
-    .then(r => { if (r.ok) { setServerUI(true); fetchModels(); } else { setServerUI(false); } })
+    .then(r => {
+      if (r.ok) {
+        setServerUI(true);
+        fetchModels();
+        checkIndexStatus();  // warn if workspace index is empty
+      } else { setServerUI(false); }
+    })
     .catch(() => setServerUI(false));
 
 })();
