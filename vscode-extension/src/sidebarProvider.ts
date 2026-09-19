@@ -32,6 +32,28 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                 case 'getActiveFile':
                     await this._sendActiveFile();
                     break;
+                case 'getActiveFileInfo': {
+                    // Returns the full content of the active file for use as file-scope context.
+                    // Posts back as 'activeFileForScope' so the webview can distinguish it from
+                    // the chip-based 'activeFile' response.
+                    const editor = vscode.window.activeTextEditor;
+                    if (editor) {
+                        const doc = editor.document;
+                        this.postMessage({
+                            type: 'activeFileForScope',
+                            file: {
+                                path: doc.uri.fsPath,
+                                relativePath: vscode.workspace.asRelativePath(doc.uri),
+                                language: doc.languageId,
+                                content: doc.getText(),
+                                lineCount: doc.lineCount
+                            }
+                        });
+                    } else {
+                        this.postMessage({ type: 'activeFileForScope', file: null });
+                    }
+                    break;
+                }
                 case 'getSelection':
                     await this._sendSelection();
                     break;

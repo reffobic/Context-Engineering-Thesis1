@@ -459,6 +459,7 @@ class StreamGenerateRequest(BaseModel):
     prompt: str
     mode: Literal["RAG", "LC", "SELF_ROUTE"] = "SELF_ROUTE"
     model: Optional[str] = None  # Ollama model name; None = use default
+    file_context: Optional[str] = None  # raw file text from the editor (skips RAG retrieval)
 
 
 def _sse(event: dict) -> str:
@@ -470,6 +471,7 @@ def _run_pipeline_streaming(
     user_prompt: str,
     mode: str,
     model: Optional[str],
+    file_context: Optional[str] = None,
 ) -> Generator[str, None, None]:
     """
     Generator that yields SSE frames as each pipeline stage completes,
@@ -483,70 +485,93 @@ def _run_pipeline_streaming(
 
     token_budget = 1800
 
-    # ── Stage 1: Retrieve ───────────────────────────────────────────────────
-    yield _sse({"event": "stage_start", "stage": "retrieve", "label": "Retrieve context"})
-    try:
-        context, duration_ms = _time_stage(lambda: call_tool("retrieve_context", user_prompt))
-        summary = _retrieval_summary(context)
-        yield _sse({"event": "stage", "stage": "retrieve", "status": "complete",
-                    "label": "Retrieve context", "duration_ms": duration_ms, "summary": summary})
-    except Exception as exc:
-        yield _sse({"event": "stage", "stage": "retrieve", "status": "error", "error": str(exc)})
-        yield _sse({"event": "done", "output": f"[Retrieval error: {exc}]"})
-        return
+    # ── File-scope short-circuit ────────────────────────────────────────────
+    # When the user chose "Current File" in the extension, file_context holds
+    # the raw editor text.  Skip retrieve/prune/assess and feed the file
+    # directly into inject+generate.  All indexing infrastructure is untouched.
+    if file_context:
+        file_lines = file_context.count('\n') + 1
+        skipped_note = "Skipped — using current file as context"
+        for stage in ("retrieve", "prune", "assess"):
+            yield _sse({"event": "stage_start", "stage": stage, "label": stage.capitalize()})
+            yield _sse({"event": "stage", "stage": stage, "status": "skipped",
+                        "label": stage.capitalize(), "duration_ms": 0,
+                        "summary": {"note": skipped_note}})
+        # Build a single chunk that inject_context understands
+        context_for_injection = [{
+            "text": file_context,
+            "path": "<current file>",
+            "symbol": "",
+            "language": "",
+            "score": 1.0,
+        }]
+        retrieve_summary_note = f"{file_lines} lines from current file"
+        logging.info("file-scope mode: injecting %d chars from editor", len(file_context))
+    else:
+        # ── Stage 1: Retrieve ───────────────────────────────────────────────
+        yield _sse({"event": "stage_start", "stage": "retrieve", "label": "Retrieve context"})
+        try:
+            context, duration_ms = _time_stage(lambda: call_tool("retrieve_context", user_prompt))
+            summary = _retrieval_summary(context)
+            yield _sse({"event": "stage", "stage": "retrieve", "status": "complete",
+                        "label": "Retrieve context", "duration_ms": duration_ms, "summary": summary})
+        except Exception as exc:
+            yield _sse({"event": "stage", "stage": "retrieve", "status": "error", "error": str(exc)})
+            yield _sse({"event": "done", "output": f"[Retrieval error: {exc}]"})
+            return
 
-    # ── Stage 2: Prune ──────────────────────────────────────────────────────
-    yield _sse({"event": "stage_start", "stage": "prune", "label": "Prune context"})
-    try:
-        (pruned_context, pruning_stats), duration_ms = _time_stage(
-            lambda: prune_context_with_stats(user_prompt, context, token_budget=token_budget)
-        )
-        summary = _pruning_summary(pruned_context, pruning_stats, token_budget)
-        yield _sse({"event": "stage", "stage": "prune", "status": "complete",
-                    "label": "Prune context", "duration_ms": duration_ms, "summary": summary})
-    except Exception as exc:
-        yield _sse({"event": "stage", "stage": "prune", "status": "error", "error": str(exc)})
-        yield _sse({"event": "done", "output": f"[Pruning error: {exc}]"})
-        return
+        # ── Stage 2: Prune ──────────────────────────────────────────────────
+        yield _sse({"event": "stage_start", "stage": "prune", "label": "Prune context"})
+        try:
+            (pruned_context, pruning_stats), duration_ms = _time_stage(
+                lambda: prune_context_with_stats(user_prompt, context, token_budget=token_budget)
+            )
+            summary = _pruning_summary(pruned_context, pruning_stats, token_budget)
+            yield _sse({"event": "stage", "stage": "prune", "status": "complete",
+                        "label": "Prune context", "duration_ms": duration_ms, "summary": summary})
+        except Exception as exc:
+            yield _sse({"event": "stage", "stage": "prune", "status": "error", "error": str(exc)})
+            yield _sse({"event": "done", "output": f"[Pruning error: {exc}]"})
+            return
 
-    # ── Stage 3: Assess (SELF_ROUTE) ────────────────────────────────────────
-    def _build_lc_chunks(raw_retrieved: list) -> list:
-        lc_chunks = []
-        for item in raw_retrieved:
-            pc = item.get("parent_context") or item.get("code") or ""
-            if not pc.strip():
-                continue
-            meta = item.get("metadata") or {}
-            lc_chunks.append({
-                "text": pc, "path": meta.get("file") or "",
-                "symbol": meta.get("function") or "", "language": meta.get("language") or "",
-            })
-        return lc_chunks
+        # ── Stage 3: Assess (SELF_ROUTE) ────────────────────────────────────
+        def _build_lc_chunks(raw_retrieved: list) -> list:
+            lc_chunks = []
+            for item in raw_retrieved:
+                pc = item.get("parent_context") or item.get("code") or ""
+                if not pc.strip():
+                    continue
+                meta = item.get("metadata") or {}
+                lc_chunks.append({
+                    "text": pc, "path": meta.get("file") or "",
+                    "symbol": meta.get("function") or "", "language": meta.get("language") or "",
+                })
+            return lc_chunks
 
-    yield _sse({"event": "stage_start", "stage": "assess", "label": "Sufficiency assessment"})
-    try:
-        if mode == "SELF_ROUTE":
-            decision, duration_ms = _time_stage(lambda: assess_sufficiency(user_prompt, pruned_context))
-            assess_summary = {"route": decision["route"], "sufficient": decision["sufficient"],
-                              "confidence": decision["confidence"], "reason": decision["reason"]}
-            context_for_injection = _build_lc_chunks(context) if decision["route"] == "LC" else pruned_context
-        elif mode == "LC":
-            decision = {"route": "LC", "sufficient": False, "confidence": "high",
-                        "reason": "LC mode forced — assessment skipped."}
-            duration_ms = 0
-            assess_summary = decision
-            context_for_injection = _build_lc_chunks(context)
-        else:  # RAG
-            decision = {"route": "RAG", "sufficient": True, "confidence": "high",
-                        "reason": "RAG mode forced — assessment skipped."}
-            duration_ms = 0
-            assess_summary = decision
+        yield _sse({"event": "stage_start", "stage": "assess", "label": "Sufficiency assessment"})
+        try:
+            if mode == "SELF_ROUTE":
+                decision, duration_ms = _time_stage(lambda: assess_sufficiency(user_prompt, pruned_context))
+                assess_summary = {"route": decision["route"], "sufficient": decision["sufficient"],
+                                  "confidence": decision["confidence"], "reason": decision["reason"]}
+                context_for_injection = _build_lc_chunks(context) if decision["route"] == "LC" else pruned_context
+            elif mode == "LC":
+                decision = {"route": "LC", "sufficient": False, "confidence": "high",
+                            "reason": "LC mode forced — assessment skipped."}
+                duration_ms = 0
+                assess_summary = decision
+                context_for_injection = _build_lc_chunks(context)
+            else:  # RAG
+                decision = {"route": "RAG", "sufficient": True, "confidence": "high",
+                            "reason": "RAG mode forced — assessment skipped."}
+                duration_ms = 0
+                assess_summary = decision
+                context_for_injection = pruned_context
+            yield _sse({"event": "stage", "stage": "assess", "status": "complete",
+                        "label": "Sufficiency assessment", "duration_ms": duration_ms, "summary": assess_summary})
+        except Exception as exc:
+            yield _sse({"event": "stage", "stage": "assess", "status": "error", "error": str(exc)})
             context_for_injection = pruned_context
-        yield _sse({"event": "stage", "stage": "assess", "status": "complete",
-                    "label": "Sufficiency assessment", "duration_ms": duration_ms, "summary": assess_summary})
-    except Exception as exc:
-        yield _sse({"event": "stage", "stage": "assess", "status": "error", "error": str(exc)})
-        context_for_injection = pruned_context
 
     # ── Stage 4: Inject ─────────────────────────────────────────────────────
     yield _sse({"event": "stage_start", "stage": "inject", "label": "Build final prompt"})
@@ -620,7 +645,7 @@ def _run_pipeline_streaming(
 def generate_stream(req: StreamGenerateRequest):
     """SSE endpoint: yields pipeline stage events + streaming LLM tokens."""
     return StreamingResponse(
-        _run_pipeline_streaming(req.prompt, req.mode, req.model),
+        _run_pipeline_streaming(req.prompt, req.mode, req.model, req.file_context),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

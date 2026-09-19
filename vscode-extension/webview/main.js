@@ -15,6 +15,8 @@
     customModels: [],       // user-added models (persisted via globalState)
     selectedModel: '',
     selectedMode: 'SELF_ROUTE',
+    selectedScope: 'repo',  // 'repo' | 'file'
+    activeFileForScope: null, // {relativePath, content, language} — populated on demand
     contextChips: [],       // [{type:'file'|'selection', label, content, path, startLine, endLine}]
     generating: false,
     messages: [],
@@ -83,6 +85,11 @@
           <button class="add-context-btn" id="addFileBtn" title="Add active file as context">📎 File</button>
           <button class="add-context-btn" id="addSelBtn" title="Add selection as context">✂ Selection</button>
           <div class="spacer"></div>
+          <!-- Scope toggle -->
+          <div class="scope-toggle" id="scopeToggle" title="Context scope">
+            <button class="scope-btn active" id="scopeRepoBtn" data-scope="repo">📁 Repo</button>
+            <button class="scope-btn" id="scopeFileBtn" data-scope="file">📄 File</button>
+          </div>
           <button class="model-pill" id="modelPillBtn" title="Choose model">
             <span class="model-pill-icon">◈</span>
             <span id="modelPillLabel">Loading…</span>
@@ -93,6 +100,12 @@
             <option value="RAG">RAG</option>
             <option value="LC">Long Context</option>
           </select>
+        </div>
+        <!-- File scope indicator -->
+        <div class="file-scope-bar hidden" id="fileScopeBar">
+          <span class="file-scope-icon">📄</span>
+          <span id="fileScopeLabel">No file open</span>
+          <span class="file-scope-hint">— asking about this file only</span>
         </div>
 
         <!-- Model Manager Panel (dropdown) -->
@@ -158,6 +171,10 @@
       vscode.postMessage({ type: 'getSelection' });
     });
 
+    // Scope toggle
+    document.getElementById('scopeRepoBtn').addEventListener('click', () => setScope('repo'));
+    document.getElementById('scopeFileBtn').addEventListener('click', () => setScope('file'));
+
     // Model panel toggle
     document.getElementById('modelPillBtn').addEventListener('click', (e) => {
       e.stopPropagation();
@@ -206,7 +223,28 @@
     fetchOllamaModels();
   }
 
-  // ── Auto-resize textarea ───────────────────────────────────────────────
+  // ── Scope toggle ──────────────────────────────────────────────────────
+  function setScope(scope) {
+    state.selectedScope = scope;
+    state.activeFileForScope = null;
+    document.getElementById('scopeRepoBtn').classList.toggle('active', scope === 'repo');
+    document.getElementById('scopeFileBtn').classList.toggle('active', scope === 'file');
+    const bar = document.getElementById('fileScopeBar');
+    if (scope === 'file') {
+      bar.classList.remove('hidden');
+      // Ask host for the active editor info to show the file name
+      vscode.postMessage({ type: 'getActiveFileInfo' });
+    } else {
+      bar.classList.add('hidden');
+    }
+  }
+
+  function updateFileScopeBar(relativePath) {
+    const label = document.getElementById('fileScopeLabel');
+    if (label) { label.textContent = relativePath || 'No file open'; }
+  }
+
+  // ── Auto-resize textarea ─────────────────────────────────────────────────
   function autoResize() {
     promptInput.style.height = 'auto';
     promptInput.style.height = Math.min(promptInput.scrollHeight, 180) + 'px';
@@ -430,11 +468,33 @@
     state.contextChips = [];
     renderContextChips();
 
-    await streamGenerate(fullPrompt);
+    await streamGenerate(fullPrompt, state.selectedScope === 'file' ? state.activeFileForScope?.content : null);
   }
 
-  // ── Streaming ─────────────────────────────────────────────────────────
-  async function streamGenerate(prompt) {
+  // ── Streaming ─────────────────────────────────────────────────────
+  async function streamGenerate(prompt, fileContext = null) {
+    // If file scope is active but we don’t have the content yet, fetch it first
+    if (state.selectedScope === 'file' && !fileContext) {
+      appendSystemMessage('⚠ Fetching current file content…');
+      await new Promise(resolve => {
+        const handler = (event) => {
+          const msg = event.data;
+          if (msg && msg.type === 'activeFileForScope') {
+            window.removeEventListener('message', handler);
+            if (msg.file) {
+              state.activeFileForScope = msg.file;
+              fileContext = msg.file.content;
+              updateFileScopeBar(msg.file.relativePath);
+            }
+            resolve();
+          }
+        };
+        window.addEventListener('message', handler);
+        vscode.postMessage({ type: 'getActiveFileInfo' });
+        // Timeout after 3s
+        setTimeout(() => { window.removeEventListener('message', handler); resolve(); }, 3000);
+      });
+    }
     state.generating = true;
     sendBtn.disabled = true;
     sendBtn.classList.add('loading');
@@ -469,7 +529,8 @@
         body: JSON.stringify({
           prompt,
           mode: state.selectedMode,
-          model: state.selectedModel || undefined
+          model: state.selectedModel || undefined,
+          ...(fileContext ? { file_context: fileContext } : {})
         })
       });
 
@@ -808,6 +869,21 @@
         break;
 
       case 'editorChanged':
+        // Update file scope bar if we're in file mode
+        if (state.selectedScope === 'file' && msg.file) {
+          updateFileScopeBar(msg.file.relativePath);
+          state.activeFileForScope = null; // stale, will re-fetch on next send
+        }
+        break;
+
+      case 'activeFileForScope':
+        // Response to getActiveFileInfo — update scope bar and cache content
+        if (msg.file) {
+          state.activeFileForScope = msg.file;
+          updateFileScopeBar(msg.file.relativePath);
+        } else {
+          updateFileScopeBar('No file open');
+        }
         break;
 
       case 'triggerIndex':
