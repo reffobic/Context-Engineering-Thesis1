@@ -452,10 +452,18 @@
         <div class="panel-body">
           <label for="user-prompt">User request</label>
           <textarea id="user-prompt" name="user_prompt" placeholder="e.g. Explain how retrieval finds code for a Flask route." autocomplete="off"></textarea>
+          <label for="generate-mode">Mode</label>
+          <select id="generate-mode">
+            <option value="SELF_ROUTE" selected>SELF_ROUTE (binary)</option>
+            <option value="GASR">GASR (RAG→GRAPH→LC)</option>
+            <option value="RAG">Always RAG</option>
+            <option value="LC">Always LC</option>
+          </select>
           <div class="row">
             <button type="button" class="primary" id="btn-generate">Run pipeline</button>
             <button type="button" class="secondary" id="btn-index">Index default repo</button>
             <button type="button" class="secondary" id="btn-refresh-index">Refresh index summary</button>
+            <a class="secondary" href="/graphify-view" target="_blank" rel="noopener" style="display:inline-block;padding:0.5rem 0.75rem;text-decoration:none;border:1px solid #ccc;border-radius:4px">Graphify view</a>
           </div>
 
           <details class="advanced">
@@ -986,7 +994,9 @@
         });
         setWorking(true, "Running retrieve, prune, inject, and Ollama...");
         try {
-          var data = await requestJson("POST", "/generate", { prompt: prompt });
+          var modeEl = el("generate-mode");
+          var mode = modeEl && modeEl.value ? modeEl.value : "SELF_ROUTE";
+          var data = await requestJson("POST", "/generate", { prompt: prompt, mode: mode });
           var out = data.output;
           outputEl.textContent = out == null || out === "" ? "(empty output from server)" : (typeof out === "string" ? out : prettyJson(out));
           el("pipeline-raw").textContent = prettyJson(data);

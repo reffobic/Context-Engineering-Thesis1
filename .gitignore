@@ -16,3 +16,16 @@ env/
 # Old/legacy tracked artifacts (keep repo clean)
 data/chroma_db/
 data/subversion/
+
+# Graphify / generated viz (rebuild with `graphify update .`)
+graphify-out/
+**/graphify-out/
+backend/mcp_server/static/graphify_view.html
+
+# Local eval dumps / Office slide builds
+docs/superset_gasr_run/
+docs/*.pptx
+docs/*.docx
+docs/*.png
+docs/_build_*.py
+docs/_tmp_*.py

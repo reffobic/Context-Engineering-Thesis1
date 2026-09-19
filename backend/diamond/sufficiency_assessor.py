@@ -67,6 +67,34 @@ RETRIEVED CHUNKS ({n} chunks):
 Is the context sufficient to answer the query? Reply with JSON only.
 """
 
+_STRUCTURE_SYSTEM = """\
+You are a routing judge for a repository code Q&A system.
+The current snippets are NOT sufficient. Decide what is missing.
+
+Reply ONLY with JSON — no markdown outside the JSON.
+Schema:
+{
+  "need": "STRUCTURE" | "CONTEXT" | "UNCLEAR",
+  "confidence": "high" | "medium" | "low",
+  "reason": "<one sentence>"
+}
+
+Rules:
+- STRUCTURE → need callees, callers, imports, or cross-file dependency neighbors (graph expand).
+- CONTEXT  → need more of the same file(s): surrounding lines, imports at top, class body (long context stitch).
+- UNCLEAR  → cannot tell; prefer CONTEXT.
+"""
+
+_STRUCTURE_USER = """\
+QUERY:
+{query}
+
+CURRENT CHUNKS ({n} chunks):
+{chunks}
+
+What is missing — STRUCTURE (graph neighbors) or CONTEXT (same-file long context)? JSON only.
+"""
+
 def _format_chunks(items: list[dict[str, Any]]) -> str:
     parts: list[str] = []
     for i, item in enumerate(items, 1):
@@ -219,5 +247,103 @@ def assess_sufficiency(
     logger.info(
         "assess_sufficiency: route=%s confidence=%s reason=%s",
         result["route"], result["confidence"], result["reason"],
+    )
+    return result
+
+
+def _parse_structure_response(raw: str) -> dict[str, Any]:
+    s = raw.strip()
+    for marker in ("</think>", "</Think>"):
+        if marker in s:
+            s = s.split(marker, 1)[-1].strip()
+    if s.startswith("```"):
+        lines = s.splitlines()
+        s = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:]).strip()
+    m = re.search(r"\{[\s\S]*?\}", s)
+    if m:
+        s = m.group(0)
+    data = json.loads(s)
+    need = str(data.get("need", "UNCLEAR")).upper()
+    if need not in ("STRUCTURE", "CONTEXT", "UNCLEAR"):
+        need = "UNCLEAR"
+    confidence = str(data.get("confidence", "low")).lower()
+    if confidence not in ("high", "medium", "low"):
+        confidence = "low"
+    return {
+        "need": need,
+        "confidence": confidence,
+        "reason": str(data.get("reason", "")),
+    }
+
+
+def assess_structure_vs_context(
+    query: str,
+    chunks: list[dict[str, Any]],
+    model: str = DEFAULT_MODEL,
+) -> dict[str, Any]:
+    """
+    After sufficiency fails: decide STRUCTURE (graph expand) vs CONTEXT (LC).
+
+    Returns: need, confidence, reason.
+    """
+    if not chunks:
+        return {
+            "need": "CONTEXT",
+            "confidence": "high",
+            "reason": "No chunks available; escalate to long context.",
+        }
+
+    user_msg = _STRUCTURE_USER.format(
+        query=query,
+        n=len(chunks),
+        chunks=_format_chunks(chunks),
+    )
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": _STRUCTURE_SYSTEM},
+            {"role": "user", "content": user_msg},
+        ],
+        "stream": False,
+        "options": {"temperature": 0.0, "num_ctx": 4096},
+    }
+
+    try:
+        resp = requests.post(
+            f"{OLLAMA_BASE_URL}/api/chat",
+            json=payload,
+            timeout=REQUEST_TIMEOUT,
+        )
+        resp.raise_for_status()
+        raw = resp.json().get("message", {}).get("content", "")
+    except requests.RequestException as exc:
+        logger.warning(
+            "assess_structure_vs_context: Ollama failed (%s) → UNCLEAR/CONTEXT", exc
+        )
+        return {
+            "need": "CONTEXT",
+            "confidence": "low",
+            "reason": f"Judge unavailable ({exc}); defaulting to CONTEXT.",
+        }
+
+    try:
+        result = _parse_structure_response(raw)
+    except (json.JSONDecodeError, KeyError, ValueError) as exc:
+        logger.warning(
+            "assess_structure_vs_context: parse failed (%s) → CONTEXT\nRaw: %s",
+            exc,
+            raw[:300],
+        )
+        return {
+            "need": "CONTEXT",
+            "confidence": "low",
+            "reason": "Could not parse judge response; defaulting to CONTEXT.",
+        }
+
+    logger.info(
+        "assess_structure_vs_context: need=%s confidence=%s reason=%s",
+        result["need"],
+        result["confidence"],
+        result["reason"],
     )
     return result

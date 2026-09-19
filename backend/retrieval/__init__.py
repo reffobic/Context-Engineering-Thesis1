@@ -3,21 +3,8 @@ Retrieval Module
 ================
 Hybrid semantic and structural code search.
 
-Key components:
-- retrieval_tool.py: Main retrieval pipeline
-- hybrid_retrieval.py: Graph-based structural scoring
+Import submodules directly (e.g. ``retrieval.graph_expand``) to avoid
+eager Chroma / MiniLM load from ``retrieval_tool``.
 """
 
-from .retrieval_tool import (
-    vector_retrieve,
-    hybrid_retrieve,
-    rank_chunks,
-    reconstruct_file_context,
-)
-
-__all__ = [
-    "vector_retrieve",
-    "hybrid_retrieve",
-    "rank_chunks",
-    "reconstruct_file_context",
-]
+__all__: list[str] = []

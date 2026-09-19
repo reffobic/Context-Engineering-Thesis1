@@ -15,13 +15,13 @@ from pydantic import BaseModel
 try:
     from tool_registry import call_tool
     from indexing.code_indexer_endpoint import get_index_summary
-    from pruning.file import prune_context as prune_context_with_stats
-    from diamond.sufficiency_assessor import assess_sufficiency
+    from pruning.file import prune_context as prune_context_with_stats, estimate_tokens
+    from diamond.sufficiency_assessor import assess_sufficiency, assess_structure_vs_context
 except ModuleNotFoundError:  # when running as package: python -m uvicorn mcp_server.server:app
     from mcp_server.tool_registry import call_tool
     from indexing.code_indexer_endpoint import get_index_summary
-    from pruning.file import prune_context as prune_context_with_stats
-    from diamond.sufficiency_assessor import assess_sufficiency
+    from pruning.file import prune_context as prune_context_with_stats, estimate_tokens
+    from diamond.sufficiency_assessor import assess_sufficiency, assess_structure_vs_context
 
 app = FastAPI()
 # Lets the UI work from file:// or another port during local demos (not for public deployment).
@@ -77,8 +77,7 @@ def _persist_eval_metrics(
 
 class GenerateRequest(BaseModel):
     prompt: str
-    mode: Literal["RAG", "LC", "SELF_ROUTE"] = "SELF_ROUTE"
-
+    mode: Literal["RAG", "LC", "SELF_ROUTE", "GASR"] = "SELF_ROUTE"
 
 class EvaluateRequest(BaseModel):
     """
@@ -92,6 +91,8 @@ class EvaluateRequest(BaseModel):
     relevant_files: Optional[List[str]] = None
     judge_retrieval_relevancy: bool = False
     faithfulness: bool = False
+    #: Ablation answer path: if set, also run full ``run_pipeline`` with this mode.
+    generate_mode: Optional[Literal["RAG", "LC", "SELF_ROUTE", "GASR"]] = None
     #: Where to store metrics JSON (``results/{mode}/json/``). Retrieval path in code may still be hybrid until vector/graph backends exist.
     retrieval_mode: Literal["hybrid", "vector", "graph"] = "hybrid"
     #: If true (default), persist full evaluate response under ``results/{retrieval_mode}/json/``.
@@ -126,6 +127,26 @@ async def ui_page():
         )
     return FileResponse(
         index,
+        media_type="text/html",
+        headers={"Cache-Control": "no-store, max-age=0"},
+    )
+
+
+@app.get("/graphify-view")
+async def graphify_view_page():
+    """Serve Graphify HTML (or setup instructions) from static/graphify_view.html."""
+    try:
+        call_tool("visualize_graphify")
+    except Exception as exc:
+        logging.warning("graphify-view: visualize_graphify failed: %s", exc)
+    page = _STATIC / "graphify_view.html"
+    if not page.is_file():
+        return JSONResponse(
+            {"error": "Graphify view not found", "hint": "Run graphify update . --force; open /graphify-view"},
+            status_code=404,
+        )
+    return FileResponse(
+        page,
         media_type="text/html",
         headers={"Cache-Control": "no-store, max-age=0"},
     )
@@ -247,12 +268,22 @@ def _stage(name: str, duration_ms: int, summary: dict, raw: Any = None) -> dict:
 
 
 # Current pipeline
-def run_pipeline(user_prompt: str, mode: str = "SELF_ROUTE") -> dict:
+def run_pipeline(
+    user_prompt: str,
+    mode: str = "SELF_ROUTE",
+) -> dict:
+    import os
+
     token_budget = 1800
+    gasr_hard_cap = int(os.environ.get("GASR_HARD_CAP", "2"))
     pipeline = {
         "prompt": user_prompt,
+        "mode": mode,
         "stages": {},
         "stage_order": ["retrieve", "prune", "assess", "inject", "generate"],
+        "tokens_injected_est": 0,
+        "route": None,
+        "hops_used": 0,
     }
 
     logging.info("Retrieval started")
@@ -265,8 +296,6 @@ def run_pipeline(user_prompt: str, mode: str = "SELF_ROUTE") -> dict:
     )
 
     logging.info("Pruning started")
-    # P4 expects (query, retrieved_items). Use the core function here so the
-    # dashboard can show the same pruning stats used to choose the final chunks.
     (pruned_context, pruning_stats), duration_ms = _time_stage(
         lambda: prune_context_with_stats(user_prompt, context, token_budget=token_budget)
     )
@@ -277,7 +306,6 @@ def run_pipeline(user_prompt: str, mode: str = "SELF_ROUTE") -> dict:
         {"chunks": pruned_context, "stats": asdict(pruning_stats)},
     )
 
-    # ── SELF-ROUTE mode logic ─────────────────────────────────────────────────
     def _build_lc_chunks(raw_retrieved: list[dict]) -> list[dict]:
         """Convert retrieved chunks to ContextChunk format using parent_context."""
         lc_chunks = []
@@ -293,6 +321,38 @@ def run_pipeline(user_prompt: str, mode: str = "SELF_ROUTE") -> dict:
                 "language": meta.get("language") or "",
             })
         return lc_chunks
+
+    def _injection_token_est(chunks: list[dict]) -> int:
+        total = 0
+        for c in chunks:
+            total += estimate_tokens(c.get("text") or c.get("code") or "")
+        return total
+
+    def _to_retrieve_shaped(chunks: list[dict], source: str = "seed") -> list[dict]:
+        """Map injection ContextChunks back to retrieve-shaped dicts for expand."""
+        out = []
+        for c in chunks:
+            if c.get("metadata") and c.get("code") is not None:
+                item = dict(c)
+                item.setdefault("source", source)
+                out.append(item)
+                continue
+            out.append({
+                "code": c.get("text") or c.get("code") or "",
+                "metadata": {
+                    "file": c.get("path") or "",
+                    "function": c.get("symbol") or "",
+                    "language": c.get("language") or "",
+                    "start_line": c.get("start_line") or 0,
+                },
+                "final_score": float(c.get("final_score") or c.get("pruning_score") or 0.5),
+                "hybrid_score": float(c.get("hybrid_score") or 0.5),
+                "source": source,
+            })
+        return out
+
+    context_for_injection: list[dict] = pruned_context
+    route = "RAG"
 
     if mode == "SELF_ROUTE":
         logging.info("Sufficiency assessment started")
@@ -315,9 +375,121 @@ def run_pipeline(user_prompt: str, mode: str = "SELF_ROUTE") -> dict:
         if decision["route"] == "LC":
             logging.info("Escalating to LC — using parent_context")
             context_for_injection = _build_lc_chunks(context)
+            route = "LC"
         else:
             logging.info("Staying on RAG path — using pruned_context")
             context_for_injection = pruned_context
+            route = "RAG"
+
+    elif mode == "GASR":
+        logging.info("GASR mode — sufficiency then structure-vs-context (hop cap=%s)", gasr_hard_cap)
+        pipeline["stage_order"] = [
+            "retrieve", "prune", "assess", "graph_expand", "re_prune", "inject", "generate"
+        ]
+        from diamond.gasr_ladder import run_gasr_ladder
+        from retrieval.graph_expand import graph_expand
+
+        seed_pool = list(context)
+        hops_box = {"n": 0}
+
+        def _assess_rag():
+            decision, ms = _time_stage(
+                lambda: assess_sufficiency(user_prompt, pruned_context)
+            )
+            decision = {**decision, "duration_ms": ms}
+            return decision
+
+        def _assess_structure():
+            # Use latest pruned context from closure via nonlocal list
+            judge, ms = _time_stage(
+                lambda: assess_structure_vs_context(user_prompt, state["pruned"])
+            )
+            return {**judge, "duration_ms": ms}
+
+        def _expand(seeds, hops):
+            result, ms = _time_stage(lambda: graph_expand(seeds, hops=hops))
+            result = dict(result)
+            result["duration_ms"] = ms
+            hops_box["n"] += 1
+            return result
+
+        # Flat re-prune after expand: score seeds+neighbors together under token_budget.
+        def _re_prune(seeds, neighbors):
+            merged = list(seeds) + list(neighbors)
+            (pruned, stats), p_ms = _time_stage(
+                lambda: prune_context_with_stats(
+                    user_prompt, merged, token_budget=token_budget
+                )
+            )
+            state["pruned"] = pruned
+            state["last_re_prune_ms"] = p_ms
+            state["last_re_prune_kept"] = stats.kept_chunks
+            return pruned
+
+        def _assess_graph():
+            decision, ms = _time_stage(
+                lambda: assess_sufficiency(user_prompt, state["pruned"])
+            )
+            return {**decision, "duration_ms": ms}
+
+        state = {
+            "pruned": pruned_context,
+            "last_re_prune_ms": 0,
+            "last_re_prune_kept": 0,
+        }
+
+        ladder = run_gasr_ladder(
+            seed_pool=seed_pool,
+            initial_pruned=pruned_context,
+            assess_rag=_assess_rag,
+            assess_structure=_assess_structure,
+            expand_hop=_expand,
+            re_prune=_re_prune,
+            assess_after_expand=_assess_graph,
+            build_lc=lambda: _build_lc_chunks(context),
+            hard_cap=gasr_hard_cap,
+        )
+        route = ladder.route
+        hops_used = ladder.hops_used
+        context_for_injection = ladder.context
+
+        for i, exp in enumerate(ladder.expand_trace):
+            if i == len(ladder.expand_trace) - 1 and state["last_re_prune_ms"]:
+                exp["re_prune_ms"] = state["last_re_prune_ms"]
+                exp["re_prune_kept"] = state["last_re_prune_kept"]
+                exp["re_prune_kind"] = "flat_merge"
+
+        pipeline["stages"]["assess"] = _stage(
+            "GASR assessment",
+            sum(t.get("duration_ms", 0) for t in ladder.assess_trace),
+            {
+                "route": route,
+                "hops_used": hops_used,
+                "gasr_hard_cap": gasr_hard_cap,
+                "re_prune_kind": "flat_merge",
+                "trace": ladder.assess_trace,
+            },
+        )
+        if ladder.expand_trace:
+            pipeline["stages"]["graph_expand"] = _stage(
+                "Graph expand",
+                sum(t.get("duration_ms", 0) for t in ladder.expand_trace),
+                {"hops_used": hops_used, "expansions": ladder.expand_trace},
+                ladder.expand_trace,
+            )
+            pipeline["stages"]["re_prune"] = _stage(
+                "Flat-merge re-prune",
+                sum(t.get("re_prune_ms", 0) for t in ladder.expand_trace),
+                {
+                    "token_budget": token_budget,
+                    "re_prune_kind": "flat_merge",
+                    "kept": len(context_for_injection)
+                    if hasattr(context_for_injection, "__len__")
+                    else None,
+                },
+            )
+        pipeline["hops_used"] = hops_used
+        logging.info("GASR finished route=%s hops=%s", route, hops_used)
 
     elif mode == "LC":
         logging.info("LC mode forced — using parent_context, skipping assessment")
@@ -331,6 +503,7 @@ def run_pipeline(user_prompt: str, mode: str = "SELF_ROUTE") -> dict:
             },
         )
         context_for_injection = _build_lc_chunks(context)
+        route = "LC"
 
     else:  # RAG
         logging.info("RAG mode forced — using pruned_context, skipping assessment")
@@ -344,16 +517,20 @@ def run_pipeline(user_prompt: str, mode: str = "SELF_ROUTE") -> dict:
             },
         )
         context_for_injection = pruned_context
+        route = "RAG"
+
+    pipeline["route"] = route
+    pipeline["tokens_injected_est"] = _injection_token_est(context_for_injection)
     # ─────────────────────────────────────────────────────────────────────────
 
-    logging.info("Injection started")
+    logging.info("Injection started (route=%s tokens_est=%s)", route, pipeline["tokens_injected_est"])
     final_prompt, duration_ms = _time_stage(
         lambda: call_tool("inject_context", user_prompt, context_for_injection)
     )
     pipeline["stages"]["inject"] = _stage(
         "Build final prompt",
         duration_ms,
-        _prompt_summary(final_prompt),
+        {**_prompt_summary(final_prompt), "route": route, "tokens_injected_est": pipeline["tokens_injected_est"]},
         final_prompt,
     )
 
@@ -369,7 +546,7 @@ def run_pipeline(user_prompt: str, mode: str = "SELF_ROUTE") -> dict:
         },
         result,
     )
-    return {"output": result, "pipeline": pipeline}
+    return {"output": result, "pipeline": pipeline, "route": route, "tokens_injected_est": pipeline["tokens_injected_est"]}
 
 
 # Add API endpoints
@@ -430,7 +607,10 @@ def index(
 
 @app.post("/generate")
 def generate(req: GenerateRequest):
-    return run_pipeline(req.prompt, mode=req.mode)
+    return run_pipeline(
+        req.prompt,
+        mode=req.mode,
+    )
 
 
 @app.post("/evaluate")
@@ -505,6 +685,20 @@ def evaluate(req: EvaluateRequest) -> dict[str, Any]:
         except Exception as exc:  # pragma: no cover
             logging.exception("evaluate: faithfulness path failed")
             out["faithfulness"] = {"error": str(exc)}
+
+    if req.generate_mode:
+        try:
+            gen = run_pipeline(req.prompt, mode=req.generate_mode)
+            out["ablation_generate"] = {
+                "mode": req.generate_mode,
+                "route": gen.get("route"),
+                "tokens_injected_est": gen.get("tokens_injected_est"),
+                "hops_used": (gen.get("pipeline") or {}).get("hops_used"),
+                "output_preview": _preview_text(gen.get("output"), 480),
+            }
+        except Exception as exc:
+            logging.exception("evaluate: generate_mode=%s failed", req.generate_mode)
+            out["ablation_generate"] = {"mode": req.generate_mode, "error": str(exc)}
 
     if req.save_metrics_json:
         rel, err = _persist_eval_metrics(out, retrieval_mode=req.retrieval_mode)
