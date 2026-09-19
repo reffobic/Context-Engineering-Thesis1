@@ -87,7 +87,7 @@
           <div class="spacer"></div>
           <!-- Scope toggle -->
           <div class="scope-toggle" id="scopeToggle" title="Context scope">
-            <button class="scope-btn active" id="scopeRepoBtn" data-scope="repo">📁 Repo</button>
+            <button class="scope-btn active" id="scopeRepoBtn" data-scope="repo">📁 Workspace</button>
             <button class="scope-btn" id="scopeFileBtn" data-scope="file">📄 File</button>
           </div>
           <button class="model-pill" id="modelPillBtn" title="Choose model">
@@ -576,12 +576,19 @@
       renderAnswer(answerEl, `⚠ Error: ${err.message}`, false);
     }
 
-    // Finalize
+    // Finalize answer
     renderAnswer(answerEl, fullAnswer || '(No response)', false);
-    // Collapse pipeline accordion after answer
-    setTimeout(() => {
-      pipelineEl.classList.remove('open');
-    }, 800);
+    // Keep accordion open so user can review pipeline stats.
+    // The header is already clickable to toggle it closed.
+    // Update pipeline meta with a summary count of completed stages.
+    const metaEl = document.getElementById(`${msgId}-pipeline-meta`);
+    if (metaEl) {
+      const doneCount = Object.values(stageRowEls).filter(r => {
+        const icon = r && r.querySelector('.stage-icon');
+        return icon && (icon.classList.contains('complete') || icon.classList.contains('skipped'));
+      }).length;
+      metaEl.textContent = `${doneCount}/5 stages done`;
+    }
 
     state.generating = false;
     sendBtn.disabled = false;
@@ -667,18 +674,27 @@
     const meta = row.querySelector('.stage-meta');
 
     icon.className = `stage-icon ${status}`;
-    if (status === 'running') { icon.textContent = '⟳'; }
+    if (status === 'running')  { icon.textContent = '⟳'; }
     else if (status === 'complete') { icon.textContent = '✔'; }
-    else if (status === 'error') { icon.textContent = '✕'; }
+    else if (status === 'error')    { icon.textContent = '✕'; }
+    else if (status === 'skipped')  { icon.textContent = '—'; }
 
     // Build meta badges
     const badges = [];
-    if (durationMs !== undefined) {
+    if (durationMs !== undefined && durationMs > 0) {
       badges.push(`<span style="color:var(--muted)">${durationMs}ms</span>`);
     }
     if (summary) {
+      // Skipped note
+      if (summary.note) {
+        badges.push(`<span style="color:var(--muted);font-style:italic;font-size:10px">${escHtml(summary.note)}</span>`);
+      }
       if (summary.candidate_chunks !== undefined) {
-        badges.push(makeBadge(`${summary.candidate_chunks} chunks`, 'badge-retrieve'));
+        const cls = summary.candidate_chunks === 0 ? 'badge-error' : 'badge-retrieve';
+        badges.push(makeBadge(`${summary.candidate_chunks} chunks`, cls));
+        if (summary.candidate_chunks === 0) {
+          badges.push(`<span style="color:var(--danger);font-size:10px">⚠ Index empty — click ⊕ to index</span>`);
+        }
       }
       if (summary.unique_files !== undefined) {
         badges.push(makeBadge(`${summary.unique_files} files`, 'badge-retrieve'));
@@ -694,6 +710,9 @@
         badges.push(makeBadge(summary.route, cls));
         if (summary.confidence) {
           badges.push(`<span style="color:var(--muted)">${summary.confidence}</span>`);
+        }
+        if (summary.reason) {
+          badges.push(`<span style="color:var(--muted);font-size:10px;font-style:italic">${escHtml(summary.reason)}</span>`);
         }
       }
       if (summary.estimated_tokens !== undefined) {

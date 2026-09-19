@@ -318,6 +318,7 @@ html, body {
 .stage-icon.running { background: color-mix(in srgb, var(--accent) 20%, transparent); animation: pulse 1s infinite; }
 .stage-icon.complete { background: color-mix(in srgb, var(--success) 20%, transparent); color: var(--success); }
 .stage-icon.error { background: color-mix(in srgb, var(--danger) 20%, transparent); color: var(--danger); }
+.stage-icon.skipped { background: var(--surface-2); color: var(--muted); opacity: 0.5; }
 
 .stage-label { flex: 1; color: var(--text); }
 .stage-meta { color: var(--muted); font-size: 11px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -338,6 +339,7 @@ html, body {
 .badge-generate { color: var(--stage-generate); border-color: color-mix(in srgb, var(--stage-generate) 40%, transparent); background: color-mix(in srgb, var(--stage-generate) 12%, transparent); }
 .badge-rag { color: var(--stage-prune); border-color: color-mix(in srgb, var(--stage-prune) 40%, transparent); background: color-mix(in srgb, var(--stage-prune) 12%, transparent); }
 .badge-lc { color: var(--stage-inject); border-color: color-mix(in srgb, var(--stage-inject) 40%, transparent); background: color-mix(in srgb, var(--stage-inject) 12%, transparent); }
+.badge-error { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); background: color-mix(in srgb, var(--danger) 12%, transparent); }
 
 /* ─── Answer Text ─────────────────────────────────────────────────────────── */
 .answer-text {
