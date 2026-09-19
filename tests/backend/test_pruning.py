@@ -10,6 +10,7 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 from backend.pruning.file import (
+    HeuristicWeights,
     PruningStats,
     estimate_tokens,
     infer_language_from_path,
@@ -22,6 +23,7 @@ from backend.pruning.file import (
     find_best_window,
     score_candidate,
     prune_single_item,
+    prune_single_item_heuristic,
     prune_context,
 )
 
@@ -38,7 +40,6 @@ def test_estimate_tokens_short():
 
 
 def test_estimate_tokens_longer():
-    # 20 chars -> ~5 tokens
     assert estimate_tokens("a" * 20) == 5
 
 
@@ -167,6 +168,35 @@ def test_find_best_window_empty():
     assert start is None
 
 
+# ── HeuristicWeights ──────────────────────────────────────────
+
+
+def test_heuristic_weights_default():
+    w = HeuristicWeights()
+    assert abs(sum(w.as_tuple()) - 1.0) < 0.01
+
+
+def test_heuristic_weights_custom():
+    w = HeuristicWeights(retrieval=0.5, query_match=0.2, function=0.2, structure=0.1)
+    assert w.retrieval == 0.5
+    assert w.structure == 0.1
+
+
+def test_score_candidate_with_custom_weights():
+    item = {
+        "code": "def hello(): pass",
+        "final_score": 0.8,
+        "metadata": {"function": "hello", "file": "greet.py"},
+    }
+    default_score = score_candidate("hello function", item)
+    # High retrieval weight should increase score when retrieval score is high
+    high_ret = score_candidate(
+        "hello function", item,
+        weights=HeuristicWeights(retrieval=0.9, query_match=0.05, function=0.03, structure=0.02),
+    )
+    assert high_ret > default_score
+
+
 # ── score_candidate ───────────────────────────────────────────
 
 
@@ -195,7 +225,7 @@ def test_score_candidate_higher_for_relevant():
     assert score_candidate("get users", relevant) > score_candidate("get users", irrelevant)
 
 
-# ── prune_single_item ─────────────────────────────────────────
+# ── prune_single_item (heuristic) ─────────────────────────────
 
 
 def test_prune_single_item_returns_chunk():
@@ -221,7 +251,36 @@ def test_prune_single_item_whitespace_code_returns_none():
     assert prune_single_item("query", item) is None
 
 
-# ── prune_context (main API) ──────────────────────────────────
+def _windowed_code() -> str:
+    # Only line 9 matches the query, so the window (radius=3) starts at snippet line 6.
+    lines = [f"value_{i} = {i}" for i in range(8)] + ["target = compute()", "value_9 = 9"]
+    return "\n".join(lines)
+
+
+def test_prune_single_item_start_line_remapped_to_file():
+    item = {
+        "code": _windowed_code(),
+        "metadata": {"function": "", "file": "mod.py", "start_line": 120},
+    }
+    chunk = prune_single_item("target", item)
+    assert chunk is not None
+    assert chunk["start_line"] == 125  # 120 + 6 - 1
+
+
+def test_prune_single_item_start_line_without_metadata_is_snippet_local():
+    item = {"code": _windowed_code(), "metadata": {"function": "", "file": "mod.py"}}
+    chunk = prune_single_item("target", item)
+    assert chunk is not None
+    assert chunk["start_line"] == 6
+
+
+def test_prune_context_default_method_is_heuristic():
+    item = {"code": "def f():\n    return 1", "metadata": {"function": "f", "file": "f.py"}}
+    _, stats = prune_context("f", [item])
+    assert stats.method == "heuristic"
+
+
+# ── prune_context (heuristic fallback) ────────────────────────
 
 
 def _make_items(n: int, code_len: int = 100) -> list[dict]:
@@ -236,23 +295,24 @@ def _make_items(n: int, code_len: int = 100) -> list[dict]:
     return items
 
 
-def test_prune_context_returns_chunks_and_stats():
+def test_prune_context_heuristic_returns_chunks_and_stats():
     items = _make_items(5)
-    chunks, stats = prune_context("func_0", items)
+    chunks, stats = prune_context("func_0", items, method="heuristic")
     assert isinstance(chunks, list)
     assert isinstance(stats, PruningStats)
     assert stats.original_chunks == 5
     assert stats.kept_chunks + stats.dropped_chunks == stats.original_chunks
+    assert stats.method == "heuristic"
 
 
 def test_prune_context_respects_token_budget():
     items = _make_items(10, code_len=200)
-    chunks, stats = prune_context("func", items, token_budget=100)
+    chunks, stats = prune_context("func", items, token_budget=100, method="heuristic")
     assert stats.kept_est_tokens <= 100
 
 
 def test_prune_context_empty_input():
-    chunks, stats = prune_context("query", [])
+    chunks, stats = prune_context("query", [], method="heuristic")
     assert chunks == []
     assert stats.original_chunks == 0
     assert stats.kept_chunks == 0
@@ -263,7 +323,7 @@ def test_prune_context_all_empty_code():
         {"code": "", "metadata": {"function": "x", "file": "x.py"}},
         {"code": "  \n  ", "metadata": {"function": "y", "file": "y.py"}},
     ]
-    chunks, stats = prune_context("query", items)
+    chunks, stats = prune_context("query", items, method="heuristic")
     assert chunks == []
     assert stats.dropped_chunks == 2
 
@@ -281,10 +341,22 @@ def test_prune_context_ranks_by_relevance():
             "metadata": {"function": "get_users", "file": "users.py"},
         },
     ]
-    chunks, stats = prune_context("get users", items, token_budget=5000)
+    chunks, stats = prune_context("get users", items, token_budget=5000, method="heuristic")
     assert len(chunks) >= 1
-    # The relevant chunk should come first
     assert chunks[0]["path"] == "users.py"
+
+
+def test_prune_context_stats_has_method_field():
+    items = _make_items(2)
+    _, stats = prune_context("query", items, method="heuristic")
+    assert stats.method == "heuristic"
+
+
+def test_prune_context_custom_weights():
+    items = _make_items(3)
+    w = HeuristicWeights(retrieval=1.0, query_match=0.0, function=0.0, structure=0.0)
+    chunks, stats = prune_context("func_0", items, method="heuristic", weights=w)
+    assert isinstance(chunks, list)
 
 
 # ── Integration: pruning output → PromptBuilder ──────────────
@@ -307,10 +379,9 @@ def test_pruning_output_compatible_with_prompt_builder():
         },
     ]
 
-    chunks, stats = prune_context("calculate total price", items, token_budget=2000)
+    chunks, stats = prune_context("calculate total price", items, token_budget=2000, method="heuristic")
     assert len(chunks) >= 1
 
-    # Feed directly into PromptBuilder — should not raise
     builder = PromptBuilder()
     system, user = builder.build("How does calculate_total work?", chunks)
 
@@ -319,3 +390,191 @@ def test_pruning_output_compatible_with_prompt_builder():
     assert "calculate_total" in user
     assert isinstance(system, str)
     assert len(system) > 0
+
+
+# ── Selective Context tests ───────────────────────────────────
+# These tests require torch + transformers.  Skipped if not installed.
+
+import pytest
+
+try:
+    import torch
+    import transformers
+    HAS_TORCH = True
+except ImportError:
+    HAS_TORCH = False
+
+requires_torch = pytest.mark.skipif(not HAS_TORCH, reason="torch/transformers not installed")
+
+
+@requires_torch
+class TestSelectiveContextPruner:
+    """Tests for the Selective Context algorithm (Li et al., 2023)."""
+
+    def test_import(self):
+        from backend.pruning.selective_context import SelectiveContextPruner
+        assert SelectiveContextPruner is not None
+
+    def test_singleton(self):
+        from backend.pruning.selective_context import SelectiveContextPruner
+        a = SelectiveContextPruner.get_instance("Salesforce/codegen-350M-multi")
+        b = SelectiveContextPruner.get_instance("Salesforce/codegen-350M-multi")
+        assert a is b
+
+    def test_compute_self_information_returns_list(self):
+        from backend.pruning.selective_context import SelectiveContextPruner
+        pruner = SelectiveContextPruner.get_instance("Salesforce/codegen-350M-multi")
+        infos = pruner.compute_self_information("def hello():\n    return 'world'")
+        assert len(infos) > 0
+        assert all(hasattr(ti, "self_info") for ti in infos)
+
+    def test_first_token_has_inf_self_info(self):
+        from backend.pruning.selective_context import SelectiveContextPruner
+        pruner = SelectiveContextPruner.get_instance("Salesforce/codegen-350M-multi")
+        infos = pruner.compute_self_information("hello world")
+        assert infos[0].self_info == float("inf")
+
+    def test_self_info_is_non_negative(self):
+        from backend.pruning.selective_context import SelectiveContextPruner
+        import math
+        pruner = SelectiveContextPruner.get_instance("Salesforce/codegen-350M-multi")
+        infos = pruner.compute_self_information("import os\nfrom pathlib import Path")
+        for ti in infos:
+            if math.isfinite(ti.self_info):
+                assert ti.self_info >= 0.0, f"Negative self-info: {ti.token} = {ti.self_info}"
+
+    def test_prune_text_reduces_length(self):
+        from backend.pruning.selective_context import SelectiveContextPruner
+        pruner = SelectiveContextPruner.get_instance("Salesforce/codegen-350M-multi")
+        code = (
+            "import os\n"
+            "import sys\n"
+            "from pathlib import Path\n"
+            "\n"
+            "def compute_metrics(predictions, labels):\n"
+            "    correct = sum(p == l for p, l in zip(predictions, labels))\n"
+            "    total = len(labels)\n"
+            "    accuracy = correct / total if total > 0 else 0.0\n"
+            "    return {'accuracy': accuracy, 'total': total}\n"
+        )
+        result = pruner.prune_text(code, target_ratio=0.5)
+        assert len(result.pruned_text) < len(code)
+        assert result.compression_ratio < 1.0
+
+    def test_prune_text_preserves_content_at_high_ratio(self):
+        from backend.pruning.selective_context import SelectiveContextPruner
+        pruner = SelectiveContextPruner.get_instance("Salesforce/codegen-350M-multi")
+        code = "def add(a, b):\n    return a + b"
+        result = pruner.prune_text(code, target_ratio=0.95)
+        # At 95% retention, almost everything should be kept
+        assert result.kept_token_count >= result.original_token_count * 0.8
+
+    def test_prune_text_empty_input(self):
+        from backend.pruning.selective_context import SelectiveContextPruner
+        pruner = SelectiveContextPruner.get_instance("Salesforce/codegen-350M-multi")
+        result = pruner.prune_text("")
+        assert result.pruned_text == ""
+
+    def test_prune_lines_reduces_line_count(self):
+        from backend.pruning.selective_context import SelectiveContextPruner
+        pruner = SelectiveContextPruner.get_instance("Salesforce/codegen-350M-multi")
+        code = (
+            "# This is a header comment\n"
+            "# Another boilerplate comment\n"
+            "import os\n"
+            "import sys\n"
+            "\n"
+            "def important_function(x):\n"
+            "    result = x ** 2 + 3 * x - 7\n"
+            "    return result\n"
+        )
+        result = pruner.prune_lines(code, target_ratio=0.5)
+        original_lines = len(code.strip().split("\n"))
+        pruned_lines = len(result.pruned_text.strip().split("\n"))
+        assert pruned_lines < original_lines
+
+    def test_chunk_informativeness_returns_float(self):
+        from backend.pruning.selective_context import SelectiveContextPruner
+        pruner = SelectiveContextPruner.get_instance("Salesforce/codegen-350M-multi")
+        score = pruner.chunk_informativeness("def hello(): return 'world'")
+        assert isinstance(score, float)
+        assert score >= 0.0
+
+    def test_informative_code_scores_higher_than_boilerplate(self):
+        from backend.pruning.selective_context import SelectiveContextPruner
+        pruner = SelectiveContextPruner.get_instance("Salesforce/codegen-350M-multi")
+        boilerplate = "import os\nimport sys\nimport json\nimport logging"
+        unique_logic = (
+            "def kalman_filter(state, measurement, noise_cov):\n"
+            "    predicted = state @ transition_matrix\n"
+            "    innovation = measurement - observation_matrix @ predicted\n"
+            "    return predicted + kalman_gain @ innovation\n"
+        )
+        assert pruner.chunk_informativeness(unique_logic) > pruner.chunk_informativeness(boilerplate)
+
+
+@requires_torch
+class TestSelectivePruneContext:
+    """Integration tests for prune_context with method='selective'."""
+
+    def test_selective_method_runs(self):
+        items = [
+            {
+                "code": "def greet(name):\n    return f'Hello {name}'",
+                "final_score": 0.8,
+                "metadata": {"function": "greet", "file": "hello.py"},
+            },
+        ]
+        chunks, stats = prune_context("greet", items, method="selective")
+        assert stats.method == "selective"
+        assert len(chunks) >= 1
+
+    def test_selective_respects_token_budget(self):
+        items = _make_items(10, code_len=200)
+        chunks, stats = prune_context("func", items, token_budget=100, method="selective")
+        assert stats.kept_est_tokens <= 100
+
+    def test_selective_output_compatible_with_prompt_builder(self):
+        from backend.injection.prompt_builder import PromptBuilder
+
+        items = [
+            {
+                "code": "def calculate_total(items):\n    return sum(i.price for i in items)",
+                "final_score": 0.85,
+                "metadata": {"function": "calculate_total", "file": "cart.py"},
+            },
+        ]
+        chunks, stats = prune_context(
+            "calculate total", items, token_budget=2000, method="selective"
+        )
+        assert len(chunks) >= 1
+
+        builder = PromptBuilder()
+        system, user = builder.build("How does calculate_total work?", chunks)
+        assert "<CONTEXT>" in user
+        assert "<TASK>" in user
+
+    def test_selective_stats_has_compression_ratio(self):
+        items = _make_items(3)
+        _, stats = prune_context("func_0", items, method="selective")
+        assert hasattr(stats, "compression_ratio")
+        assert 0.0 < stats.compression_ratio <= 1.0
+
+    def test_selective_with_custom_target_ratio(self):
+        items = [
+            {
+                "code": "import os\nimport sys\ndef foo():\n    x = 1\n    y = 2\n    return x + y",
+                "final_score": 0.8,
+                "metadata": {"function": "foo", "file": "foo.py"},
+            },
+        ]
+        # Low ratio = more aggressive pruning
+        chunks_aggressive, _ = prune_context(
+            "foo", items, method="selective", target_ratio=0.3, token_budget=5000
+        )
+        # High ratio = keep more
+        chunks_gentle, _ = prune_context(
+            "foo", items, method="selective", target_ratio=0.9, token_budget=5000
+        )
+        if chunks_aggressive and chunks_gentle:
+            assert len(chunks_aggressive[0]["text"]) <= len(chunks_gentle[0]["text"])
