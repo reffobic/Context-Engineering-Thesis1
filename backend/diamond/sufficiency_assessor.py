@@ -130,7 +130,7 @@ def _parse_response(raw: str) -> dict[str, Any]:
 def assess_sufficiency(
     query:  str,
     chunks: list[dict[str, Any]],
-    model:  str = DEFAULT_MODEL,
+    model:  str | None = None,
 ) -> dict[str, Any]:
     """
     Assess whether *chunks* are sufficient to answer *query*.
@@ -140,6 +140,9 @@ def assess_sufficiency(
 
     Returns a routing dict with keys: sufficient, confidence, reason, route.
     """
+    if not model:
+        model = DEFAULT_MODEL
+
     if not chunks:
         logger.info("assess_sufficiency: no chunks → routing to LC")
         return {

@@ -20,7 +20,8 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         webviewView.webview.options = {
             enableScripts: true,
             localResourceRoots: [
-                vscode.Uri.joinPath(this._context.extensionUri, 'webview')
+                vscode.Uri.joinPath(this._context.extensionUri, 'webview'),
+                vscode.Uri.joinPath(this._context.extensionUri, 'node_modules', '@vscode', 'codicons', 'dist')
             ]
         };
 
@@ -215,6 +216,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
     private _getHtml(webview: vscode.Webview): string {
         const webviewDir = vscode.Uri.joinPath(this._context.extensionUri, 'webview');
+        const codiconsUri = webview.asWebviewUri(vscode.Uri.joinPath(this._context.extensionUri, 'node_modules', '@vscode', 'codicons', 'dist', 'codicon.css'));
 
         const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(webviewDir, 'style.css'));
         const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(webviewDir, 'main.js'));
@@ -228,10 +230,12 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Content-Security-Policy"
     content="default-src 'none';
+             font-src ${webview.cspSource};
              style-src ${webview.cspSource} 'unsafe-inline';
              script-src 'nonce-${nonce}';
              connect-src http://127.0.0.1:* http://localhost:*;
              img-src ${webview.cspSource} data:;" />
+  <link rel="stylesheet" href="${codiconsUri}" />
   <link rel="stylesheet" href="${styleUri}" />
   <title>Context Engine</title>
 </head>

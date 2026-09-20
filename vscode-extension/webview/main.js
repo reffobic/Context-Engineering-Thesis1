@@ -13,7 +13,9 @@
     serverRunning: false,
     ollamaModels: [],       // models from Ollama /api/tags
     customModels: [],       // user-added models (persisted via globalState)
-    selectedModel: '',
+    generatorModel: '',
+    assessorModel: '',
+    activeModelPicker: null, // 'generator' or 'assessor'
     selectedMode: 'SELF_ROUTE',
     selectedScope: 'repo',  // 'repo' | 'file'
     activeFileForScope: null, // {relativePath, content, language} — populated on demand
@@ -34,27 +36,27 @@
       <div class="header">
         <div class="header-left">
           <div class="logo">
-            <div class="logo-icon">⬡</div>
+            <i class="codicon codicon-circuit-board logo-icon"></i>
             <span>Context Engine</span>
           </div>
           <div class="server-dot" id="serverDot"></div>
         </div>
         <div class="header-actions">
-          <button class="icon-btn" id="indexBtn" data-tooltip="Index Workspace" title="Index Workspace">⊕</button>
-          <button class="icon-btn" id="serverToggleBtn" data-tooltip="Start Server" title="Start Server">▶</button>
-          <button class="icon-btn" id="clearBtn" data-tooltip="Clear Chat" title="Clear Chat">⊘</button>
+          <button class="icon-btn" id="indexBtn" data-tooltip="Index Workspace" title="Index Workspace"><i class="codicon codicon-database"></i></button>
+          <button class="icon-btn" id="serverToggleBtn" data-tooltip="Start Server" title="Start Server"><i class="codicon codicon-play"></i></button>
+          <button class="icon-btn" id="clearBtn" data-tooltip="Clear Chat" title="Clear Chat"><i class="codicon codicon-clear-all"></i></button>
         </div>
       </div>
 
       <!-- Server offline banner -->
       <div class="server-banner hidden" id="serverBanner">
         <span class="banner-text"><strong>Server offline</strong> — start the backend to use Context Engine.</span>
-        <button class="action-btn" id="bannerStartBtn">▶ Start</button>
+        <button class="action-btn" id="bannerStartBtn"><i class="codicon codicon-play"></i> Start</button>
       </div>
 
       <!-- Index progress -->
       <div class="index-progress hidden" id="indexProgress">
-        <span class="spin">⟳</span>
+        <i class="codicon codicon-sync codicon-modifier-spin spin"></i>
         <span id="indexProgressText">Indexing workspace…</span>
       </div>
 
@@ -62,7 +64,7 @@
       <div class="chat-area" id="chatArea">
         <!-- Empty state -->
         <div class="empty-state" id="emptyState">
-          <div class="empty-state-icon">⬡</div>
+          <div class="empty-state-icon"><i class="codicon codicon-circuit-board"></i></div>
           <h3>Context Engine</h3>
           <p>Ask anything about your codebase. The pipeline retrieves, prunes, and injects context automatically.</p>
           <div class="suggestion-chips">
@@ -79,22 +81,27 @@
         <div class="context-chip-row" id="contextChipRow"></div>
         <div class="textarea-wrapper">
           <textarea id="prompt" placeholder="Ask anything about your codebase…" rows="3"></textarea>
-          <button class="send-btn" id="sendBtn" title="Send (Enter)">↑</button>
+          <button class="send-btn" id="sendBtn" title="Send (Enter)"><i class="codicon codicon-send"></i></button>
         </div>
         <div class="bottom-controls">
-          <button class="add-context-btn" id="addFileBtn" title="Add active file as context">📎 File</button>
-          <button class="add-context-btn" id="addSelBtn" title="Add selection as context">✂ Selection</button>
+          <button class="add-context-btn" id="addFileBtn" title="Add active file as context"><i class="codicon codicon-file-add"></i> File</button>
+          <button class="add-context-btn" id="addSelBtn" title="Add selection as context"><i class="codicon codicon-symbol-snippet"></i> Selection</button>
           <div class="spacer"></div>
           <!-- Scope toggle -->
           <div class="scope-toggle" id="scopeToggle" title="Context scope">
-            <button class="scope-btn active" id="scopeRepoBtn" data-scope="repo">📁 Workspace</button>
-            <button class="scope-btn" id="scopeFileBtn" data-scope="file">📄 File</button>
+            <button class="scope-btn active" id="scopeRepoBtn" data-scope="repo"><i class="codicon codicon-folder"></i> Workspace</button>
+            <button class="scope-btn" id="scopeFileBtn" data-scope="file"><i class="codicon codicon-file"></i> File</button>
           </div>
-          <button class="model-pill" id="modelPillBtn" title="Choose model">
-            <span class="model-pill-icon">◈</span>
-            <span id="modelPillLabel">Loading…</span>
-            <span class="model-pill-arrow">▾</span>
-          </button>
+          <div class="model-selectors" style="display: flex; gap: 4px;">
+            <button class="model-pill" id="assessorModelPillBtn" title="Choose Assessor model">
+              <span style="color:var(--muted)">Assessor:</span>
+              <span id="assessorModelPillLabel" style="margin-left: 2px;">Loading…</span>
+            </button>
+            <button class="model-pill" id="generatorModelPillBtn" title="Choose Generator model">
+              <span style="color:var(--muted)">Gen:</span>
+              <span id="generatorModelPillLabel" style="margin-left: 2px;">Loading…</span>
+            </button>
+          </div>
           <select class="select-pill" id="modeSelect" title="Pipeline mode">
             <option value="SELF_ROUTE">Auto-Route</option>
             <option value="RAG">RAG</option>
@@ -103,7 +110,7 @@
         </div>
         <!-- File scope indicator -->
         <div class="file-scope-bar hidden" id="fileScopeBar">
-          <span class="file-scope-icon">📄</span>
+          <i class="codicon codicon-file file-scope-icon"></i>
           <span id="fileScopeLabel">No file open</span>
           <span class="file-scope-hint">— asking about this file only</span>
         </div>
@@ -112,7 +119,7 @@
         <div class="model-panel hidden" id="modelPanel">
           <div class="model-panel-header">
             <span>Models</span>
-            <button class="icon-btn" id="refreshModelsBtn" title="Refresh from Ollama">⟳</button>
+            <button class="icon-btn" id="refreshModelsBtn" title="Refresh from Ollama"><i class="codicon codicon-sync"></i></button>
           </div>
 
           <!-- Detected (Ollama) models -->
@@ -176,9 +183,17 @@
     document.getElementById('scopeFileBtn').addEventListener('click', () => setScope('file'));
 
     // Model panel toggle
-    document.getElementById('modelPillBtn').addEventListener('click', (e) => {
+    document.getElementById('assessorModelPillBtn').addEventListener('click', (e) => {
       e.stopPropagation();
+      state.activeModelPicker = 'assessor';
       toggleModelPanel();
+      renderModelManager();
+    });
+    document.getElementById('generatorModelPillBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      state.activeModelPicker = 'generator';
+      toggleModelPanel();
+      renderModelManager();
     });
     document.getElementById('refreshModelsBtn').addEventListener('click', () => {
       fetchOllamaModels();
@@ -198,8 +213,9 @@
     // Close model panel when clicking outside
     document.addEventListener('click', (e) => {
       const panel = document.getElementById('modelPanel');
-      const btn = document.getElementById('modelPillBtn');
-      if (panel && !panel.contains(e.target) && !btn.contains(e.target)) {
+      const btn1 = document.getElementById('assessorModelPillBtn');
+      const btn2 = document.getElementById('generatorModelPillBtn');
+      if (panel && !panel.contains(e.target) && !btn1.contains(e.target) && !btn2.contains(e.target)) {
         closeModelPanel();
       }
     });
@@ -321,9 +337,15 @@
   }
 
   function setSelectedModel(model) {
-    state.selectedModel = model;
-    const pill = document.getElementById('modelPillLabel');
-    if (pill) { pill.textContent = model || 'No model'; }
+    if (state.activeModelPicker === 'assessor') {
+      state.assessorModel = model;
+      const pill = document.getElementById('assessorModelPillLabel');
+      if (pill) { pill.textContent = model || 'No model'; }
+    } else {
+      state.generatorModel = model;
+      const pill = document.getElementById('generatorModelPillLabel');
+      if (pill) { pill.textContent = model || 'No model'; }
+    }
     closeModelPanel();
   }
 
@@ -332,20 +354,27 @@
     const customList = document.getElementById('customModelList');
     if (!ollamaList || !customList) { return; }
 
-    // Ensure selectedModel is valid — pick first available if not
+    // Ensure models are valid
     const all = allModels();
-    if (!state.selectedModel && all.length > 0) {
-      state.selectedModel = all[0];
+    if (!state.generatorModel && all.length > 0) {
+      state.generatorModel = all[0];
     }
-    // Update pill label
-    const pill = document.getElementById('modelPillLabel');
-    if (pill) { pill.textContent = state.selectedModel || (all.length ? all[0] : 'No model'); }
+    if (!state.assessorModel && all.length > 0) {
+      state.assessorModel = all[0];
+    }
+    // Update pill labels
+    const genPill = document.getElementById('generatorModelPillLabel');
+    if (genPill) { genPill.textContent = state.generatorModel || (all.length ? all[0] : 'No model'); }
+    const assPill = document.getElementById('assessorModelPillLabel');
+    if (assPill) { assPill.textContent = state.assessorModel || (all.length ? all[0] : 'No model'); }
+
+    const activeModel = state.activeModelPicker === 'assessor' ? state.assessorModel : state.generatorModel;
 
     // Render Ollama models
     if (state.ollamaModels.length === 0) {
       ollamaList.innerHTML = `<div class="model-empty">No Ollama models detected.<br><span style="font-size:10px">Run: <code>ollama pull qwen3.5:9b</code></span></div>`;
     } else {
-      ollamaList.innerHTML = state.ollamaModels.map(m => modelRow(m, 'ollama')).join('');
+      ollamaList.innerHTML = state.ollamaModels.map(m => modelRow(m, 'ollama', activeModel)).join('');
     }
 
     // Render custom models (only those NOT already in Ollama list)
@@ -354,7 +383,7 @@
     if (customOnly.length === 0) {
       customList.innerHTML = `<div class="model-empty">No custom models added yet.</div>`;
     } else {
-      customList.innerHTML = customOnly.map(m => modelRow(m, 'custom')).join('');
+      customList.innerHTML = customOnly.map(m => modelRow(m, 'custom', activeModel)).join('');
     }
 
     // Bind row clicks
@@ -373,14 +402,14 @@
     });
   }
 
-  function modelRow(name, source) {
-    const isSelected = name === state.selectedModel;
+  function modelRow(name, source, activeModel) {
+    const isSelected = name === activeModel;
     const isCustom = source === 'custom';
     return `<div class="model-row ${isSelected ? 'selected' : ''}" data-model="${escHtml(name)}">
       <span class="model-row-dot ${isSelected ? 'active' : ''}"></span>
       <span class="model-row-name" title="${escHtml(name)}">${escHtml(name)}</span>
       <span class="model-row-source ${source}">${source === 'ollama' ? 'Ollama' : 'Custom'}</span>
-      ${isCustom ? `<button class="model-row-remove" title="Remove">✕</button>` : ''}
+      ${isCustom ? `<button class="model-row-remove" title="Remove"><i class="codicon codicon-close"></i></button>` : ''}
     </div>`;
   }
 
@@ -401,9 +430,12 @@
     state.customModels = state.customModels.filter(m => m !== name);
     persistCustomModels();
     // If removed model was selected, pick first available
-    if (state.selectedModel === name) {
-      const all = allModels();
-      state.selectedModel = all[0] || '';
+    const all = allModels();
+    if (state.generatorModel === name) {
+      state.generatorModel = all[0] || '';
+    }
+    if (state.assessorModel === name) {
+      state.assessorModel = all[0] || '';
     }
     renderModelManager();
   }
@@ -430,7 +462,7 @@
     state.contextChips.forEach(chip => {
       const el = document.createElement('div');
       el.className = 'context-chip';
-      el.innerHTML = `📎 <span>${escHtml(chip.label)}</span> <span class="chip-remove" data-label="${escHtml(chip.label)}">✕</span>`;
+      el.innerHTML = `<i class="codicon codicon-file-add"></i> <span>${escHtml(chip.label)}</span> <span class="chip-remove" data-label="${escHtml(chip.label)}"><i class="codicon codicon-close"></i></span>`;
       el.querySelector('.chip-remove').addEventListener('click', () => removeContextChip(chip.label));
       contextChipRow.appendChild(el);
     });
@@ -498,7 +530,7 @@
     state.generating = true;
     sendBtn.disabled = true;
     sendBtn.classList.add('loading');
-    sendBtn.textContent = '…';
+    sendBtn.innerHTML = '<i class="codicon codicon-sync codicon-modifier-spin"></i>';
 
     // Create agent message shell
     const msgId = 'msg-' + Date.now();
@@ -529,7 +561,8 @@
         body: JSON.stringify({
           prompt,
           mode: state.selectedMode,
-          model: state.selectedModel || undefined,
+          model: state.generatorModel || undefined,
+          assessor_model: state.assessorModel || undefined,
           ...(fileContext ? { file_context: fileContext } : {})
         })
       });
@@ -593,7 +626,7 @@
     state.generating = false;
     sendBtn.disabled = false;
     sendBtn.classList.remove('loading');
-    sendBtn.textContent = '↑';
+    sendBtn.innerHTML = '<i class="codicon codicon-send"></i>';
     scrollToBottom();
   }
 
@@ -605,7 +638,7 @@
     let chipHtml = '';
     if (chips.length > 0) {
       chipHtml = `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;justify-content:flex-end">
-        ${chips.map(c => `<span class="context-chip" style="cursor:default">📎 ${escHtml(c.label)}</span>`).join('')}
+        ${chips.map(c => `<span class="context-chip" style="cursor:default"><i class="codicon codicon-file-add"></i> ${escHtml(c.label)}</span>`).join('')}
       </div>`;
     }
     el.innerHTML = `
@@ -623,13 +656,13 @@
     el.className = 'message';
     el.id = id;
     el.innerHTML = `
-      <div class="avatar agent-avatar">⬡</div>
+      <div class="avatar agent-avatar"><i class="codicon codicon-circuit-board"></i></div>
       <div class="message-content" style="width:100%">
         <div class="bubble agent-bubble">
           <div class="pipeline-accordion" id="${id}-pipeline">
             <div class="pipeline-header" onclick="toggleAccordion('${id}-pipeline')">
               <div class="pipeline-header-left">
-                <span class="pipeline-chevron">▶</span>
+                <i class="codicon codicon-chevron-right pipeline-chevron"></i>
                 <span>Pipeline</span>
               </div>
               <span style="font-size:11px;color:var(--muted)" id="${id}-pipeline-meta"></span>
@@ -654,7 +687,7 @@
 
   // ── Stage rows ─────────────────────────────────────────────────────────
 
-  const STAGE_ICONS = { retrieve: '🔍', prune: '✂', assess: '⚖', inject: '📝', generate: '✨' };
+  const STAGE_ICONS = { retrieve: '<i class="codicon codicon-search"></i>', prune: '<i class="codicon codicon-filter"></i>', assess: '<i class="codicon codicon-law"></i>', inject: '<i class="codicon codicon-insert"></i>', generate: '<i class="codicon codicon-sparkle"></i>' };
   const STAGE_LABELS = { retrieve: 'Retrieve', prune: 'Prune', assess: 'Assess', inject: 'Inject', generate: 'Generate' };
 
   function createStageRow(stage, status) {
@@ -662,7 +695,7 @@
     row.className = 'stage-row';
     row.id = `stage-${stage}-${Date.now()}`;
     row.innerHTML = `
-      <div class="stage-icon pending">${STAGE_ICONS[stage] || '•'}</div>
+      <div class="stage-icon pending">${STAGE_ICONS[stage] || '<i class="codicon codicon-circle-filled"></i>'}</div>
       <div class="stage-label">${STAGE_LABELS[stage] || stage}</div>
       <div class="stage-meta"></div>`;
     return row;
@@ -674,10 +707,10 @@
     const meta = row.querySelector('.stage-meta');
 
     icon.className = `stage-icon ${status}`;
-    if (status === 'running')  { icon.textContent = '⟳'; }
-    else if (status === 'complete') { icon.textContent = '✔'; }
-    else if (status === 'error')    { icon.textContent = '✕'; }
-    else if (status === 'skipped')  { icon.textContent = '—'; }
+    if (status === 'running')  { icon.innerHTML = '<i class="codicon codicon-sync codicon-modifier-spin"></i>'; }
+    else if (status === 'complete') { icon.innerHTML = '<i class="codicon codicon-check"></i>'; }
+    else if (status === 'error')    { icon.innerHTML = '<i class="codicon codicon-error"></i>'; }
+    else if (status === 'skipped')  { icon.innerHTML = '<i class="codicon codicon-dash"></i>'; }
 
     // Build meta badges
     const badges = [];
@@ -693,7 +726,7 @@
         const cls = summary.candidate_chunks === 0 ? 'badge-error' : 'badge-retrieve';
         badges.push(makeBadge(`${summary.candidate_chunks} chunks`, cls));
         if (summary.candidate_chunks === 0) {
-          badges.push(`<span style="color:var(--danger);font-size:10px">⚠ Index empty — click ⊕ to index</span>`);
+          badges.push(`<span style="color:var(--danger);font-size:10px"><i class="codicon codicon-warning"></i> Index empty — click <i class="codicon codicon-database"></i> to index</span>`);
         }
       }
       if (summary.unique_files !== undefined) {
@@ -815,7 +848,7 @@
       if (chunks === 0) {
         const progressText = document.getElementById('indexProgressText');
         indexProgress.classList.remove('hidden');
-        progressText.innerHTML = 'Workspace index is empty. Click <strong>+</strong> in the header to index first.';
+        progressText.innerHTML = 'Workspace index is empty. Click <strong><i class="codicon codicon-database"></i></strong> in the header to index first.';
         setTimeout(() => indexProgress.classList.add('hidden'), 10000);
       }
     } catch { /* server not ready yet */ }
@@ -838,7 +871,7 @@
   function clearChat() {
     chatArea.innerHTML = `
       <div class="empty-state" id="emptyState">
-        <div class="empty-state-icon">⬡</div>
+        <div class="empty-state-icon"><i class="codicon codicon-circuit-board"></i></div>
         <h3>Context Engine</h3>
         <p>Ask anything about your codebase. The pipeline retrieves, prunes, and injects context automatically.</p>
         <div class="suggestion-chips">

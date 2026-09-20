@@ -2,16 +2,16 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --radius: 8px;
-  --radius-sm: 5px;
-  --radius-lg: 12px;
-  --transition: 0.18s ease;
+  --radius: 4px;
+  --radius-sm: 2px;
+  --radius-lg: 6px;
+  --transition: 0.1s ease;
 
   /* Map onto VS Code theme vars */
-  --bg: var(--vscode-sideBar-background, #1e1e2e);
-  --surface: var(--vscode-editor-background, #181825);
-  --surface-2: var(--vscode-editorGroupHeader-tabsBackground, #24243e);
-  --border: var(--vscode-panel-border, #313244);
+  --bg: var(--vscode-editor-background, #1e1e1e);
+  --surface: var(--vscode-editor-background, #1e1e1e);
+  --surface-2: var(--vscode-sideBar-background, #252526);
+  --border: var(--vscode-panel-border, #444);
   --text: var(--vscode-editor-foreground, #cdd6f4);
   --muted: var(--vscode-descriptionForeground, #a6adc8);
   --accent: var(--vscode-button-background, #89b4fa);
@@ -93,12 +93,13 @@ html, body {
 .logo-icon {
   width: 18px;
   height: 18px;
-  background: linear-gradient(135deg, var(--accent), var(--stage-generate));
-  border-radius: 4px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: 12px;
   flex-shrink: 0;
 }
 
@@ -134,8 +135,9 @@ html, body {
   align-items: center;
   justify-content: center;
 }
-.icon-btn:hover { background: var(--border); color: var(--text); }
+.icon-btn:hover { background: var(--surface-2); color: var(--text); }
 .icon-btn:active { background: var(--accent); color: var(--accent-fg); }
+.icon-btn:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: -1px; }
 .icon-btn[title] { position: relative; }
 
 /* ─── Server Banner ──────────────────────────────────────────────────────── */
@@ -182,10 +184,11 @@ html, body {
   color: var(--muted);
 }
 .empty-state-icon {
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 20%, transparent), color-mix(in srgb, var(--stage-generate) 20%, transparent));
-  border-radius: 14px;
+  width: 42px;
+  height: 42px;
+  background: var(--surface-2);
+  color: var(--accent);
+  border-radius: var(--radius);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -231,7 +234,7 @@ html, body {
 }
 .avatar.user-avatar { background: var(--accent); color: var(--accent-fg); }
 .avatar.agent-avatar {
-  background: linear-gradient(135deg, var(--accent), var(--stage-generate));
+  background: var(--accent);
   color: var(--accent-fg);
 }
 
@@ -252,7 +255,7 @@ html, body {
   border-radius: var(--radius-lg) var(--radius-lg) var(--radius-sm) var(--radius-lg);
 }
 .bubble.agent-bubble {
-  background: var(--surface-2);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm) var(--radius-lg) var(--radius-lg) var(--radius-lg);
   width: 100%;
@@ -472,7 +475,7 @@ textarea#prompt {
   transition: border-color var(--transition);
   scrollbar-width: thin;
 }
-textarea#prompt:focus { outline: none; border-color: var(--accent); }
+textarea#prompt:focus { outline: 1px solid var(--vscode-focusBorder); border-color: transparent; outline-offset: -1px; }
 textarea#prompt::placeholder { color: var(--muted); }
 
 .send-btn {
@@ -521,8 +524,8 @@ textarea#prompt::placeholder { color: var(--muted); }
   max-width: 150px;
   text-overflow: ellipsis;
 }
-.select-pill:focus { outline: none; border-color: var(--accent); }
-.select-pill:hover { border-color: var(--accent); }
+.select-pill:focus { outline: 1px solid var(--vscode-focusBorder); border-color: transparent; outline-offset: -1px; }
+.select-pill:hover:not(:focus) { border-color: var(--accent); }
 
 .spacer { flex: 1; }
 
@@ -587,8 +590,8 @@ textarea#prompt::placeholder { color: var(--muted); }
   width: 280px;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px var(--vscode-widget-shadow, rgba(0,0,0,0.25));
   z-index: 100;
   overflow: hidden;
   animation: panelIn 0.15s ease;

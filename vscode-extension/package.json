@@ -3,11 +3,30 @@
   "displayName": "Context Engine",
   "description": "AI-powered context engineering assistant with RAG pipeline, pruning, and local Ollama models",
   "version": "0.1.0",
-  "publisher": "context-engine",
-  "engines": { "vscode": "^1.85.0" },
-  "categories": ["AI", "Programming Languages", "Other"],
-  "keywords": ["AI", "RAG", "Ollama", "context", "coding assistant"],
-  "activationEvents": ["onStartupFinished"],
+  "publisher": "ref",
+  "icon": "icon.jpg",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/reffobic/context-engine-vscode"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "AI",
+    "Programming Languages",
+    "Other"
+  ],
+  "keywords": [
+    "AI",
+    "RAG",
+    "Ollama",
+    "context",
+    "coding assistant"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "viewsContainers": {
@@ -107,11 +126,14 @@
     "lint": "eslint src --ext ts"
   },
   "devDependencies": {
-    "@types/vscode": "^1.85.0",
     "@types/node": "^20.0.0",
-    "typescript": "^5.3.0",
+    "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
-    "eslint": "^8.0.0"
+    "eslint": "^8.0.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "@vscode/codicons": "^0.0.46-24"
   }
 }

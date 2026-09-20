@@ -80,7 +80,8 @@ def _persist_eval_metrics(
 class GenerateRequest(BaseModel):
     prompt: str
     mode: Literal["RAG", "LC", "SELF_ROUTE"] = "SELF_ROUTE"
-    model: Optional[str] = None  # Ollama model name; None = use agent default
+    model: Optional[str] = None  # Ollama model name for Generation; None = use agent default
+    assessor_model: Optional[str] = None  # Ollama model name for Assessment
 
 
 class EvaluateRequest(BaseModel):
@@ -458,7 +459,8 @@ def list_models() -> dict:
 class StreamGenerateRequest(BaseModel):
     prompt: str
     mode: Literal["RAG", "LC", "SELF_ROUTE"] = "SELF_ROUTE"
-    model: Optional[str] = None  # Ollama model name; None = use default
+    model: Optional[str] = None  # Ollama model name for Generation; None = use default
+    assessor_model: Optional[str] = None # Ollama model name for Assessment
     file_context: Optional[str] = None  # raw file text from the editor (skips RAG retrieval)
 
 
@@ -471,6 +473,7 @@ def _run_pipeline_streaming(
     user_prompt: str,
     mode: str,
     model: Optional[str],
+    assessor_model: Optional[str] = None,
     file_context: Optional[str] = None,
 ) -> Generator[str, None, None]:
     """
@@ -551,7 +554,7 @@ def _run_pipeline_streaming(
         yield _sse({"event": "stage_start", "stage": "assess", "label": "Sufficiency assessment"})
         try:
             if mode == "SELF_ROUTE":
-                decision, duration_ms = _time_stage(lambda: assess_sufficiency(user_prompt, pruned_context))
+                decision, duration_ms = _time_stage(lambda: assess_sufficiency(user_prompt, pruned_context, model=assessor_model))
                 assess_summary = {"route": decision["route"], "sufficient": decision["sufficient"],
                                   "confidence": decision["confidence"], "reason": decision["reason"]}
                 context_for_injection = _build_lc_chunks(context) if decision["route"] == "LC" else pruned_context
@@ -645,7 +648,7 @@ def _run_pipeline_streaming(
 def generate_stream(req: StreamGenerateRequest):
     """SSE endpoint: yields pipeline stage events + streaming LLM tokens."""
     return StreamingResponse(
-        _run_pipeline_streaming(req.prompt, req.mode, req.model, req.file_context),
+        _run_pipeline_streaming(req.prompt, req.mode, req.model, req.assessor_model, req.file_context),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
