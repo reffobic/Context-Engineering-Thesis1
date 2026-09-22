@@ -854,14 +854,14 @@ def print_recommend() -> int:
         print("No usable model. Example: ollama pull qwen3.5:9b", file=sys.stderr)
         return 2
     print("Start API with:")
-    print(f'  $env:OLLAMA_MODEL="{sel}"')
-    print('  $env:PYTHONPATH="backend"')
+    print(f'  export OLLAMA_MODEL="{sel}"')
+    print('  export PYTHONPATH="backend"')
     print("  cd backend")
-    print("  python -m uvicorn mcp_server.server:app --host 127.0.0.1 --port 8000")
+    print("  python3 -m uvicorn mcp_server.server:app --host 127.0.0.1 --port 8000")
     print()
-    print("Then run:")
-    print("  python -u scripts/live_gasr_ollama_tests.py --suite core --timeout 600")
-    print("  python -u scripts/live_gasr_ollama_tests.py --suite compare --timeout 900")
+    print("Then run (bash Terminal — use python3):")
+    print("  python3 -u scripts/live_gasr_ollama_tests.py --suite core --timeout 600")
+    print("  python3 -u scripts/live_gasr_ollama_tests.py --suite compare --timeout 900")
     return 0
 
 
