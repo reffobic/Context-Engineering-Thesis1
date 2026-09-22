@@ -46,6 +46,63 @@ python3 -u scripts/live_gasr_ollama_tests.py --recommend-model
 
 ---
 
+## 0b. Once — create `graph.json` (required for GASR graph hops)
+
+Without this file, GASR expand returns `graph_backend: "empty"`, `new_chunk_count: 0`, and **always falls through to LC** even when the judge says `STRUCTURE`.
+
+**Expected path (default):**
+
+```text
+<repo>/graphify-out/graph.json
+```
+
+Also accepted: `GRAPHIFY_OUT` env pointing at the file or its folder; or `graphify_out/graph.json`; or `backend/chroma_db/graphify_graph.json`.
+
+### Create it (bash Terminal)
+
+From the **repo root** (same tree you index / ask about, e.g. with `superset/` code present):
+
+```bash
+cd ~/Documents/ThesisProject/Context-Engineering-Thesis1
+
+# Graphify CLI (PyPI package name is graphifyy)
+python3 -m pip install -U graphifyy
+
+# Build / refresh the graph (no LLM needed)
+graphify update . --force
+
+# Confirm
+ls -la graphify-out/graph.json
+```
+
+Optional checks:
+
+```bash
+graphify explain "create_app"
+# or:
+ls graphify-out/   # usually graph.json, graph.html, GRAPH_REPORT.md
+```
+
+If the corpus lives elsewhere, run Graphify **there**, then point the API at it:
+
+```bash
+export GRAPHIFY_OUT="/path/to/that/repo/graphify-out"
+# restart uvicorn after setting this
+```
+
+Or copy into this repo:
+
+```bash
+mkdir -p graphify-out
+cp /path/to/graphify-out/graph.json graphify-out/
+```
+
+**Restart uvicorn** after creating or copying `graph.json` so GASR reloads the adapter.
+
+Quick sanity after a live GASR case: in `results/live_gasr/LATEST.md`, expand should show `graph_backend` ≠ `empty` and `new_chunk_count > 0` when STRUCTURE hops work.
+
+---
+
 ## 1. Terminal A — start the API
 
 Set `OLLAMA_MODEL` **before** starting uvicorn.
@@ -56,6 +113,8 @@ cd ~/Documents/ThesisProject/Context-Engineering-Thesis1
 export OLLAMA_MODEL="qwen3.5:9b"
 export PYTHONPATH="backend"
 # Do NOT set GASR_OFFLINE=1
+# Optional if graph is not under ./graphify-out:
+# export GRAPHIFY_OUT="$PWD/graphify-out"
 
 cd backend
 python3 -m uvicorn mcp_server.server:app --host 127.0.0.1 --port 8000
@@ -73,9 +132,10 @@ Check:
 
 ```bash
 curl -s http://127.0.0.1:8000/
+ls ../graphify-out/graph.json   # from backend/, or: ls graphify-out/graph.json from repo root
 ```
 
-Repo must already be **indexed** and Graphify `graph.json` available to the server.
+Repo must already be **indexed** and `graphify-out/graph.json` present (see §0b).
 
 ---
 
@@ -133,7 +193,8 @@ Reports include **Mode cost summary** and **Prompt comparison** (Δ vs RAG).
 
 1. `python3 --version` works  
 2. Ollama up + model pulled  
-3. `export OLLAMA_MODEL=...` then uvicorn on `:8000`  
-4. Indexed corpus + Graphify graph  
-5. `python3 -u scripts/live_gasr_ollama_tests.py --suite compare --timeout 900`  
-6. Open `results/live_gasr/LATEST.md`
+3. **`graphify update . --force`** → `graphify-out/graph.json` exists  
+4. `export OLLAMA_MODEL=...` then uvicorn on `:8000` (restart after graph changes)  
+5. Corpus indexed  
+6. `python3 -u scripts/live_gasr_ollama_tests.py --suite compare --timeout 900`  
+7. Open `results/live_gasr/LATEST.md` — GASR expand should not be `empty`
