@@ -16,3 +16,10 @@ env/
 # Old/legacy tracked artifacts (keep repo clean)
 data/chroma_db/
 data/subversion/
+
+# Graphify generated output / cache
+graphify-out/
+**/graphify-out/
+
+# Mem0 local persistence
+.mem0/
