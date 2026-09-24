@@ -94,12 +94,19 @@ def run_gasr_ladder(
         expand_result = expand_hop(expand_seeds, 1)
         new_chunks = expand_result.get("chunks") or []
         hops_used += 1
+        neighbor_ids = list(expand_result.get("neighbor_ids") or [])
+        # Cap ids in the trace so live reports stay readable.
+        neighbor_ids_cap = 20
         expand_trace.append(
             {
                 "hops_used": hops_used,
                 "new_chunk_count": expand_result.get("new_chunk_count", 0),
                 "graph_backend": expand_result.get("graph_backend"),
                 "seed_keys": expand_result.get("seed_keys"),
+                "neighbor_ids": neighbor_ids[:neighbor_ids_cap],
+                "neighbor_ids_total": len(neighbor_ids),
+                "edge_counts": expand_result.get("edge_counts"),
+                "duration_ms": expand_result.get("duration_ms", 0),
                 "confidence_note": conf,
             }
         )

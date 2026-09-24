@@ -1,8 +1,8 @@
-Latest run: `live_gasr_run_20260922T114732Z.md`
+Latest run: `live_gasr_run_20260924T081237Z.md`
 
 # Live GASR + Ollama test run
 
-- **When (UTC):** 20260922T114732Z
+- **When (UTC):** 20260924T081237Z
 - **Base URL:** `http://127.0.0.1:8000`
 - **Timeout/case:** 900.0s
 - **Suite:** `compare`
@@ -15,7 +15,7 @@ Latest run: `live_gasr_run_20260922T114732Z.md`
 ```json
 {
   "platform": "Linux-6.8.0-138-generic-x86_64-with-glibc2.35",
-  "python": "3.10.12",
+  "python": "3.12.13",
   "machine": "x86_64",
   "processor": "x86_64",
   "hostname": "csep07217951-Alienware-Aurora-R16",
@@ -33,10 +33,10 @@ Latest run: `live_gasr_run_20260922T114732Z.md`
 | Metric | Value |
 |--------|-------|
 | ok / fail | 12 / 0 |
-| route_counts | `{"RAG": 4, "LC": 8}` |
-| hops_used_counts | `{"0": 8, "1": 4}` |
-| duration_ms mean | 5684 |
-| duration_ms total | 68215 |
+| route_counts | `{"RAG": 4, "LC": 7, "GRAPH": 1}` |
+| hops_used_counts | `{"0": 8, "1": 1, "2": 3}` |
+| duration_ms mean | 9536 |
+| duration_ms total | 114432 |
 
 ### Routes by mode
 
@@ -49,7 +49,8 @@ Latest run: `live_gasr_run_20260922T114732Z.md`
     "LC": 4
   },
   "GASR": {
-    "LC": 4
+    "GRAPH": 1,
+    "LC": 3
   }
 }
 ```
@@ -58,9 +59,9 @@ Latest run: `live_gasr_run_20260922T114732Z.md`
 
 | Mode | n | tokens mean | tokens sum | wall_ms mean | generate_ms mean | retrieve_ms mean | graph_expand_ms mean | hops mean | ms/token |
 |------|---|-------------|------------|--------------|------------------|------------------|----------------------|-----------|----------|
-| GASR | 4 | 33681.8 | 134727 | 5383.8 | 2744.8 | 1847.8 | 0.0 | 1.0 | 0.16 |
-| LC | 4 | 33681.8 | 134727 | 4819.8 | 2724.2 | 1981.5 | None | 0.0 | 0.143 |
-| RAG | 4 | 484.5 | 1938 | 6850.2 | 3925.0 | 2281.8 | None | 0.0 | 14.139 |
+| GASR | 4 | 24431.8 | 97727 | 9156.8 | 2723.8 | 1302.8 | 130.2 | 1.8 | 0.375 |
+| LC | 4 | 30245.2 | 120981 | 10288.5 | 8879.0 | 1289.5 | None | 0.0 | 0.34 |
+| RAG | 4 | 614.5 | 2458 | 9162.8 | 7688.0 | 1354.8 | None | 0.0 | 14.911 |
 
 ## Prompt comparison (RAG vs LC vs GASR)
 
@@ -72,9 +73,9 @@ Each group runs the **same prompt** under forced `RAG`, `LC`, and `GASR`.
 
 | Mode | ok | route | hops | tokens | wall_ms | retrieve_ms | assess_ms | graph_expand_ms | generate_ms | Δtokens vs RAG | Δwall_ms vs RAG |
 |------|----|-------|------|--------|---------|-------------|-----------|-----------------|-------------|----------------|-----------------|
-| RAG | True | `RAG` | 0 | 457 | 9109 | 3039 | 0 | None | 3841 | — | — |
-| LC | True | `LC` | 0 | 25052 | 4857 | 2062 | 0 | None | 2682 | 24595 | -4252 |
-| GASR | True | `LC` | 1 | 25052 | 5353 | 1762 | 1256 | 0 | 2214 | 24595 | -3756 |
+| RAG | True | `RAG` | 0 | 482 | 2222 | 1351 | 0 | None | 758 | — | — |
+| LC | True | `LC` | 0 | 25052 | 4975 | 1200 | 0 | None | 3664 | 24570 | 2753 |
+| GASR | True | `GRAPH` | 1 | 1798 | 5032 | 1295 | 955 | 74 | 1858 | 1316 | 2810 |
 
 ### `C2_cross_file_callees`
 
@@ -82,9 +83,9 @@ Each group runs the **same prompt** under forced `RAG`, `LC`, and `GASR`.
 
 | Mode | ok | route | hops | tokens | wall_ms | retrieve_ms | assess_ms | graph_expand_ms | generate_ms | Δtokens vs RAG | Δwall_ms vs RAG |
 |------|----|-------|------|--------|---------|-------------|-----------|-----------------|-------------|----------------|-----------------|
-| RAG | True | `RAG` | 0 | 372 | 3856 | 2137 | 0 | None | 1619 | — | — |
-| LC | True | `LC` | 0 | 65370 | 3045 | 2131 | 0 | None | 811 | 64998 | -811 |
-| GASR | True | `LC` | 1 | 65370 | 2812 | 1957 | 423 | 0 | 328 | 64998 | -1044 |
+| RAG | True | `RAG` | 0 | 594 | 26089 | 1320 | 0 | None | 24656 | — | — |
+| LC | True | `LC` | 0 | 55222 | 3765 | 1337 | 0 | None | 2310 | 54628 | -22324 |
+| GASR | True | `LC` | 2 | 55222 | 5462 | 1329 | 1538 | 118 | 330 | 54628 | -20627 |
 
 ### `C3_same_file_context`
 
@@ -92,9 +93,9 @@ Each group runs the **same prompt** under forced `RAG`, `LC`, and `GASR`.
 
 | Mode | ok | route | hops | tokens | wall_ms | retrieve_ms | assess_ms | graph_expand_ms | generate_ms | Δtokens vs RAG | Δwall_ms vs RAG |
 |------|----|-------|------|--------|---------|-------------|-----------|-----------------|-------------|----------------|-----------------|
-| RAG | True | `RAG` | 0 | 464 | 8769 | 1899 | 0 | None | 6754 | — | — |
-| LC | True | `LC` | 0 | 15283 | 6327 | 1895 | 0 | None | 4323 | 14819 | -2442 |
-| GASR | True | `LC` | 1 | 15283 | 6248 | 1834 | 522 | 0 | 3778 | 14819 | -2521 |
+| RAG | True | `RAG` | 0 | 464 | 3514 | 1291 | 0 | None | 2112 | — | — |
+| LC | True | `LC` | 0 | 15283 | 7624 | 1253 | 0 | None | 6262 | 14819 | 4110 |
+| GASR | True | `LC` | 2 | 15283 | 12059 | 1284 | 2191 | 156 | 4436 | 14819 | 8545 |
 
 ### `C4_config_deps`
 
@@ -102,9 +103,9 @@ Each group runs the **same prompt** under forced `RAG`, `LC`, and `GASR`.
 
 | Mode | ok | route | hops | tokens | wall_ms | retrieve_ms | assess_ms | graph_expand_ms | generate_ms | Δtokens vs RAG | Δwall_ms vs RAG |
 |------|----|-------|------|--------|---------|-------------|-----------|-----------------|-------------|----------------|-----------------|
-| RAG | True | `RAG` | 0 | 645 | 5667 | 2052 | 0 | None | 3486 | — | — |
-| LC | True | `LC` | 0 | 29022 | 5050 | 1838 | 0 | None | 3081 | 28377 | -617 |
-| GASR | True | `LC` | 1 | 29022 | 7122 | 1838 | 496 | 0 | 4659 | 28377 | 1455 |
+| RAG | True | `RAG` | 0 | 918 | 4826 | 1457 | 0 | None | 3226 | — | — |
+| LC | True | `LC` | 0 | 25424 | 24790 | 1368 | 0 | None | 23280 | 24506 | 19964 |
+| GASR | True | `LC` | 2 | 25424 | 14074 | 1303 | 2249 | 173 | 4271 | 24506 | 9248 |
 
 ## Process
 
@@ -131,36 +132,28 @@ Each group runs the **same prompt** under forced `RAG`, `LC`, and `GASR`.
 | Field | Value |
 |-------|-------|
 | ok | True |
-| duration_ms (wall) | 9109 |
+| duration_ms (wall) | 2222 |
 | route | `RAG` |
 | hops_used | `0` |
-| tokens_injected_est | `457` |
-| retrieve_ms | `3039` |
+| tokens_injected_est | `482` |
+| retrieve_ms | `1351` |
 | assess_ms | `0` |
 | graph_expand_ms | `None` |
 | re_prune_ms | `None` |
 | inject_ms | `0` |
-| generate_ms | `3841` |
-| pipeline_stages_ms | `9105` |
-| answer_chars | `738` |
+| generate_ms | `758` |
+| pipeline_stages_ms | `2220` |
+| answer_chars | `256` |
 
 **Answer:**
 
 ```
-Based on the provided context, specifically the `superset/app.py` file snippet:
+Based on the provided context, specifically the code in `superset/app.py`:
 
-The function `create_app` concludes its logic by calling `app_initializer.init()` and then returning the Flask application instance. The relevant code lines are:
-
+The function `create_app` returns the Flask application instance. This is explicitly shown at the end of the function's logic block with the statement:
 ```python
-if app.debug:
-    start_localextensions_w_thread()
-return  # Make sure that bootstrap errors ALWAYS get logged
-# Exception:
-logger.error("Failed to create app")
-raise
+    return app
 ```
-
-Although the exact variable name assigned immediately before the `return` statement in the provided snippet is obscured by formatting/encoding issues (showing as `app`), standard Flask application factory patterns and the surrounding context imply that the final `return` yields the initialized Flask app object.
 ```
 
 **Assess summary:**
@@ -191,30 +184,37 @@ Although the exact variable name assigned immediately before the `return` statem
 | Field | Value |
 |-------|-------|
 | ok | True |
-| duration_ms (wall) | 4857 |
+| duration_ms (wall) | 4975 |
 | route | `LC` |
 | hops_used | `0` |
 | tokens_injected_est | `25052` |
-| retrieve_ms | `2062` |
+| retrieve_ms | `1200` |
 | assess_ms | `0` |
 | graph_expand_ms | `None` |
 | re_prune_ms | `None` |
 | inject_ms | `0` |
-| generate_ms | `2682` |
-| pipeline_stages_ms | `4853` |
-| answer_chars | `956` |
+| generate_ms | `3664` |
+| pipeline_stages_ms | `4972` |
+| answer_chars | `1262` |
 
 **Answer:**
 
 ```
-Based on the provided code snippet and context, **`create_app`** is not explicitly shown within the `files_and_code` block. However, looking at the test cases for classes like `TestWebDriverSelenium`, `TestWebDriverScreenshotErrorDetector`, and the usage of `self.client` in `test_get_async_dashboard_screenshot`, we can infer the context:
+Based on the file `superset/app.py` (which is standard for this project, though not explicitly provided in the snippet, the behavior is defined there), the function `create_app` returns an **application factory** (a class/function) that creates and configures the Flask application instance.
 
-1.  **Usage Pattern**: The tests initialize a client (e.g., `self.client = self.app.test_client()` inside the parent class `SupersetTestCase`).
-2.  **Inferred Return Type**: In standard Superset architecture (and Flask applications in general), the `create_app` function is responsible for instantiating and returning the **Flask application instance** (often stored as `app`).
+Specifically, it:
+1.  Creates a Flask app (`Flask(__name__)`).
+2.  Loads configuration (from environment variables or default configs).
+3.  Initializes extensions (SQLAlchemy, Flask-SQLAlchemy, CORS, etc.).
+4.  Configures blueprints and error handlers.
+5.  Returns the configured `app` object.
 
-Therefore, `create_app` returns a **Flask app instance**.
+If you are looking for the specific return type in the context of testing or running the server, it is usually just the **Flask App instance**.
 
-*(Note: While the specific implementation of `create_app` isn't in the provided text, the test setup implies that an app object exists and is used for testing client requests.)*
+However, if your question implies "What does the code snippet *above* return?" (referring to the provided test file), **nothing**. The provided text contains tests (`TestDashboardApi`, `TestWebDriverScreenshotErrorDetector`, etc.), which run assertions but do not define or call `create_app` within the visible scope.
+
+**Answer:**
+The function `create_app` in `superset/app.py` returns a **Flask application instance** (specifically, it is an **application factory** that initializes and configures the Superset web application).
 ```
 
 **Assess summary:**
@@ -245,37 +245,34 @@ Therefore, `create_app` returns a **Flask app instance**.
 | Field | Value |
 |-------|-------|
 | ok | True |
-| duration_ms (wall) | 5353 |
-| route | `LC` |
+| duration_ms (wall) | 5032 |
+| route | `GRAPH` |
 | hops_used | `1` |
-| tokens_injected_est | `25052` |
-| retrieve_ms | `1762` |
-| assess_ms | `1256` |
-| graph_expand_ms | `0` |
-| re_prune_ms | `0` |
+| tokens_injected_est | `1798` |
+| retrieve_ms | `1295` |
+| assess_ms | `955` |
+| graph_expand_ms | `74` |
+| re_prune_ms | `741` |
 | inject_ms | `0` |
-| generate_ms | `2214` |
-| pipeline_stages_ms | `5337` |
-| answer_chars | `975` |
+| generate_ms | `1858` |
+| pipeline_stages_ms | `5029` |
+| answer_chars | `600` |
 
 **Answer:**
 
 ```
-Based on the provided code context, the `create_app` function in `superset/app.py` returns an **application factory** (often referred to as a `Flask` app instance or `application factory`).
+Based on the `superset/app.py` file provided:
 
-In the context of Superset's architecture and the tests shown (like `TestWebDriverScreenshotErrorDetector` which accesses `app.config`), this returned object is the main Flask application instance. It is typically assigned to a global variable named `app` after importing it from `superset.app`.
+The function `create_app` (lines 1-53) returns the initialized Flask application object. Specifically, at line 47, after initializing the app, configuring options based on environment variables like `SUPAPP`, and setting up locale extensions if in debug mode, it executes `return`. 
 
-This factory pattern allows for:
-1.  **Configuration Handling**: It initializes the app with specific configurations defined in environment variables or config files (as seen when tests set `app.config["SCREENSHOT_REPLACE_UNEXPECTED_ERRORS"]`).
-2.  **Blueprint Registration**: It registers all Superset blueprints (views) and extensions.
-3.  **Database Initialization**: It sets up the database connection pool and other infrastructure needed for the WSGI/ASGI server to handle requests.
+While the snippet does not show the exact line where the application instance is constructed (likely earlier in the omitted lines), the return statement at line 47 confirms that the function yields the configured Flask app instance for use by other parts of the system.
 ```
 
 **Assess summary:**
 
 ```json
 {
-  "route": "LC",
+  "route": "GRAPH",
   "hops_used": 1,
   "gasr_hard_cap": 2,
   "re_prune_kind": "flat_merge",
@@ -285,18 +282,27 @@ This factory pattern allows for:
       "hops": 0,
       "sufficient": false,
       "confidence": "low",
-      "reason": "The retrieved chunks do not provide information about the return value of create_app",
+      "reason": "Key information about the return value of create_app is missing",
       "route": "LC",
-      "duration_ms": 1021
+      "duration_ms": 284
     },
     {
       "phase": "structure_vs_context",
       "hops": 0,
       "need": "STRUCTURE",
       "confidence": "low",
-      "reason": "Lack of information about function calls, imports, and dependencies",
-      "duration_ms": 235,
+      "reason": "Lack of information about callers, callees, imports, or cross-file dependencies",
+      "duration_ms": 259,
       "can_expand": true
+    },
+    {
+      "phase": "graph",
+      "hops": 1,
+      "sufficient": true,
+      "confidence": "high",
+      "reason": "The retrieved chunks directly answer the query about the return value of the `create_app` function in `superset/app.py`.",
+      "route": "RAG",
+      "duration_ms": 412
     }
   ]
 }
@@ -310,16 +316,46 @@ This factory pattern allows for:
   "expansions": [
     {
       "hops_used": 1,
-      "new_chunk_count": 0,
+      "new_chunk_count": 23,
       "graph_backend": "graphify",
       "seed_keys": [
         "tests/integration_tests/base_tests.py:create_app",
         "superset/app.py:create_app",
         "tests/integration_tests/base_tests.py:create_user",
-        "tests/integration_tests/base_tests.py:get_or_create",
-        "tests/integration_tests/thumbnails_tests.py:create_app"
+        "tests/integration_tests/thumbnails_tests.py:create_app",
+        "tests/integration_tests/base_tests.py:create_fake_db"
       ],
-      "confidence_note": "low"
+      "neighbor_ids": [
+        "scripts/erd/erd.py:erd",
+        "superset/app.py:SupersetApp",
+        "superset/app.py:AppRootMiddleware",
+        "superset/extensions/local_extensions_watcher.py:start_local_extensions_watcher_thread",
+        "superset/cli/main.py:create_app",
+        "tests/unit_tests/initialization_test.py:test_application_root_config_activates_middleware",
+        "tests/unit_tests/initialization_test.py:test_default_app_root_no_middleware",
+        "tests/unit_tests/initialization_test.py:test_env_var_activates_middleware",
+        "tests/unit_tests/initialization_test.py:test_env_var_takes_precedence_over_config",
+        "tests/unit_tests/initialization_test.py:test_param_takes_precedence_over_env_var",
+        "scripts/benchmark_migration.py:benchmark_migration.py",
+        "scripts/erd/erd.py:erd.py",
+        "superset/cli/main.py:main.py",
+        "superset/db_engine_specs/lib.py:lib.py",
+        "superset/__init__.py:superset/__init__.py",
+        "superset/mcp_service/flask_singleton.py:flask_singleton.py",
+        "superset/tasks/celery_app.py:celery_app.py",
+        "tests/integration_tests/test_app.py:test_app.py",
+        "tests/unit_tests/initialization_test.py:initialization_test.py",
+        "superset/app.py:superset/app.py"
+      ],
+      "neighbor_ids_total": 20,
+      "edge_counts": {
+        "neighbors": 20
+      },
+      "duration_ms": 74,
+      "confidence_note": "low",
+      "re_prune_ms": 741,
+      "re_prune_kept": 15,
+      "re_prune_kind": "flat_merge"
     }
   ]
 }
@@ -331,7 +367,7 @@ This factory pattern allows for:
 {
   "token_budget": 1800,
   "re_prune_kind": "flat_merge",
-  "kept": 5
+  "kept": 15
 }
 ```
 
@@ -352,30 +388,83 @@ This factory pattern allows for:
 | Field | Value |
 |-------|-------|
 | ok | True |
-| duration_ms (wall) | 3856 |
+| duration_ms (wall) | 26089 |
 | route | `RAG` |
 | hops_used | `0` |
-| tokens_injected_est | `372` |
-| retrieve_ms | `2137` |
+| tokens_injected_est | `594` |
+| retrieve_ms | `1320` |
 | assess_ms | `0` |
 | graph_expand_ms | `None` |
 | re_prune_ms | `None` |
 | inject_ms | `0` |
-| generate_ms | `1619` |
-| pipeline_stages_ms | `3851` |
-| answer_chars | `669` |
+| generate_ms | `24656` |
+| pipeline_stages_ms | `26085` |
+| answer_chars | `9103` |
 
 **Answer:**
 
 ```
-Based on the provided context, the `create_app` function is not explicitly shown, but the initialization logic within `superset/initialization/__init__.py` reveals the sequence and relationships between the relevant helper functions regarding feature flags and encryption:
+Based on the provided code snippets for `superset/app.py`, the file actually defines the function `create_app` but does not contain a direct invocation of `init_app`. Instead, the initialization logic described in your task appears to be located within `superset/initialization/__init__.py`.
 
-1.  **Feature Flags**: The `init_app` method calls `selfconfigfeature_flags` to "allow init features" early in the configuration phase.
-2.  **Encryption**: Immediately following database setup checks, `init_app` calls `selfconfigdb_encrypt()` to handle database encryption configuration.
+Looking at the `__call__` method in `superset/initialization/__init__.py`, which acts as the main entry point for initialization:
 
-Therefore, the callee symbols related to these tasks are:
-*   `configfeature_flags`
-*   `configdb_encrypt`
+```python
+def __call__(self, app): # Snippet from superset/initialization/__init__.py
+    self.pre_init()
+    self.check_secret_key()
+    self.configure_session()
+    self.config_logging()  # Configuration of logging must be first to apply the form properly
+    self.feature_flags = config.get("FEATURE_FLAGS", {}) # Configuration feature_flags must first allow init features (condition)
+    self.config_db_encrypt()
+    self.setup_db()
+    ...
+```
+
+And looking at the `init_app` method in the same file:
+
+```python
+def init_app(self): # Snippet from superset/initialization/__init__.py
+    ...
+    self.pre_init()
+    self.check_secret_key()
+    self.configure_session()
+    self.config_logging()
+    self.feature_flags = config.get("FEATURE_FLAGS", {})
+    self.config_db_encrypt()
+    self.setup_db()
+    ...
+```
+
+The question asks for callee symbols related to **feature flags** or **encrypt** within the context of `init_app`. Based on the `__call__` and `init_app` snippets in `superset/initialization/__init__.py`, the specific callees (methods invoked by `self`) are:
+
+1.  `config_db_encrypt` (related to encrypt)
+2.  `feature_flags` (assigned/configured, not called as a method with a name like `config_feature_flags`, but it is the symbol handling feature flags). However, strictly looking for *callee symbols* (methods being called):
+    *   `self.config_db_encrypt()` is a direct call.
+    *   There is no explicit method call like `self.config_feature_flags()`. The code sets `self.feature_flags = ...`.
+
+If strictly adhering to "call related to feature flags or encrypt", and naming callee symbols only:
+
+*   For **encrypt**: `config_db_encrypt`
+*   For **feature flags**: There is no explicit method *called* (invoked) in the provided snippets specifically named for configuring feature flags other than the assignment. However, if we look at `self.config_logging()` or `self.setup_db()`, these are calls.
+
+Wait, let's re-read the prompt carefully: "In superset/app.py...". The code for `create_app` is in `superset/app.py`. The snippets provided show the content of `superset/initialization/__init__.py`. The `create_app` function in `superset/app.py` calls `SupApp(app_initializer)(app)` (inferred from `SupInitial)(app`). The `SupApp` class seems to be in `superset/initialization/__init__.py`.
+
+If the question implies "What does the initialization logic (accessed via app initializer) call", based on the `__call__` and `init_app` methods shown:
+The calls made are: `pre_init`, `check_secret_key`, `configure_session`, `config_logging`, `config_db_encrypt`, `setup_db`, etc.
+
+Specifically regarding **feature flags** or **encrypt**:
+1.  `config_db_encrypt` is called.
+2.  There is no method call for feature flags (only assignment to `self.feature_flags`).
+
+However, often "callee symbols" refers to the functions defined in the same file being called.
+In `superset/initialization/__init__.py`:
+*   `def __call__(...` calls: `self.pre_init()`, `self.check_secret_key()`, `self.configure_session()`, `self.config_logging()`, `self.config_db_encrypt()`.
+*   `def init_app(...)` calls: same sequence.
+
+The symbol handling feature flags is the variable assignment, not a call. The only *call* explicitly related to **encrypt** is `config_db_encrypt`. If the question insists on a callee for feature flags, it might be assuming `config_feature_flags` exists but isn't in the snippet, or perhaps I missed something.
+
+Let's look at the text again:
+`# Configuration feature_flags must first allow init features (condition)` followed by `self.feature_flags = config
 ```
 
 **Assess summary:**
@@ -406,25 +495,34 @@ Therefore, the callee symbols related to these tasks are:
 | Field | Value |
 |-------|-------|
 | ok | True |
-| duration_ms (wall) | 3045 |
+| duration_ms (wall) | 3765 |
 | route | `LC` |
 | hops_used | `0` |
-| tokens_injected_est | `65370` |
-| retrieve_ms | `2131` |
+| tokens_injected_est | `55222` |
+| retrieve_ms | `1337` |
 | assess_ms | `0` |
 | graph_expand_ms | `None` |
 | re_prune_ms | `None` |
 | inject_ms | `0` |
-| generate_ms | `811` |
-| pipeline_stages_ms | `3036` |
-| answer_chars | `96` |
+| generate_ms | `2310` |
+| pipeline_stages_ms | `3758` |
+| answer_chars | `774` |
 
 **Answer:**
 
 ```
-feature_flag_manager.is_feature_enabled
-feature_flag_manager.is_feature_enabled
-encrypt.init_app
+Based on the code context provided from `superset/app.py`, here are the callee symbols related to **feature flags** and **encrypt init_app helpers**:
+
+**Feature Flags:**
+*   `feature_flag_manager`
+    *   *(Used in checks like `is_feature_enabled("ENABLE_EXTENSIONS")`) *
+*   `config["FAB_ADD_SECURITY_VIEWS"]`
+    *   *(Though a config lookup, it is the helper flag controlling visibility of specific views like `ActionLogView`)*
+
+*(Note: The provided code snippet does not contain explicit calls to an "encrypt" function or "init_app" helpers related to encryption within this specific block. It primarily focuses on feature flags via `feature_flag_manager` and conditional view registration logic.)*
+
+**Result:**
+`feature_flag_manager`, `config["FAB_ADD_SECURITY_VIEWS"]`
 ```
 
 **Assess summary:**
@@ -455,23 +553,24 @@ encrypt.init_app
 | Field | Value |
 |-------|-------|
 | ok | True |
-| duration_ms (wall) | 2812 |
+| duration_ms (wall) | 5462 |
 | route | `LC` |
-| hops_used | `1` |
-| tokens_injected_est | `65370` |
-| retrieve_ms | `1957` |
-| assess_ms | `423` |
-| graph_expand_ms | `0` |
-| re_prune_ms | `0` |
+| hops_used | `2` |
+| tokens_injected_est | `55222` |
+| retrieve_ms | `1329` |
+| assess_ms | `1538` |
+| graph_expand_ms | `118` |
+| re_prune_ms | `1338` |
 | inject_ms | `0` |
-| generate_ms | `328` |
-| pipeline_stages_ms | `2802` |
-| answer_chars | `30` |
+| generate_ms | `330` |
+| pipeline_stages_ms | `4762` |
+| answer_chars | `29` |
 
 **Answer:**
 
 ```
-feature_flag_manager, init_app
+feature_flag_manager
+init_app
 ```
 
 **Assess summary:**
@@ -479,7 +578,7 @@ feature_flag_manager, init_app
 ```json
 {
   "route": "LC",
-  "hops_used": 1,
+  "hops_used": 2,
   "gasr_hard_cap": 2,
   "re_prune_kind": "flat_merge",
   "trace": [
@@ -487,19 +586,55 @@ feature_flag_manager, init_app
       "phase": "rag",
       "hops": 0,
       "sufficient": false,
-      "confidence": "low",
-      "reason": "Key information about feature flags or encrypt init_app helpers is missing",
+      "confidence": "medium",
+      "reason": "Key information about feature flags or encrypt init_app helpers is missing in the retrieved chunks",
       "route": "LC",
-      "duration_ms": 224
+      "duration_ms": 278
     },
     {
       "phase": "structure_vs_context",
       "hops": 0,
       "need": "STRUCTURE",
       "confidence": "low",
-      "reason": "Cannot determine callee symbols without graph expansion",
-      "duration_ms": 199,
+      "reason": "Lack of callee symbols in create_app",
+      "duration_ms": 194,
       "can_expand": true
+    },
+    {
+      "phase": "graph",
+      "hops": 1,
+      "sufficient": false,
+      "confidence": "medium",
+      "reason": "Key information related to feature flags or encrypt init_app helpers is missing",
+      "route": "LC",
+      "duration_ms": 244
+    },
+    {
+      "phase": "structure_vs_context",
+      "hops": 1,
+      "need": "STRUCTURE",
+      "confidence": "high",
+      "reason": "Missing callee symbols for create_app related to feature flags or encrypt",
+      "duration_ms": 280,
+      "can_expand": true
+    },
+    {
+      "phase": "graph",
+      "hops": 2,
+      "sufficient": false,
+      "confidence": "low",
+      "reason": "Key information related to feature flags or encrypt init_app helpers is missing",
+      "route": "LC",
+      "duration_ms": 288
+    },
+    {
+      "phase": "structure_vs_context",
+      "hops": 2,
+      "need": "STRUCTURE",
+      "confidence": "low",
+      "reason": "Cannot tell; prefer CONTEXT",
+      "duration_ms": 254,
+      "can_expand": false
     }
   ]
 }
@@ -509,23 +644,69 @@ feature_flag_manager, init_app
 
 ```json
 {
-  "hops_used": 1,
+  "hops_used": 2,
   "expansions": [
     {
       "hops_used": 1,
-      "new_chunk_count": 0,
+      "new_chunk_count": 20,
       "graph_backend": "graphify",
       "seed_keys": [
-        "superset/initialization/__init__.py:init_app_in_ctx",
         "superset/initialization/__init__.py:init_app",
-        "superset/initialization/__init__.py:__call__",
-        "superset/initialization/__init__.py:__call__",
-        "superset/initialization/__init__.py:__init__"
+        "superset/app.py:create_app",
+        "superset/initialization/__init__.py:__init__",
+        "superset/initialization/__init__.py:__init__",
+        "superset/initialization/__init__.py:__call__"
       ],
+      "neighbor_ids": [
+        "superset/initialization/__init__.py:pre_init",
+        "superset/initialization/__init__.py:check_secret_key",
+        "superset/initialization/__init__.py:configure_session",
+        "superset/initialization/__init__.py:configure_logging",
+        "superset/initialization/__init__.py:configure_feature_flags",
+        "superset/initialization/__init__.py:configure_db_encrypt",
+        "superset/initialization/__init__.py:setup_db",
+        "superset/initialization/__init__.py:check_and_warn_database_connection",
+        "superset/initialization/__init__.py:configure_celery",
+        "superset/initialization/__init__.py:enable_profiling",
+        "superset/initialization/__init__.py:setup_event_logger",
+        "superset/initialization/__init__.py:setup_bundle_manifest",
+        "superset/initialization/__init__.py:register_blueprints",
+        "superset/initialization/__init__.py:configure_wtf",
+        "superset/initialization/__init__.py:configure_middlewares",
+        "superset/initialization/__init__.py:configure_cache",
+        "superset/initialization/__init__.py:set_db_default_isolation",
+        "superset/initialization/__init__.py:configure_sqlglot_dialects",
+        "superset/initialization/__init__.py:init_app_in_ctx",
+        "superset/initialization/__init__.py:post_init"
+      ],
+      "neighbor_ids_total": 20,
+      "edge_counts": {
+        "neighbors": 20
+      },
+      "duration_ms": 50,
       "confidence_note": "low"
-    }
-  ]
-}
+    },
+    {
+      "hops_used": 2,
+      "new_chunk_count": 23,
+      "graph_backend": "graphify",
+      "seed_keys": [
+        "superset/initialization/__init__.py:init_app",
+        "superset/app.py:create_app",
+        "superset/initialization/__init__.py:__init__",
+        "superset/initialization/__init__.py:__init__",
+        "superset/initialization/__init__.py:__call__",
+        "superset/initialization/__init__.py:pre_init",
+        "superset/initialization/__init__.py:check_secret_key",
+        "superset/initialization/__init__.py:configure_session",
+        "superset/initialization/__init__.py:configure_logging",
+        "superset/initialization/__init__.py:configure_feature_flags",
+        "superset/initialization/__init__.py:configure_db_encrypt",
+        "superset/initialization/__init__.py:setup_db",
+        "superset/initialization/__init__.py:check_and_warn_database_connection",
+        "superset/initialization/__init__.py:configure_celery",
+        "superset/initialization/__init__.py:enable_profiling",
+        "superset/initialization/__init__.py:setup
 ```
 
 **Re-prune summary:**
@@ -555,64 +736,39 @@ feature_flag_manager, init_app
 | Field | Value |
 |-------|-------|
 | ok | True |
-| duration_ms (wall) | 8769 |
+| duration_ms (wall) | 3514 |
 | route | `RAG` |
 | hops_used | `0` |
 | tokens_injected_est | `464` |
-| retrieve_ms | `1899` |
+| retrieve_ms | `1291` |
 | assess_ms | `0` |
 | graph_expand_ms | `None` |
 | re_prune_ms | `None` |
 | inject_ms | `0` |
-| generate_ms | `6754` |
-| pipeline_stages_ms | `8765` |
-| answer_chars | `2840` |
+| generate_ms | `2112` |
+| pipeline_stages_ms | `3511` |
+| answer_chars | `876` |
 
 **Answer:**
 
 ```
-In `superset/app.py` the `create_app` function performs a series of configuration overrides and initializations around the core `SupApp` instantiation:
+In `superset/app.py` within the `create_app` function, the surrounding logic after initialization and before returning involves:
+- Setting up locale extensions in debug mode via a thread worker.
+- Ensuring bootstrap errors are logged.
+- Raising an exception if creation fails.
 
-1.  **Config Module Loading** – It attempts to import an optional user config module (`SUPCON`) using `app.fromobject`, allowing users to completely override defaults if that module exists.
-    ```python
-    try# Allow user override our config completely
-    config_module supers or os(
-    "SUPCON", "supconfig"app.fromobjectconfig
-    ```
+Here are the nearby setup steps from the same file:
 
-2.  **Subdirectory Path Handling** – If the application is not rooted at the standard path (`"/"`), it prefixes static asset paths with the subdirectory root. This ensures assets load correctly in nested deployments.
-    ```python
-    app_ cast
-    str
-    sup
-    or osen("SUPAPP")             app["AP"],if app != "/.ws AppRootMiddleapp            # If not set, manually configure options that depend the
-     value of app_ so things work out of
-             if not.["STATASSPREF" app            # Prefix APPICON path with subdirectory root for subdirectory deploymentsif (app..APP", "").start("/static") app_ != "/""] f{}{['']
-    ```
-
-3.  **Theme Token Updates** – When a custom app root is detected, the code iterates over theme keys (`THDEFAULT`, `DARK`) to update tokens like `brand` and `logoUrl`, ensuring they resolve relative to the correct static path instead of `/`.
-    ```python
-                # Also update theme tokens for subdirectory deploymentsfor theme_key in ("THDEFAULT",DARK"theme =[token theme.gettoken", {})# Update brandLogUrl if it points /static
-    if tokenbrand", "").("//"token[" fapp_token['                    # Update brandLogH's the default "/"
-     token") "/": app_
-    ```
-
-4.  **App Initialization** – After adjusting paths and themes, it calls `SupInitial(app)` to finalize setup (likely loading extensions, locales, etc.).
-    ```python
-            if app.["APRO"] == "/app app        app_initializer appconfig.APP", SupInitial)(appapp_initialinit()        # Set up LOCALEXTENSIONS file wat when in debug
-    ```
-
-5.  **Debug Mode Hook** – If the application runs in debug mode (`app.debug`), it explicitly triggers `start_localextensions_w_thread()` to handle locale and extension loading asynchronously.
-    ```python
-    if appdebug:start_localextensions_w_thread()        return
-    ```
-
-6.  **Error Handling** – The entire block is wrapped in a `try/except` that catches any exceptions during creation, logs them with `"Failed create app"`, and re-raises the error to prevent silent failures.
-    ```python
-    except Exception:loggerex("Failed create app")        raise
-    ```
-
-These steps collectively handle environment-specific configuration, path adjustments for subdirectory deployments, theme customization, and initialization hooks before returning the fully configured Flask app instance.
+```python
+app_initializer.appconfig.APP, SuperInitial()(app)      # Initialize app config
+app_initializer.init()                                  # Set up LOCALEXTENSIONS file (when in debug)
+if app.debug:
+    start_localextensions_w_thread()
+return                                                  # Make sure that bootstrap errors ALWAYS get logged
+Exception:
+    logger.ex("Failed to create app")                   # Log failure before re-raising
+raise                                                    # Re-raise exception after logging
+```
 ```
 
 **Assess summary:**
@@ -643,62 +799,96 @@ These steps collectively handle environment-specific configuration, path adjustm
 | Field | Value |
 |-------|-------|
 | ok | True |
-| duration_ms (wall) | 6327 |
+| duration_ms (wall) | 7624 |
 | route | `LC` |
 | hops_used | `0` |
 | tokens_injected_est | `15283` |
-| retrieve_ms | `1895` |
+| retrieve_ms | `1253` |
 | assess_ms | `0` |
 | graph_expand_ms | `None` |
 | re_prune_ms | `None` |
 | inject_ms | `0` |
-| generate_ms | `4323` |
-| pipeline_stages_ms | `6324` |
-| answer_chars | `1731` |
+| generate_ms | `6262` |
+| pipeline_stages_ms | `7621` |
+| answer_chars | `2332` |
 
 **Answer:**
 
 ```
-In `superset/app.py`, the `create_app` function initializes the Flask application with Superset-specific configuration and registration logic. Here are the key surrounding setup steps typically found in that function:
+In `superset/app.py`, the `create_app` function is responsible for initializing the Flask application instance and setting up the core extensions, configuration, and blueprints that constitute the Superset app factory. Below are key setup steps and surrounding lines from the file:
 
 ```python
-from flask import Flask, jsonify
-
 def create_app(config=None):
+    """
+    Create a Superset app instance given config or return the existing one.
+    """
+    # Initialize Flask app with basic configuration
     app = Flask(__name__)
     
-    # Load config from environment or defaults
-    if config is None:
-        config = {
-            "SUPERSET_WEBSERVER_DOMAIN": os.environ.get("SUPERSET_WEBSERVER_DOMAIN", ""),
-            "SUPERSET_WEBSERVER_PORT": int(os.environ.get("SUPERSET_WEBSERVER_PORT", 8088)),
-        }
-    app.config.update(config)
-    
-    # Register Superset blueprint
-    from superset import app as superset_app
-    from superset.utils.aws_auth import register_aws_auth
-    
-    register_aws_auth(app)
-    superset_app.register_blueprint(app)
-    
-    # Enable health checks if feature is enabled
-    if app.config.get("SUPERSET_ENABLE_HEALTH_CHECKS", False):
-        from flask_healthcheck import HealthCheck
-        health_check = HealthCheck()
-        health_check.init_app(app)
-    
+    # Load default configuration or custom config if provided
+    if config is not None:
+        app.config.update(config)
+    else:
+        app.config.from_object("superset.app.superset_app_config")
+
+    # Register extensions (e.g., SQLAlchemy, Migrate, Security Manager)
+    initialize_extensions(app)
+
+    # Register blueprints for various components (views, assets, etc.)
+    register_blueprints(app)
+
+    # Initialize CLI commands
+    init_cli(app)
+
+    # Load data-driven configurations and set up logging
+    setup_logging(app)
+    setup_metrics_registry(app)
+
     return app
 ```
 
-The function performs:
-1. **Flask app initialization** with basic config defaults pulled from environment variables
-2. **Configuration merging** - overrides/updates Flask's default config with Superset-specific settings
-3. **AWS authentication registration** via `register_aws_auth()`
-4. **Blueprint registration** to mount Superset routes under `/`
-5. **Health check initialization** (conditionally) if enabled in configuration
+### Nearby Setup Steps in Context:
 
-This factory pattern allows flexible deployment with environment-based configuration while maintaining Superset's core functionality through blueprint registration and modular extensions.
+- **Extensions Initialization**:
+  ```python
+  from superset.utils.extensions import initialize_extensions
+  
+  def initialize_extensions(app):
+      db.init_app(app)
+      migrate.init_app(db, app)
+      # ... other extensions ...
+  ```
+
+- **Blueprint Registration**:
+  ```python
+  from superset.views.dashboard import blueprint as dashboard_bp
+  from superset.views.explore import blueprint as explore_bp
+  
+  def register_blueprints(app):
+      app.register_blueprint(dashboard_bp, url_prefix="/")
+      app.register_blueprint(explore_bp, url_prefix="/")
+      # ... more blueprints ...
+  ```
+
+- **CLI Commands Setup**:
+  ```python
+  from superset.cli import cli
+  from flask.cli import FlaskGroup
+  
+  def init_cli(app):
+      cli.init_app(app)
+      app.cli.add_command(FlaskGroup())
+  ```
+
+- **Logging Configuration**:
+  ```python
+  def setup_logging(app):
+      log = logging.getLogger("superset")
+      log.setLevel(logging.INFO)
+      # Add file handlers and formatters if not already configured
+  ```
+
+These steps ensure that the application is fully equipped with its database, security layers, views, command-line tools, and logging infrastructure before returning the configured Flask app instance.
 ```
 
 **Assess summary:**
@@ -729,53 +919,41 @@ This factory pattern allows flexible deployment with environment-based configura
 | Field | Value |
 |-------|-------|
 | ok | True |
-| duration_ms (wall) | 6248 |
+| duration_ms (wall) | 12059 |
 | route | `LC` |
-| hops_used | `1` |
+| hops_used | `2` |
 | tokens_injected_est | `15283` |
-| retrieve_ms | `1834` |
-| assess_ms | `522` |
-| graph_expand_ms | `0` |
-| re_prune_ms | `0` |
+| retrieve_ms | `1284` |
+| assess_ms | `2191` |
+| graph_expand_ms | `156` |
+| re_prune_ms | `3162` |
 | inject_ms | `0` |
-| generate_ms | `3778` |
-| pipeline_stages_ms | `6241` |
-| answer_chars | `1654` |
+| generate_ms | `4436` |
+| pipeline_stages_ms | `11334` |
+| answer_chars | `1791` |
 
 **Answer:**
 
 ```
-Based on the provided code context (which primarily shows test files for `superset.utils.webdriver`), **the specific implementation of `create_app` inside `superset/app.py` is not included in the `<FILES_AND_CODE>` block.**
+To answer your question about `superset/app.py`, I need to analyze the code within that file. However, based on the provided `<FILES_AND_CODE>` context, **`superset/app.py` is not included**. The provided code contains:
 
-Therefore, I cannot quote the *exact* surrounding lines of that specific function from the provided text. However, I can infer what typically happens around a `create_app` factory function based on standard Superset patterns (which match the test setups seen in your file):
+1.  `superset/appbuilder/views/async_dashboards_api.py`
+2.  `superset/utils/webdriver.py` (specifically tests for it)
 
-1.  **Application Creation**: The app is usually instantiated with Flask's `Flask(__name__)`.
-2.  **Extensions Initialization**: Common extensions like SQLAlchemy, Migrate, and Marshmallow are initialized immediately following the instance creation.
-3.  **Configuration**: The app object is added to a registry (often `AppContext`) or specific config variables defined in `superset/config.py` are applied.
+Since the specific implementation of `app_factory` inside `superset/app.py` is missing from your context, I cannot quote the exact lines regarding app factory setup from that file.
 
-If you have access to `superset/app.py`, it likely looks something like this:
+However, based on standard Superset architecture and typical usage found in similar projects:
+- In older versions or specific deployment patterns, `app.py` might contain an `create_app()` function (often used with Flask's application factory pattern).
+- This function typically initializes the Flask app, sets up extensions (Flask-SQLAlchemy, Flask-CORS, etc.), and configures logging.
 
-```python
-# Typical structure around create_app in superset/app.py
-def create_app():
-    app = Flask(__name__)
-    
-    # Initialization of extensions (SQLAlchemy, Migrate, Marshmallow)
-    from flask_sqlalchemy import SQLAlchemy
-    
-    db = SQLAlchemy(app) 
-    # ... other extensions
-    
-    # Configuration handling
-    from .config import Config
-    
-    with app.app_context():
-        # Often loads config classes and registers blueprints here
-        
-        return app
-```
+If you need the specific code for `superset/app.py`, please ensure that file is included in the context or uploaded separately. If you are looking for the initialization sequence based on the files provided:
+- You might be interested in how configurations like `SCREENSHOT_SELENIUM_HEADSTART`, `SCREENSHOT_REPLACE_UNEXPECTED_ERRORS`, etc., are utilized, which implies the app config has been set up before importing these modules.
 
-**If you can paste the content of `superset/app.py` or a larger snippet containing `def create_app`:**, I will be able to provide the exact quotes and context for that specific file.
+If you have a snippet of `superset/app.py` available or if I should generate a generic answer on typical Superset factory patterns based on my internal knowledge without seeing your specific file:
+- Typically, it involves calling `create_app` or using `appbuilder.init_app`.
+- It sets up the `SQLALCHEMY_DATABASE_URI` and other environment variables.
+
+Please provide the content of `superset/app.py` if you require specific line quotes for that file.
 ```
 
 **Assess summary:**
@@ -783,7 +961,7 @@ def create_app():
 ```json
 {
   "route": "LC",
-  "hops_used": 1,
+  "hops_used": 2,
   "gasr_hard_cap": 2,
   "re_prune_kind": "flat_merge",
   "trace": [
@@ -792,18 +970,54 @@ def create_app():
       "hops": 0,
       "sufficient": false,
       "confidence": "low",
-      "reason": "Key information about app factory setup is missing, such as how the app is initialized and configured",
+      "reason": "Key information about app factory setup is missing from the surrounding lines of the create_app function body",
       "route": "LC",
-      "duration_ms": 266
+      "duration_ms": 316
     },
     {
       "phase": "structure_vs_context",
       "hops": 0,
       "need": "STRUCTURE",
       "confidence": "low",
-      "reason": "Missing graph neighbors (cross-file dependencies) for the create_app function in superset/app.py",
-      "duration_ms": 256,
+      "reason": "Missing graph expand to show callees, callers, imports, and cross-file dependency neighbors for the create_app function in superset/app.py",
+      "duration_ms": 309,
       "can_expand": true
+    },
+    {
+      "phase": "graph",
+      "hops": 1,
+      "sufficient": false,
+      "confidence": "low",
+      "reason": "Key information about app factory setup is missing",
+      "route": "LC",
+      "duration_ms": 325
+    },
+    {
+      "phase": "structure_vs_context",
+      "hops": 1,
+      "need": "STRUCTURE",
+      "confidence": "high",
+      "reason": "Missing graph neighbors for function calls, imports, and cross-file dependencies in superset/app.py",
+      "duration_ms": 424,
+      "can_expand": true
+    },
+    {
+      "phase": "graph",
+      "hops": 2,
+      "sufficient": false,
+      "confidence": "low",
+      "reason": "Key information about app factory setup in create_app function is missing",
+      "route": "LC",
+      "duration_ms": 402
+    },
+    {
+      "phase": "structure_vs_context",
+      "hops": 2,
+      "need": "STRUCTURE",
+      "confidence": "low",
+      "reason": "Missing graph neighbors for function calls, imports, and cross-file dependencies",
+      "duration_ms": 415,
+      "can_expand": false
     }
   ]
 }
@@ -813,23 +1027,70 @@ def create_app():
 
 ```json
 {
-  "hops_used": 1,
+  "hops_used": 2,
   "expansions": [
     {
       "hops_used": 1,
-      "new_chunk_count": 0,
+      "new_chunk_count": 22,
       "graph_backend": "graphify",
       "seed_keys": [
         "superset/app.py:create_app",
         "superset/cli/main.py:create_app",
+        "tests/integration_tests/thumbnails_tests.py:create_app",
+        "tests/integration_tests/base_tests.py:create_app",
+        "superset/app.py:send_static_file"
+      ],
+      "neighbor_ids": [
+        "scripts/erd/erd.py:erd",
+        "superset/app.py:SupersetApp",
+        "superset/app.py:AppRootMiddleware",
+        "superset/extensions/local_extensions_watcher.py:start_local_extensions_watcher_thread",
+        "tests/unit_tests/initialization_test.py:test_application_root_config_activates_middleware",
+        "tests/unit_tests/initialization_test.py:test_default_app_root_no_middleware",
+        "tests/unit_tests/initialization_test.py:test_env_var_activates_middleware",
+        "tests/unit_tests/initialization_test.py:test_env_var_takes_precedence_over_config",
+        "tests/unit_tests/initialization_test.py:test_param_takes_precedence_over_env_var",
+        "scripts/benchmark_migration.py:benchmark_migration.py",
+        "scripts/erd/erd.py:erd.py",
+        "superset/cli/main.py:main.py",
+        "superset/db_engine_specs/lib.py:lib.py",
+        "superset/__init__.py:superset/__init__.py",
+        "superset/mcp_service/flask_singleton.py:flask_singleton.py",
+        "superset/tasks/celery_app.py:celery_app.py",
+        "tests/integration_tests/test_app.py:test_app.py",
+        "tests/unit_tests/initialization_test.py:initialization_test.py",
+        "superset/app.py:superset/app.py"
+      ],
+      "neighbor_ids_total": 19,
+      "edge_counts": {
+        "neighbors": 19
+      },
+      "duration_ms": 64,
+      "confidence_note": "low"
+    },
+    {
+      "hops_used": 2,
+      "new_chunk_count": 16,
+      "graph_backend": "graphify",
+      "seed_keys": [
+        "superset/app.py:create_app",
+        "superset/cli/main.py:create_app",
+        "tests/integration_tests/thumbnails_tests.py:create_app",
         "tests/integration_tests/base_tests.py:create_app",
         "superset/app.py:send_static_file",
-        "tests/integration_tests/thumbnails_tests.py:create_app"
-      ],
-      "confidence_note": "low"
-    }
-  ]
-}
+        "scripts/erd/erd.py:erd",
+        "superset/app.py:SupersetApp",
+        "superset/app.py:AppRootMiddleware",
+        "superset/extensions/local_extensions_watcher.py:start_local_extensions_watcher_thread",
+        "tests/unit_tests/initialization_test.py:test_application_root_config_activates_middleware",
+        "tests/unit_tests/initialization_test.py:test_default_app_root_no_middleware",
+        "tests/unit_tests/initialization_test.py:test_env_var_activates_middleware",
+        "tests/unit_tests/initialization_test.py:test_env_var_takes_precedence_over_config",
+        "tests/unit_tests/initialization_test.py:test_param_takes_precedence_over_env_var",
+        "scripts/benchmark_migration.py:benchmark_migration.py",
+        "scripts/erd/erd.py:erd.py",
+        "superset/cli/main.py:normalize_token",
+  
 ```
 
 **Re-prune summary:**
@@ -859,38 +1120,38 @@ def create_app():
 | Field | Value |
 |-------|-------|
 | ok | True |
-| duration_ms (wall) | 5667 |
+| duration_ms (wall) | 4826 |
 | route | `RAG` |
 | hops_used | `0` |
-| tokens_injected_est | `645` |
-| retrieve_ms | `2052` |
+| tokens_injected_est | `918` |
+| retrieve_ms | `1457` |
 | assess_ms | `0` |
 | graph_expand_ms | `None` |
 | re_prune_ms | `None` |
 | inject_ms | `0` |
-| generate_ms | `3486` |
-| pipeline_stages_ms | `5665` |
-| answer_chars | `1403` |
+| generate_ms | `3226` |
+| pipeline_stages_ms | `4823` |
+| answer_chars | `1155` |
 
 **Answer:**
 
 ```
-Based on the provided code and context, here are the dependencies for configuration loading:
+Based on the provided code snippets, here are the functions that `SupersetApp` and `create_app` depend on for configuration loading:
 
-**`SupersetApp` (from `superset/app.py`):**
-- **`db`**: Imported from `supers.ext.db` to check migration status (`current == head`) and manage database connections.
-- **`engine`**: Used implicitly via connection context within `check_db_upgraded`.
-- **`Config`**: Imported from `alembic.config` (implied by `from alembic import Config`) to read migration script locations.
-- **`ScriptDirectory`**: Imported from `alembic.script` to determine the head revision of migrations.
-- **`feature_flag_manager`**: Used to check feature flags before applying configuration sync logic.
-- **`SeedSystemThemeCommand`**: Called to seed system themes from configuration.
-- **`register_sqlalchemy_events()`**: Registered if the "TAGGING_SYSTEM" feature is enabled, handling SQLAlchemy event listeners for the tagging system.
+**For `SupersetApp` (in `superset/app.py`):**
+- `self._isdatabaseup_()` — Used to check migration status before syncing config.
+- `feature.is_enabled("TAGGING_SYSTEM")` — Checks feature flag to register SQLA event listeners.
+- `SuperTagsCore.register_sqlalchemy_event_listeners()` — Registered when tagging system is enabled.
+- `SeedSystemThemesCommand.run()` — Seeds system themes from configuration.
 
-**`create_app` (from `tests/integration_tests/base_tests.py`):**
-- **`db.session`**: Used to manage database sessions and commit changes when creating or retrieving objects like users.
-- **`security_manager`**: Used to find existing roles, retrieve existing users, and add new users during initialization.
+**For `create_app` (in `superset/app.py`):**
+- `SupAppInitializer.__init__()` — Initializes the app with config values like `APP_ROOT`, `STATICS_PREFIX`.
+- `start_localextensions_w_thread()` — Starts locale extensions in debug mode.
 
-These symbols are referenced across files (`superset/app.py`, `tests/integration_tests/base_tests.py`) and imported from external modules like `alembic` and internal modules like `supers.ext`.
+Additionally, there is a reference to:
+- `security_manager.find_role()` and `security_manager.add_user()` (from `tests/integration_tests/base_tests.py`) — These are used for user/role management but not directly tied to *configuration loading* in the main app flow.
+
+No neighbor symbols outside the provided context can be inferred, as per the constraint of using only available code.
 ```
 
 **Assess summary:**
@@ -921,29 +1182,67 @@ These symbols are referenced across files (`superset/app.py`, `tests/integration
 | Field | Value |
 |-------|-------|
 | ok | True |
-| duration_ms (wall) | 5050 |
+| duration_ms (wall) | 24790 |
 | route | `LC` |
 | hops_used | `0` |
-| tokens_injected_est | `29022` |
-| retrieve_ms | `1838` |
+| tokens_injected_est | `25424` |
+| retrieve_ms | `1368` |
 | assess_ms | `0` |
 | graph_expand_ms | `None` |
 | re_prune_ms | `None` |
 | inject_ms | `0` |
-| generate_ms | `3081` |
-| pipeline_stages_ms | `5045` |
-| answer_chars | `1207` |
+| generate_ms | `23280` |
+| pipeline_stages_ms | `24786` |
+| answer_chars | `9287` |
 
 **Answer:**
 
 ```
-Based on the code provided in `tests/app/test_utils.py`, here is the analysis of dependencies required for `SupersetTestCase` (which contains the `create_app` method) to load configuration across files:
+Based on the provided code snippet and context, here is the analysis of dependencies for `SupersetApp` (specifically within its methods like `create_import_v1_zip_file`) and `create_app` regarding configuration loading:
 
-1.  **`metadata_files`**: This variable is referenced inside `create_import_v1_zip_file`. It appears to be imported from another file or defined in a sibling module to provide default YAML configurations for different asset types (`databases`, `datasets`, `charts`, `dashboards`).
-2.  **`database_config`** and **`dataset_config`**: These are referenced inside `create_import_v1_zip_file`. They appear to be imported constants or functions containing the default configuration objects for databases and datasets respectively.
-3.  **`chart_config`** and **`dashboard_config`**: Similarly, these are referenced inside `create_import_v1_zip_file` to hold the default configurations for charts and dashboards.
+### Analysis of Dependencies
 
-These symbols likely exist in a separate utility module (e.g., `tests/app/test_data.py` or similar) that holds test-specific fixtures and default configuration data. The `SupersetTestCase` class imports them to construct the YAML files for zip bundles used in testing import/export functionality.
+The question asks which **functions** are depended upon for **configuration loading across files**.
+
+1.  **Context**: The snippet shows a class (likely inheriting from `SupersetTestCase`) that handles test fixtures, user management, and asset creation (`insert_dashboard`, `get_list`).
+2.  **`create_app` Function**:
+    *   Definition: `def create_app(self): return app`.
+    *   Dependency for Config Loading: None within this specific snippet. It simply instantiates a global or pre-configured Flask application object named `app`. The actual configuration loading (imports, secret keys, database URIs) would typically happen in `create_app`'s definition elsewhere or via a bootstrap mechanism not shown here.
+3.  **`SupersetApp` Methods (`insert_dashboard`, `create_import_v1_zip_file`, etc.)**:
+    *   These methods rely heavily on external data for operation but do not strictly depend on other *functions* to load configuration from files during execution in the sense of "loading config values".
+    *   However, they use variables like `database_config`, `dataset_config`, `chart_config`, `dashboard_config`, and `metadata_files`.
+    *   Looking at the line: `from superset.utils import ...` or similar imports usually found in such test files, these configuration dictionaries are typically imported directly from utility modules.
+
+**Crucially**, looking strictly at the provided text for "functions that depend on functions for configuration loading":
+
+*   There are **no function calls** within the provided snippet that perform *configuration loading* (e.g., reading `.env`, `config.yaml`, or database schema inspection) triggered by another function.
+*   The variables `database_config`, `dataset_config`, etc., are assigned in the snippet itself:
+    ```python
+    asset_configs = {
+        "databases": (kwargs.get("databases"), database_config, True),
+        ...
+    }
+    ```
+    Since they are defined *in* the snippet (likely imported from above or defined in a sibling module not shown but assumed to exist as constants), they are treated as data, not functions.
+
+**Re-evaluating "Neighbor Symbols" and "Across Files":**
+The prompt asks for **neighbor symbols**, not whole files.
+In the context of typical Superset test structures (like `tests/integration/.../test_api.py`):
+*   The configuration dictionaries (`database_config`, etc.) and metadata files are usually imported as *constants*.
+*   There are no other functions listed here that act as loaders for these configs.
+
+However, if the question implies **"Which symbols (functions) does the code rely on from neighboring scopes or imports to function correctly regarding configuration?"**, the answer is likely **none** in this specific isolated snippet, OR it refers to the **import statements** (which are not functions).
+
+Let's look closer at the prompt's constraint: "List neighbor symbols, not whole files." and "across files".
+If `create_app` or the class methods rely on `security_manager`, `db`, `app`, etc., these are usually module-level objects imported from `superset.appbuilder` or similar. They are not functions (except `get_nonexistent_numeric_id`, `get_birth_names_dataset`, `temporary_user`, `create_user` which are utility helper functions defined in the same file).
+
+**Hypothesis**: The user might be asking about the specific helper functions defined *within* the file that prepare the environment (which involves config/state).
+*   `get_nonexistent_numeric_id`: Helper function to get DB max IDs. Relies on `db`.
+*   `get_birth_names_dataset`: Helper to access tables. Relies on `SupersetTestCase.get_table`.
+*   `create_user_with_roles`: Helper for auth setup.
+*   `temporary_user`: Context manager for tests.
+
+But do any of these load **configu
 ```
 
 **Assess summary:**
@@ -974,43 +1273,38 @@ These symbols likely exist in a separate utility module (e.g., `tests/app/test_d
 | Field | Value |
 |-------|-------|
 | ok | True |
-| duration_ms (wall) | 7122 |
+| duration_ms (wall) | 14074 |
 | route | `LC` |
-| hops_used | `1` |
-| tokens_injected_est | `29022` |
-| retrieve_ms | `1838` |
-| assess_ms | `496` |
-| graph_expand_ms | `0` |
-| re_prune_ms | `0` |
+| hops_used | `2` |
+| tokens_injected_est | `25424` |
+| retrieve_ms | `1303` |
+| assess_ms | `2249` |
+| graph_expand_ms | `173` |
+| re_prune_ms | `3318` |
 | inject_ms | `0` |
-| generate_ms | `4659` |
-| pipeline_stages_ms | `7115` |
-| answer_chars | `1879` |
+| generate_ms | `4271` |
+| pipeline_stages_ms | `11455` |
+| answer_chars | `1824` |
 
 **Answer:**
 
 ```
-Based on the provided code snippet, the `SupersetApp` (or more specifically the test classes within it) depends on several functions and objects for configuration loading, primarily involving user management, security roles, and database setup.
+Based on the provided code snippet and standard Superset testing patterns (inferred from the imports like `database_config`, `dataset_config`, `metadata_files`), here are the functions and mechanisms involved in configuration loading:
 
-Here are the neighbor symbols and dependencies involved in configuration/loading logic:
+1.  **`create_app`**: This is the entry point function for the Flask test client. It instantiates the application instance, which triggers the entire configuration loading process (database setup, importing metadata/yaml configs like `metadata_files`, etc.) before tests run.
+2.  **`setUp`**: While not shown in full in the provided snippet beyond the method signature and a tiny bit of logic, it typically calls helper functions to load initial data or configure the app state for tests (often involving the aforementioned config objects).
+3.  **Configuration Loading Helpers**: Although specific function names for loading individual YAML configs aren't explicitly defined as separate *functions* in the snippet (they are often module-level variables like `database_config`, `dataset_config`), the logic to use them is tied directly to:
+    -   The **app creation** inside `create_app`.
+    -   Potentially helper functions defined elsewhere that read these configs, but based strictly on the provided text, the dependencies are on the **config objects themselves** used within `create_app` or `setUp`.
 
-1.  **`security_manager`**: A module-level object used extensively for:
-    *   Finding users (`find_user`)
-    *   Adding users (`add_user`)
-    *   Managing roles (`find_role`, `copy_role`)
-    *   Managing permission view menus (`find_permission_view_menu`)
-2.  **`database_config`**: Used in `create_import_v1_zip_file` to define default configurations for databases.
-3.  **`dataset_config`**: Used in `create_import_v1_zip_file` for dataset defaults.
-4.  **`chart_config`**: Used in `create_import_v1_zip_file` for chart defaults.
-5.  **`dashboard_config`**: Used in `create_import_v1_zip_file` for dashboard defaults.
-6.  **`metadata_files`**: A dictionary containing metadata YAML content used in `create_import_v1_zip_file`.
-7.  **`ab_models`**: The SQLAlchemy models (e.g., `User`, `Role`) imported from elsewhere, instantiated directly in functions like `temporary_user`.
-8.  **`db.session`**: The Flask-SQLAlchemy session object used for committing transactions and querying data throughout the setup functions.
-9.  **`g`**: The Flask `RequestContext` object (e.g., `g.user`, `previous_g_user`) used to maintain context during temporary user tests.
-10. **`security_manager.add_user`**: Specifically relies on internal logic to load roles and set up users upon creation.
-11. **`shortid`**: Used in `temporary_user` to generate unique usernames for temporary test users (`f"temp_user_{shortid()}"`).
+However, since the question asks for **functions**, the primary function responsible for this across files is:
 
-These symbols are essential for the application's configuration, user management, and test setup routines within the Superset project.
+*   **`create_app`**: It orchestrates the loading of configuration by using variables like `database_config`, `dataset_config`, `chart_config`, etc. (which are loaded from other files/modules).
+
+If we consider `setUp` as a method on `SupersetTestCase`, it also depends on these configurations indirectly if called within tests.
+
+So, the key function is:
+**`create_app`**
 ```
 
 **Assess summary:**
@@ -1018,7 +1312,7 @@ These symbols are essential for the application's configuration, user management
 ```json
 {
   "route": "LC",
-  "hops_used": 1,
+  "hops_used": 2,
   "gasr_hard_cap": 2,
   "re_prune_kind": "flat_merge",
   "trace": [
@@ -1029,16 +1323,52 @@ These symbols are essential for the application's configuration, user management
       "confidence": "low",
       "reason": "Key information about configuration loading across files is missing",
       "route": "LC",
-      "duration_ms": 232
+      "duration_ms": 308
     },
     {
       "phase": "structure_vs_context",
       "hops": 0,
       "need": "STRUCTURE",
-      "confidence": "low",
-      "reason": "Cannot determine dependencies between SupersetApp and create_app without more information about their imports and calls",
-      "duration_ms": 264,
+      "confidence": "high",
+      "reason": "Missing neighbor symbols for SupersetApp and create_app, such as imports, callees, and callers.",
+      "duration_ms": 322,
       "can_expand": true
+    },
+    {
+      "phase": "graph",
+      "hops": 1,
+      "sufficient": false,
+      "confidence": "low",
+      "reason": "Key information about configuration loading across files is missing",
+      "route": "LC",
+      "duration_ms": 347
+    },
+    {
+      "phase": "structure_vs_context",
+      "hops": 1,
+      "need": "STRUCTURE",
+      "confidence": "low",
+      "reason": "Missing graph neighbors for functions SupersetApp and create_app",
+      "duration_ms": 396,
+      "can_expand": true
+    },
+    {
+      "phase": "graph",
+      "hops": 2,
+      "sufficient": false,
+      "confidence": "medium",
+      "reason": "Key information about configuration loading across files is missing",
+      "route": "LC",
+      "duration_ms": 383
+    },
+    {
+      "phase": "structure_vs_context",
+      "hops": 2,
+      "need": "STRUCTURE",
+      "confidence": "high",
+      "reason": "Missing neighbor symbols for functions in superset/cli/main.py, superset/initialization/__init__.py, and superset/db_engine_specs/lib.py",
+      "duration_ms": 493,
+      "can_expand": false
     }
   ]
 }
@@ -1048,23 +1378,65 @@ These symbols are essential for the application's configuration, user management
 
 ```json
 {
-  "hops_used": 1,
+  "hops_used": 2,
   "expansions": [
     {
       "hops_used": 1,
-      "new_chunk_count": 0,
+      "new_chunk_count": 21,
       "graph_backend": "graphify",
       "seed_keys": [
         "tests/integration_tests/base_tests.py:create_app",
         "tests/integration_tests/base_tests.py:get_or_create",
         "superset/app.py:SupersetApp",
-        "tests/integration_tests/base_tests.py:get_list",
+        "superset/app.py:create_app",
         "tests/integration_tests/base_tests.py:create_user"
       ],
-      "confidence_note": "low"
-    }
-  ]
-}
+      "neighbor_ids": [
+        "tests/integration_tests/base_tests.py:create_fake_db",
+        "tests/integration_tests/base_tests.py:create_fake_db_for_macros",
+        "tests/unit_tests/initialization_test.py:test_sync_config_to_db_handles_operational_error",
+        "tests/unit_tests/initialization_test.py:test_sync_config_to_db_initializes_when_tables_exist",
+        "tests/unit_tests/initialization_test.py:test_sync_config_to_db_skips_when_no_tables",
+        "superset/initialization/__init__.py:initialization/__init__.py",
+        "tests/unit_tests/commands/report/execute_test.py:execute_test.py",
+        "tests/unit_tests/conftest.py:unit_tests/conftest.py",
+        "tests/unit_tests/initialization_test.py:initialization_test.py",
+        "superset/app.py:superset/app.py",
+        "superset_app_py_flask",
+        "scripts/erd/erd.py:erd",
+        "superset/app.py:AppRootMiddleware",
+        "superset/extensions/local_extensions_watcher.py:start_local_extensions_watcher_thread",
+        "superset/cli/main.py:create_app",
+        "tests/unit_tests/initialization_test.py:test_application_root_config_activates_middleware",
+        "tests/unit_tests/initialization_test.py:test_default_app_root_no_middleware",
+        "tests/unit_tests/initialization_test.py:test_env_var_activates_middleware",
+        "tests/unit_tests/initialization_test.py:test_env_var_takes_precedence_over_config",
+        "tests/unit_tests/initialization_test.py:test_param_takes_precedence_over_env_var"
+      ],
+      "neighbor_ids_total": 20,
+      "edge_counts": {
+        "neighbors": 20
+      },
+      "duration_ms": 75,
+      "confidence_note": "high"
+    },
+    {
+      "hops_used": 2,
+      "new_chunk_count": 23,
+      "graph_backend": "graphify",
+      "seed_keys": [
+        "tests/integration_tests/base_tests.py:create_app",
+        "tests/integration_tests/base_tests.py:get_or_create",
+        "superset/app.py:SupersetApp",
+        "superset/app.py:create_app",
+        "tests/integration_tests/base_tests.py:create_user",
+        "tests/integration_tests/base_tests.py:create_fake_db",
+        "tests/integration_tests/base_tests.py:create_fake_db_for_macros",
+        "tests/unit_tests/initialization_test.py:test_sync_config_to_db_handles_operational_error",
+        "tests/unit_tests/initialization_test.py:test_sync_config_to_db_initializes_when_tables_exist",
+        "tests/unit_tests/initialization_test.py:test_sync_config_to_db_skips_when_no_tables",
+        "superset/initialization/__init__.py:SupersetAppInitializer",
+        "superset/initialization/__i
 ```
 
 **Re-prune summary:**
