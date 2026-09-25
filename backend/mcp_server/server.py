@@ -278,8 +278,26 @@ def run_pipeline(
 ) -> dict:
     token_budget = 1800
     rm = retrieval_mode if retrieval_mode in {"vector", "graph"} else "vector"
+
+    # Resolve pronouns / "again" against chat history *before* retrieval.
+    original_prompt = user_prompt
+    try:
+        from agent.agent_endpoint import agent as _memory_agent
+
+        resolved = _memory_agent.resolve_referential_prompt(user_prompt)
+        if resolved != user_prompt:
+            logging.info(
+                "Follow-up resolved before retrieval: %r -> %r",
+                user_prompt[:120],
+                resolved[:200],
+            )
+            user_prompt = resolved
+    except Exception as exc:
+        logging.warning("Follow-up resolution skipped: %s", exc)
+
     pipeline = {
         "prompt": user_prompt,
+        "prompt_original": original_prompt,
         "retrieval_mode": rm,
         "route_mode": route_mode,
         "stages": {},

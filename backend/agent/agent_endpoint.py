@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import Any, Union
 
-from .ollama_agent import OllamaAgent
+from .ollama_agent import get_shared_agent
 
-agent = OllamaAgent(model="qwen3.5:9b")  # must match a model you have: ollama list
+# Process-wide singleton — do NOT construct OllamaAgent per request.
+agent = get_shared_agent(model="qwen3.5:9b")  # must match: ollama list
 
 
 def ollama_generate(payload: Union[str, dict[str, Any]]) -> str:

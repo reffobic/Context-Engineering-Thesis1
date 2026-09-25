@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any, List, Optional
 from urllib.error import HTTPError, URLError
@@ -52,6 +53,21 @@ from injection.prompt_builder import (
 _MEM0_EMBEDDING_DIMS = 384
 _MEM0_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 
+# Process-wide singleton so short-term history survives across callers
+# (agent_endpoint, generate_response shortcut, tests) within one server process.
+_SHARED_AGENT: Optional["OllamaAgent"] = None
+
+
+def get_shared_agent(
+    model: str = "qwen3.5:9b",
+    **kwargs: Any,
+) -> "OllamaAgent":
+    """Return the process-wide agent, creating it once."""
+    global _SHARED_AGENT
+    if _SHARED_AGENT is None:
+        _SHARED_AGENT = OllamaAgent(model=model, **kwargs)
+    return _SHARED_AGENT
+
 
 class OllamaAgent:
     """
@@ -70,7 +86,7 @@ class OllamaAgent:
 
     def __init__(
         self,
-        model: str = "qwen3.5:9b",
+        model: str = "qwen3.8:27b",
         base_url: str = "http://localhost:11434",
         timeout: int = 600,
         *,
@@ -106,7 +122,15 @@ class OllamaAgent:
         # Number of relevant long-term memories to retrieve.
         self.max_memories = max_memories
 
-        # Current conversation/thread history.
+        # Short-term history as Ollama chat messages (role/content dicts).
+        # Loaded from disk so uvicorn --reload does not wipe the thread.
+        self._history_path = (
+            Path(os.environ.get("MEM0_DIR", str(_DEFAULT_MEM0_DIR)))
+            / f"chat_history_{self.memory_user_id}.json"
+        )
+        self.messages: List[dict[str, str]] = self._load_messages()
+
+        # Back-compat alias used by older call sites / debugging.
         self.chat_history: List[str] = []
 
         # Mem0 is optional.
@@ -271,20 +295,60 @@ class OllamaAgent:
             print(f"[Memory] Search failed: {e}")
             return []
 
-    def _format_short_term_memory(self) -> str:
-        """
-        Format recent conversation history.
-        """
+    def _load_messages(self) -> List[dict[str, str]]:
+        """Load persisted short-term chat messages from disk."""
+        try:
+            if not self._history_path.is_file():
+                return []
+            raw = json.loads(self._history_path.read_text(encoding="utf-8"))
+            if not isinstance(raw, list):
+                return []
+            messages: List[dict[str, str]] = []
+            for item in raw:
+                if (
+                    isinstance(item, dict)
+                    and isinstance(item.get("role"), str)
+                    and isinstance(item.get("content"), str)
+                ):
+                    messages.append(
+                        {"role": item["role"], "content": item["content"]}
+                    )
+            return messages
+        except Exception as e:
+            print(f"[Memory] Failed to load chat history: {e}")
+            return []
 
-        if not self.chat_history:
-            return ""
+    def _save_messages(self) -> None:
+        """Persist short-term chat messages so reloads keep the thread."""
+        try:
+            self._history_path.parent.mkdir(parents=True, exist_ok=True)
+            self._history_path.write_text(
+                json.dumps(self.messages, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+        except Exception as e:
+            print(f"[Memory] Failed to save chat history: {e}")
 
-        entries = self.chat_history
+    def _trim_messages(self) -> None:
+        """Keep system (if any) + the most recent user/assistant turns."""
+        if self.max_history_messages is None:
+            return
 
-        if self.max_history_messages is not None:
-            entries = entries[-self.max_history_messages :]
+        system_msgs = [m for m in self.messages if m.get("role") == "system"]
+        other = [m for m in self.messages if m.get("role") != "system"]
+        # Each "turn" is roughly user+assistant; keep last N message dicts.
+        other = other[-self.max_history_messages :]
+        self.messages = system_msgs[:1] + other
 
-        return "\n\n".join(entries)
+    def clear_history(self) -> None:
+        """Reset short-term conversation (does not wipe Mem0)."""
+        self.messages = []
+        self.chat_history = []
+        try:
+            if self._history_path.is_file():
+                self._history_path.unlink()
+        except Exception as e:
+            print(f"[Memory] Failed to clear chat history file: {e}")
 
     def _format_long_term_memory(
         self,
@@ -306,31 +370,253 @@ class OllamaAgent:
 
         return "\n".join(lines)
 
-    def _build_memory_context(self, prompt: str) -> str:
+    def _augment_user_prompt(self, prompt: str) -> str:
+        """Attach retrieved long-term memories to the current user turn."""
+        long_term = self._format_long_term_memory(
+            self._search_long_term_memory(prompt)
+        )
+        if not long_term:
+            return prompt
+        return long_term + "\n\n" + prompt
+
+    def _extract_task(self, prompt: str) -> str:
+        """Pull the bare user question out of an injected RAG prompt."""
+        match = re.search(
+            r"<TASK>\s*(.*?)\s*</TASK>",
+            prompt,
+            flags=re.DOTALL | re.IGNORECASE,
+        )
+        if match:
+            task = match.group(1).strip()
+            if task:
+                return task
+        return prompt.strip()
+
+    def _compact_user_content(self, prompt: str) -> str:
         """
-        Build the conversational memory context.
+        Shrink a RAG user prompt for storage in history.
 
-        The model receives:
-        1. Recent conversation from the current thread
-        2. Relevant long-term memories from Mem0
-        3. The current user message
+        Prior turns should keep the question/task, not the full retrieved
+        code context (which would explode the token budget).
         """
+        task = self._extract_task(prompt)
+        if task and task != prompt.strip():
+            return task
 
-        long_term_memories = self._search_long_term_memory(prompt)
-        short_term = self._format_short_term_memory()
-        long_term = self._format_long_term_memory(long_term_memories)
+        stripped = prompt.strip()
+        if len(stripped) > 1500:
+            return stripped[:1500] + "\n...[truncated for chat history]"
+        return stripped
 
-        sections = []
+    def _is_meta_memory_question(self, text: str) -> bool:
+        """True when the user is asking about prior turns, not about code."""
+        q = text.strip().lower()
+        patterns = (
+            r"\bwhat (was|were|did) (the )?(last|previous|prior)\b",
+            r"\bwhat did i (just )?(ask|say|request|want)\b",
+            r"\b(my|the) (last|previous|prior) (thing|question|query|prompt|message|request)\b",
+            r"\bremind me what i (asked|said)\b",
+            r"\bwhat was i (asking|talking) about\b",
+            r"\blast thin[gk] i asked\b",
+            r"\blast thing i asked\b",
+        )
+        return any(re.search(p, q) for p in patterns)
 
-        if short_term:
-            sections.append("Recent conversation:\n" + short_term)
+    def _is_referential_followup(self, text: str) -> bool:
+        """
+        True for underspecified follow-ups that depend on prior turns
+        (pronouns, 'again', 'more', etc.).
+        """
+        q = text.strip().lower()
+        if not q:
+            return False
+        if self._is_meta_memory_question(q):
+            return False
+        # Do NOT match bare "this/that" — "this codebase" is a normal coding query.
+        patterns = (
+            r"\bexplain it\b",
+            r"\b(about|of|on|for) it\b",
+            r"\bit again\b",
+            r"\b(that|this|those|these) (one|part|bit|section|step|point|thing)\b",
+            r"\bagain\b",
+            r"\b(the )?(same|previous|last) (one|thing|topic|question|part|answer)\b",
+            r"\b(more detail|in more detail|go deeper|elaborate|clarify)\b",
+            r"\btell me more\b",
+            r"\bwhat about (it|that|this)\b",
+            r"\bcan you (explain|show|repeat|rephrase)\b",
+            r"\bre-?explain\b",
+            r"\bsay (that|it) (again|differently)\b",
+        )
+        if any(re.search(p, q) for p in patterns):
+            return True
+        return bool(
+            re.fullmatch(
+                r"(please\s+)?(explain|describe|show|repeat|clarify|continue|"
+                r"yes|yep|ok|sure|more|again|go on|same)(\s+\w+){0,3}\??",
+                q,
+            )
+        )
 
-        if long_term:
-            sections.append(long_term)
+    def _is_assistant_referential_followup(self, text: str) -> bool:
+        """True when asking about something in the previous assistant reply."""
+        q = text.strip().lower()
+        if not q or self._is_meta_memory_question(q):
+            return False
+        patterns = (
+            r"\b(the|those|these|your)\s+(\d+\s+)?(key\s+)?(tasks?|steps?|points?|"
+            r"parts?|items?|reasons?|ways?|things?|findings?|takeaways?)\b",
+            r"\bwhat (are|were|was|is) (the|those|these)\b",
+            r"\byou (mentioned|listed|said|wrote|outlined)\b",
+            r"\bin your (last |previous )?(answer|response|reply|explanation)\b",
+            r"\bthe (first|second|third|last|previous) (one|step|task|point|part)\b",
+            r"\bexpand on (the|that|those|point|step|task)\b",
+        )
+        return any(re.search(p, q) for p in patterns)
 
-        sections.append("Current user message:\n" + prompt)
+    def _clean_topic(self, text: str) -> str:
+        """Strip injected resolution / memory wrappers from a stored user turn."""
+        content = (text or "").strip()
+        if content.startswith("Relevant information remembered"):
+            parts = content.split("\n\n", 1)
+            content = parts[-1].strip() if len(parts) > 1 else content
+        content = re.split(
+            r"\n\s*Context from this conversation\b",
+            content,
+            maxsplit=1,
+        )[0].strip()
+        content = re.split(
+            r"\n\s*Previous assistant reply\b",
+            content,
+            maxsplit=1,
+        )[0].strip()
+        content = re.split(
+            r"\n\s*Follow-up question:\b",
+            content,
+            maxsplit=1,
+        )[0].strip()
+        return self._compact_user_content(content)
 
-        return "\n\n".join(sections)
+    def _last_assistant_message(self) -> str:
+        for msg in reversed(self.messages):
+            if msg.get("role") == "assistant":
+                return (msg.get("content") or "").strip()
+        return ""
+
+    def _last_real_user_topic(self) -> str:
+        """Most recent substantive user topic (skips pure follow-up noise)."""
+        prior = self._prior_user_tasks(skip_meta=True)
+        for topic in reversed(prior):
+            clean = self._clean_topic(topic)
+            if not clean:
+                continue
+            if self._is_referential_followup(clean) and len(clean.split()) <= 6:
+                continue
+            if self._is_assistant_referential_followup(clean):
+                continue
+            return clean
+        return self._clean_topic(prior[-1]) if prior else ""
+
+    def resolve_referential_prompt(self, prompt: str) -> str:
+        """
+        Expand follow-ups before retrieval using the last real user topic.
+
+        Assistant-referential questions ("what are the 3 key tasks") are left
+        unchanged here and answered from chat history in ``generate_response``.
+        """
+        task = prompt.strip()
+        if not task or self._is_meta_memory_question(task):
+            return prompt
+        # Don't rewrite — generate_response will answer from the last reply.
+        if self._is_assistant_referential_followup(task):
+            print(
+                "[Memory] Assistant-referential follow-up detected; "
+                "will answer from previous reply (skip topic rewrite)."
+            )
+            return prompt
+
+        last_topic = self._last_real_user_topic()
+        if not last_topic or not self._is_referential_followup(task):
+            return prompt
+
+        resolved = (
+            f"{task}\n\n"
+            f"Context from this conversation — the user is referring to their "
+            f"previous question: {last_topic}"
+        )
+        print(f"[Memory] Follow-up resolved using prior topic: {last_topic[:120]!r}")
+        return resolved
+
+    def _prior_user_tasks(self, *, skip_meta: bool = False) -> List[str]:
+        """Compact prior user turns already stored in ``self.messages``."""
+        tasks: List[str] = []
+        for msg in self.messages:
+            if msg.get("role") != "user":
+                continue
+            content = (msg.get("content") or "").strip()
+            if not content:
+                continue
+            task = self._clean_topic(content)
+            if not task:
+                continue
+            if skip_meta and self._is_meta_memory_question(task):
+                continue
+            tasks.append(task)
+        return tasks
+
+    def _build_assistant_followup_prompt(self, task: str) -> str:
+        """History-only prompt when the user asks about the last assistant answer."""
+        last_assistant = self._last_assistant_message()
+        last_topic = self._last_real_user_topic()
+        if not last_assistant:
+            return (
+                f"The user asked: {task}\n\n"
+                "There is no previous assistant reply stored. Say so briefly."
+            )
+        return (
+            "Answer the follow-up using ONLY the previous assistant reply below. "
+            "Do NOT use retrieved code context. Do NOT invent a different list "
+            "of tasks/steps/points than what appears in that reply.\n\n"
+            f"Original topic: {last_topic or '(unknown)'}\n\n"
+            f"Previous assistant reply:\n{last_assistant}\n\n"
+            f"Follow-up question:\n{task}"
+        )
+
+    def _build_meta_memory_prompt(self, task: str) -> str:
+        """
+        Build a RAG-free prompt for conversation-memory questions.
+
+        Retrieved code CONTEXT often hijacks these answers (the model invents
+        a 'previous question' from whatever files were retrieved). Quote prior
+        turns explicitly so the model cannot miss them.
+        """
+        prior = self._prior_user_tasks(skip_meta=True)
+        if not prior:
+            return (
+                "The user is asking about earlier messages in this conversation, "
+                "but there are no previous user questions stored yet.\n\n"
+                f"Current question:\n{task}\n\n"
+                "Reply briefly that you do not have a previous question yet."
+            )
+
+        lines = [
+            "Answer using ONLY the conversation history below.",
+            "Do NOT use any retrieved code context. Do NOT invent a prior question.",
+            "",
+            "Previous user questions (oldest → newest):",
+        ]
+        for i, prev in enumerate(prior, start=1):
+            lines.append(f'{i}. "{prev}"')
+        lines.extend(
+            [
+                "",
+                f'The most recent previous user question was: "{prior[-1]}"',
+                "",
+                f"Current question:\n{task}",
+                "",
+                "Answer the current question directly from the history above.",
+            ]
+        )
+        return "\n".join(lines)
 
     def _remember_chat_turn(
         self,
@@ -338,33 +624,13 @@ class OllamaAgent:
         response: str,
     ) -> None:
         """
-        Store the current exchange.
+        Store the current exchange in Mem0 long-term memory.
 
-        The exchange is stored in:
-        - short-term thread history
-        - Mem0 long-term memory
+        Short-term history is already stored in ``self.messages``.
         """
 
         if not prompt and not response:
             return
-
-        # ---------------------------------------------------------
-        # Short-term memory
-        # ---------------------------------------------------------
-
-        entry = (
-            f"User: {prompt.strip()}\n"
-            f"Assistant: {response.strip()}"
-        )
-
-        self.chat_history.append(entry)
-
-        if self.max_history_messages is not None:
-            self.chat_history = self.chat_history[-self.max_history_messages :]
-
-        # ---------------------------------------------------------
-        # Long-term memory
-        # ---------------------------------------------------------
 
         if self.memory_store is None:
             return
@@ -382,6 +648,10 @@ class OllamaAgent:
                 return
 
             if hasattr(self.memory_store, "create"):
+                entry = (
+                    f"User: {prompt.strip()}\n"
+                    f"Assistant: {response.strip()}"
+                )
                 self.memory_store.create(
                     entry,
                     user_id=self.memory_user_id,
@@ -415,28 +685,112 @@ class OllamaAgent:
 
         Before Ollama:
             1. Search Mem0 for relevant long-term memories.
-            2. Add recent thread history.
-            3. Add the current user message.
+            2. Append the current user turn to the persistent message list.
+            3. Send the full message history (not a fresh 2-message list).
 
         After Ollama:
-            4. Store the exchange in short-term memory.
+            4. Append the assistant reply to the message list and save to disk.
             5. Store the exchange in Mem0.
         """
 
-        prompt_with_memory = self._build_memory_context(prompt)
+        task = self._extract_task(prompt)
+        # If inject wrapped a resolved follow-up, prefer the bare question when present.
+        followup_match = re.search(
+            r"Follow-up question:\s*(.+?)(?:\n\n|\Z)",
+            task,
+            flags=re.DOTALL | re.IGNORECASE,
+        )
+        if followup_match:
+            task = followup_match.group(1).strip()
+        task = self._clean_topic(task)
+
+        meta = self._is_meta_memory_question(task)
+        assistant_ref = self._is_assistant_referential_followup(task)
+
+        if meta or assistant_ref:
+            if assistant_ref:
+                user_content = self._build_assistant_followup_prompt(task)
+                meta_system = (
+                    "You answer follow-up questions about your previous reply. "
+                    "Use only that previous reply. Do not invent a different list "
+                    "from retrieved code."
+                )
+                print(
+                    "[Memory] Assistant-referential follow-up → LLM with prior reply."
+                )
+            else:
+                user_content = self._build_meta_memory_prompt(task)
+                meta_system = (
+                    "You answer questions about this conversation's history. "
+                    "Use only the prior user questions listed in the prompt. "
+                    "Never invent a previous question from code snippets."
+                )
+                print(
+                    f"[Memory] Meta question → LLM with quoted history "
+                    f"(prior_turns={len(self._prior_user_tasks(skip_meta=True))})."
+                )
+            try:
+                response = self._chat(
+                    messages=[
+                        {"role": "system", "content": meta_system},
+                        {"role": "user", "content": user_content},
+                    ]
+                )
+            except Exception:
+                raise
+            self.messages.append({"role": "user", "content": task})
+            self.messages.append({"role": "assistant", "content": response})
+            self._trim_messages()
+            self._save_messages()
+            print(
+                f"[Memory] Short-term turns={sum(1 for m in self.messages if m.get('role')=='user')} "
+                f"(messages={len(self.messages)}, saved={self._history_path.name})"
+            )
+            self._remember_chat_turn(task, response)
+            return response
+
+        user_content = self._augment_user_prompt(prompt)
 
         if system is not None:
-            response = self._chat(
-                system,
-                prompt_with_memory,
-            )
-        else:
-            response = self._generate(prompt_with_memory)
+            if self.messages and self.messages[0].get("role") == "system":
+                self.messages[0] = {"role": "system", "content": system}
+            else:
+                self.messages.insert(0, {"role": "system", "content": system})
 
-        self._remember_chat_turn(
-            prompt,
-            response,
+        # Compact older user turns so repeated RAG contexts don't pile up.
+        for msg in self.messages:
+            if msg.get("role") == "user":
+                raw = msg.get("content") or ""
+                if "<CONTEXT>" in raw or "Context from this conversation" in raw:
+                    msg["content"] = self._clean_topic(raw)
+
+        self.messages.append({"role": "user", "content": user_content})
+        self._trim_messages()
+
+        try:
+            response = self._chat()
+        except Exception:
+            # Do not leave a dangling user turn if Ollama failed.
+            if self.messages and self.messages[-1].get("role") == "user":
+                self.messages.pop()
+            raise
+
+        # Store a compact clean topic (never the RAG dump / resolution wrapper).
+        for i in range(len(self.messages) - 1, -1, -1):
+            if self.messages[i].get("role") == "user":
+                self.messages[i]["content"] = self._clean_topic(prompt)
+                break
+
+        self.messages.append({"role": "assistant", "content": response})
+        self._trim_messages()
+        self._save_messages()
+
+        print(
+            f"[Memory] Short-term turns={sum(1 for m in self.messages if m.get('role')=='user')} "
+            f"(messages={len(self.messages)}, saved={self._history_path.name})"
         )
+
+        self._remember_chat_turn(prompt, response)
 
         return response
 
@@ -457,25 +811,18 @@ class OllamaAgent:
             response_key="response",
         )
 
-    def _chat(
-        self,
-        system: str,
-        user: str,
-    ) -> str:
+    def _chat(self, messages: Optional[List[dict[str, str]]] = None) -> str:
+        """
+        Call Ollama /api/chat with ``messages`` (or ``self.messages`` by default).
+
+        Previously this rebuilt a fresh [system, user] list every call, which
+        wiped conversational memory even when the agent singleton survived.
+        """
         url = f"{self.base_url}/api/chat"
 
         body = {
             "model": self.model,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": system,
-                },
-                {
-                    "role": "user",
-                    "content": user,
-                },
-            ],
+            "messages": messages if messages is not None else self.messages,
             "stream": False,
             "think": self.think,
             "options": self._ollama_options(),
@@ -632,8 +979,8 @@ def generate_response(
     model: str = "qwen3.5:9b",
     system: Optional[str] = None,
 ) -> str:
-
-    return OllamaAgent(model=model).generate_response(
+    # Reuse the process-wide agent so chat history is not reset every call.
+    return get_shared_agent(model=model).generate_response(
         prompt,
         system=system,
     )

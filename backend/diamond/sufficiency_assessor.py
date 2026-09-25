@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # ── tunables ──────────────────────────────────────────────────────────────────
 
 OLLAMA_BASE_URL = "http://localhost:11434"
-DEFAULT_MODEL = "llama3.2:3b"
+DEFAULT_MODEL = "ornith:9b"
 REQUEST_TIMEOUT = 120   # seconds — sufficiency call is short, but give extra space just in case
 
 # Queries whose top-chunk score falls below this are escalated immediately
