@@ -13,10 +13,10 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
-
+import os
 
 # ── Config ─────────────────────────────────────────────────────
 
@@ -30,11 +30,10 @@ class HeuristicWeights:
     All four weights should sum to 1.0 for interpretability, but this
     is not enforced — the final score is just a weighted sum.
     """
-
-    retrieval: float = 0.40
-    query_match: float = 0.25
-    function: float = 0.20
-    structure: float = 0.15
+    retrieval: float = float(os.getenv("PRUNE_W_RETRIEVAL", "0.40"))
+    query_match: float = float(os.getenv("PRUNE_W_QUERY_MATCH", "0.25"))
+    function: float = float(os.getenv("PRUNE_W_FUNCTION", "0.20"))
+    structure: float = float(os.getenv("PRUNE_W_STRUCTURE", "0.15"))
 
     def as_tuple(self) -> tuple[float, float, float, float]:
         return (self.retrieval, self.query_match, self.function, self.structure)

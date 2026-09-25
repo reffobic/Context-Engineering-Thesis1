@@ -37,11 +37,10 @@ COLLECTION_NAME = "code_embeddings"
 BM25_PATH       = str(Path(CHROMA_PATH) / "bm25_index.json")
 CONTEXT_SEPARATOR = "\n\n--- RAW CODE ---\n"
 
-# Ranking weights
-W_HYBRID    = 0.46
-W_PROXIMITY = 0.26
-W_FUNCTION  = 0.18
-W_SYMBOL    = 0.10  # boost when chunk body contains query’s C-style API symbol
+W_HYBRID    = float(os.getenv("FINAL_W_HYBRID", "0.46"))
+W_PROXIMITY = float(os.getenv("FINAL_W_PROXIMITY", "0.26"))
+W_FUNCTION  = float(os.getenv("FINAL_W_FUNCTION", "0.18"))
+W_SYMBOL    = float(os.getenv("FINAL_W_SYMBOL", "0.10"))  # boost when chunk body contains query’s C-style API symbol
 
 # New retrieval stream weights
 W_DENSE = float(os.getenv("DENSE_WEIGHT", "0.42"))
