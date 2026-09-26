@@ -128,7 +128,15 @@ class OllamaAgent:
             Path(os.environ.get("MEM0_DIR", str(_DEFAULT_MEM0_DIR)))
             / f"chat_history_{self.memory_user_id}.json"
         )
+        self._context_path = (
+            Path(os.environ.get("MEM0_DIR", str(_DEFAULT_MEM0_DIR)))
+            / f"last_code_context_{self.memory_user_id}.json"
+        )
         self.messages: List[dict[str, str]] = self._load_messages()
+        # Keep the most recent retrieved code context separately from chat
+        # history.  It lets follow-up questions refer to the previous function
+        # even though we deliberately keep large RAG dumps out of the thread.
+        self._last_code_context: str = self._load_last_code_context()
 
         # Back-compat alias used by older call sites / debugging.
         self.chat_history: List[str] = []
@@ -329,6 +337,29 @@ class OllamaAgent:
         except Exception as e:
             print(f"[Memory] Failed to save chat history: {e}")
 
+    def _load_last_code_context(self) -> str:
+        """Load the compact code context belonging to the latest code turn."""
+        try:
+            if not self._context_path.is_file():
+                return ""
+            raw = json.loads(self._context_path.read_text(encoding="utf-8"))
+            if isinstance(raw, dict) and isinstance(raw.get("context"), str):
+                return raw["context"]
+        except Exception as e:
+            print(f"[Memory] Failed to load last code context: {e}")
+        return ""
+
+    def _save_last_code_context(self, context: str) -> None:
+        """Persist the latest code context for same-thread follow-up questions."""
+        try:
+            self._context_path.parent.mkdir(parents=True, exist_ok=True)
+            self._context_path.write_text(
+                json.dumps({"context": context}, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+        except Exception as e:
+            print(f"[Memory] Failed to save last code context: {e}")
+
     def _trim_messages(self) -> None:
         """Keep system (if any) + the most recent user/assistant turns."""
         if self.max_history_messages is None:
@@ -344,11 +375,14 @@ class OllamaAgent:
         """Reset short-term conversation (does not wipe Mem0)."""
         self.messages = []
         self.chat_history = []
+        self._last_code_context = ""
         try:
             if self._history_path.is_file():
                 self._history_path.unlink()
+            if self._context_path.is_file():
+                self._context_path.unlink()
         except Exception as e:
-            print(f"[Memory] Failed to clear chat history file: {e}")
+            print(f"[Memory] Failed to clear chat history/context files: {e}")
 
     def _format_long_term_memory(
         self,
@@ -458,20 +492,58 @@ class OllamaAgent:
         )
 
     def _is_assistant_referential_followup(self, text: str) -> bool:
-        """True when asking about something in the previous assistant reply."""
+        """
+        True when the current question depends on the previous assistant reply.
+
+        This check MUST happen before code/RAG retrieval.  A coding follow-up such
+        as "what are its external dependencies?" is not a new code-search query:
+        "its" refers to something explained in the previous answer.
+
+        We intentionally require an existing assistant reply before treating
+        pronouns as conversational references.  This avoids classifying a fresh
+        standalone question such as "What is its purpose?" as a follow-up when
+        there is no conversation context.
+        """
         q = text.strip().lower()
         if not q or self._is_meta_memory_question(q):
             return False
-        patterns = (
-            r"\b(the|those|these|your)\s+(\d+\s+)?(key\s+)?(tasks?|steps?|points?|"
-            r"parts?|items?|reasons?|ways?|things?|findings?|takeaways?)\b",
-            r"\bwhat (are|were|was|is) (the|those|these)\b",
-            r"\byou (mentioned|listed|said|wrote|outlined)\b",
+        if not self._last_assistant_message():
+            return False
+
+        # Explicit references to the previous answer.
+        explicit_patterns = (
+            r"\b(the|those|these|your)\s+(\d+\s+)?(key\s+)?"
+            r"(tasks?|steps?|points?|parts?|items?|reasons?|ways?|things?|"
+            r"findings?|takeaways?|dependencies?|examples?|issues?|files?)\b",
+            r"\bwhat (are|were|was|is)\s+(the|those|these|its|their|his|her)\b",
+            r"\bwhat (does|did)\s+(it|that|this)\b",
+            r"\bhow (does|did|is|was)\s+(it|that|this)\b",
+            r"\bwhy (does|did|is|was)\s+(it|that|this)\b",
+            r"\bwhere (does|did|is|was)\s+(it|that|this)\b",
+            r"\bwhich (of (them|those|these)|one)\b",
+            r"\b(it|its|they|their|them)\b.*\b("
+            r"dependencies?|inputs?|outputs?|parameters?|arguments?|"
+            r"callers?|callees?|uses?|usage|purpose|role|function|"
+            r"implementation|behavior|logic|parts?|steps?|details?)\b",
+            r"\byou (mentioned|listed|said|wrote|outlined|explained)\b",
             r"\bin your (last |previous )?(answer|response|reply|explanation)\b",
-            r"\bthe (first|second|third|last|previous) (one|step|task|point|part)\b",
-            r"\bexpand on (the|that|those|point|step|task)\b",
+            r"\bthe (first|second|third|last|previous) "
+            r"(one|step|task|point|part|item)\b",
+            r"\bexpand on (the|that|those|this|it|point|step|task)\b",
+            r"\bcan you (explain|show|repeat|rephrase|clarify) (it|that|this|those|these)\b",
         )
-        return any(re.search(p, q) for p in patterns)
+        if any(re.search(p, q) for p in explicit_patterns):
+            return True
+
+        # Short, underspecified questions containing a conversational pronoun.
+        # These are almost always dependent on the preceding turn in a coding
+        # conversation (e.g. "what about its inputs?", "and its callers?").
+        if len(q.split()) <= 12 and re.search(
+            r"\b(it|its|they|their|them|that|those|these|this)\b", q
+        ):
+            return True
+
+        return False
 
     def _clean_topic(self, text: str) -> str:
         """Strip injected resolution / memory wrappers from a stored user turn."""
@@ -564,22 +636,53 @@ class OllamaAgent:
         return tasks
 
     def _build_assistant_followup_prompt(self, task: str) -> str:
-        """History-only prompt when the user asks about the last assistant answer."""
+        """
+        Build a deterministic prompt for questions referring to the previous turn.
+
+        The previous assistant reply is the primary source.  The last retrieved
+        code context is included only as supporting evidence, so a follow-up
+        such as "what are its external dependencies?" cannot trigger a fresh
+        unrelated retrieval result.
+        """
         last_assistant = self._last_assistant_message()
         last_topic = self._last_real_user_topic()
+
         if not last_assistant:
             return (
                 f"The user asked: {task}\n\n"
                 "There is no previous assistant reply stored. Say so briefly."
             )
-        return (
-            "Answer the follow-up using ONLY the previous assistant reply below. "
-            "Do NOT use retrieved code context. Do NOT invent a different list "
-            "of tasks/steps/points than what appears in that reply.\n\n"
-            f"Original topic: {last_topic or '(unknown)'}\n\n"
-            f"Previous assistant reply:\n{last_assistant}\n\n"
-            f"Follow-up question:\n{task}"
-        )
+
+        parts = [
+            "Answer the follow-up question using the conversation immediately "
+            "before it.",
+            "First use the previous assistant reply as the primary context.",
+            "If the answer requires a code-level detail that is not stated in "
+            "that reply, use the previous retrieved code context below.",
+            "Do NOT invent a new unrelated topic and do NOT perform a fresh "
+            "interpretation of the user's question.",
+            "",
+            f"Original user topic:\n{last_topic or '(unknown)'}",
+            "",
+            f"Previous assistant reply:\n{last_assistant}",
+        ]
+
+        if self._last_code_context:
+            parts.extend([
+                "",
+                "Code context retrieved for that previous topic:",
+                self._last_code_context,
+            ])
+
+        parts.extend([
+            "",
+            f"Current follow-up question:\n{task}",
+            "",
+            "Answer directly and specifically. Resolve pronouns such as "
+            "'it', 'its', 'they', and 'their' using the original topic and "
+            "previous assistant reply.",
+        ])
+        return "\n".join(parts)
 
     def _build_meta_memory_prompt(self, task: str) -> str:
         """
@@ -950,6 +1053,33 @@ class OllamaAgent:
                 ↓
             Ollama
         """
+
+        # Keep the previous retrieval result available for conversational
+        # follow-ups.  Do not put it into the normal chat history because that
+        # would repeatedly inflate the context window.
+        context_parts: List[str] = []
+        for chunk in chunks:
+            if isinstance(chunk, dict):
+                path = str(chunk.get("path", ""))
+                symbol = str(chunk.get("symbol", ""))
+                chunk_text = str(chunk.get("text", ""))
+                if chunk_text:
+                    header = f"[{path}::{symbol}]" if symbol else f"[{path}]"
+                    context_parts.append(f"{header}\n{chunk_text}")
+            elif chunk:
+                context_parts.append(str(chunk))
+
+        if extra_dependencies:
+            context_parts.append(f"[Extra dependencies]\n{extra_dependencies}")
+
+        # Do not overwrite the previous turn's code context when this request
+        # is itself a conversational follow-up.  The upstream retriever may
+        # have produced unrelated chunks for an underspecified query such as
+        # "what are its dependencies?", but those chunks must not replace the
+        # context belonging to "its".
+        if context_parts and not self._is_assistant_referential_followup(user_task):
+            self._last_code_context = "\n\n".join(context_parts)
+            self._save_last_code_context(self._last_code_context)
 
         builder = prompt_builder or PromptBuilder(
             system_prompt=(system_prompt or DEFAULT_SYSTEM_PROMPT)
