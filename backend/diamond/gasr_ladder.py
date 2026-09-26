@@ -7,6 +7,12 @@ without Ollama.
 
 ``re_prune`` is the post-expand callback: flat-merge seeds+neighbors under
 the token budget (``prune_context``). The ladder only needs updated context.
+
+Policy (after a successful expand that added neighbors):
+  prefer GRAPH (re-pruned seeds+neighbors) over dumping full LC when the
+  post-expand judge is still unsatisfied or the hop cap is hit.
+  LC is for CONTEXT needs (no useful neighbors) or failed expand (0 new chunks
+  and empty neighbor pool).
 """
 
 from __future__ import annotations
@@ -29,6 +35,23 @@ class GasrLadderResult:
     context: Any
     assess_trace: list[dict[str, Any]] = field(default_factory=list)
     expand_trace: list[dict[str, Any]] = field(default_factory=list)
+
+
+def _finish(
+    *,
+    route: str,
+    hops_used: int,
+    context: Any,
+    assess_trace: list[dict[str, Any]],
+    expand_trace: list[dict[str, Any]],
+) -> GasrLadderResult:
+    return GasrLadderResult(
+        route=route,
+        hops_used=hops_used,
+        context=context,
+        assess_trace=assess_trace,
+        expand_trace=expand_trace,
+    )
 
 
 def run_gasr_ladder(
@@ -59,7 +82,7 @@ def run_gasr_ladder(
     assess_trace.append({"phase": "rag", "hops": 0, **decision})
 
     if decision.get("sufficient"):
-        return GasrLadderResult(
+        return _finish(
             route="RAG",
             hops_used=0,
             context=current_pruned,
@@ -82,7 +105,16 @@ def run_gasr_ladder(
         )
 
         if not can_expand:
-            return GasrLadderResult(
+            # Prefer GRAPH if we already materialised neighbors; else LC.
+            if neighbor_pool:
+                return _finish(
+                    route="GRAPH",
+                    hops_used=hops_used,
+                    context=current_pruned,
+                    assess_trace=assess_trace,
+                    expand_trace=expand_trace,
+                )
+            return _finish(
                 route="LC",
                 hops_used=hops_used,
                 context=build_lc(),
@@ -94,18 +126,33 @@ def run_gasr_ladder(
         expand_result = expand_hop(expand_seeds, 1)
         new_chunks = expand_result.get("chunks") or []
         hops_used += 1
+        neighbor_ids = list(expand_result.get("neighbor_ids") or [])
+        # Cap ids in the trace so live reports stay readable.
+        neighbor_ids_cap = 20
         expand_trace.append(
             {
                 "hops_used": hops_used,
                 "new_chunk_count": expand_result.get("new_chunk_count", 0),
                 "graph_backend": expand_result.get("graph_backend"),
                 "seed_keys": expand_result.get("seed_keys"),
+                "neighbor_ids": neighbor_ids[:neighbor_ids_cap],
+                "neighbor_ids_total": len(neighbor_ids),
+                "edge_counts": expand_result.get("edge_counts"),
+                "duration_ms": expand_result.get("duration_ms", 0),
                 "confidence_note": conf,
             }
         )
 
         if expand_result.get("new_chunk_count", 0) <= 0:
-            return GasrLadderResult(
+            if neighbor_pool:
+                return _finish(
+                    route="GRAPH",
+                    hops_used=hops_used,
+                    context=current_pruned,
+                    assess_trace=assess_trace,
+                    expand_trace=expand_trace,
+                )
+            return _finish(
                 route="LC",
                 hops_used=hops_used,
                 context=build_lc(),
@@ -119,11 +166,22 @@ def run_gasr_ladder(
         decision2 = assess_after_expand()
         assess_trace.append({"phase": "graph", "hops": hops_used, **decision2})
         if decision2.get("sufficient"):
-            return GasrLadderResult(
+            return _finish(
                 route="GRAPH",
                 hops_used=hops_used,
                 context=current_pruned,
                 assess_trace=assess_trace,
                 expand_trace=expand_trace,
             )
-        # else: loop for another STRUCTURE hop or LC
+
+        # Still insufficient: another STRUCTURE hop, or stop with GRAPH
+        # (do not dump full LC after a successful expand).
+        if hops_used >= hard_cap:
+            return _finish(
+                route="GRAPH",
+                hops_used=hops_used,
+                context=current_pruned,
+                assess_trace=assess_trace,
+                expand_trace=expand_trace,
+            )
+        # else: loop for another STRUCTURE hop
