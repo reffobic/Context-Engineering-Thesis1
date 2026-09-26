@@ -1,15 +1,18 @@
 import json
 import logging
+import os
 import time
 import uuid
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, List, Literal, Optional
+from typing import Any, Callable, Generator, List, Literal, Optional
+from urllib.request import urlopen
+from urllib.error import URLError
 
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 try:
@@ -79,6 +82,8 @@ class GenerateRequest(BaseModel):
     prompt: str
     mode: Literal["RAG", "LC", "SELF_ROUTE"] = "SELF_ROUTE"
     pruning_method: Literal["heuristic", "selective"] = "heuristic"
+    assessor_model: Optional[str] = None  # Ollama model for sufficiency judge; None = use default
+    model: Optional[str] = None           # Ollama model for generation; None = use default
 
 
 class EvaluateRequest(BaseModel):
@@ -435,6 +440,230 @@ def index(
 @app.post("/generate")
 def generate(req: GenerateRequest):
     return run_pipeline(req.prompt, mode=req.mode, pruning_method=req.pruning_method)
+
+
+# ---------------------------------------------------------------------------
+# GET /models — list available Ollama models for the VS Code extension picker
+# ---------------------------------------------------------------------------
+@app.get("/models")
+def list_models() -> dict:
+    """Proxy to Ollama /api/tags and return a flat list of model names."""
+    try:
+        with urlopen("http://localhost:11434/api/tags", timeout=5) as resp:
+            data = json.loads(resp.read().decode())
+        models = [m["name"] for m in (data.get("models") or [])]
+        return {"models": models}
+    except (URLError, Exception) as exc:
+        logging.warning("list_models: could not reach Ollama: %s", exc)
+        return {"models": [], "error": str(exc)}
+
+
+# ---------------------------------------------------------------------------
+# POST /generate/stream — SSE streaming pipeline for the VS Code extension
+# ---------------------------------------------------------------------------
+class StreamGenerateRequest(BaseModel):
+    prompt: str
+    mode: Literal["RAG", "LC", "SELF_ROUTE"] = "SELF_ROUTE"
+    model: Optional[str] = None           # Ollama model for generation; None = use default
+    assessor_model: Optional[str] = None  # Ollama model for sufficiency judge; None = use default
+    file_context: Optional[str] = None    # raw file text from the editor (skips RAG retrieval)
+
+
+def _sse(event: dict) -> str:
+    """Serialise one SSE data frame."""
+    return f"data: {json.dumps(event, ensure_ascii=False, default=str)}\n\n"
+
+
+def _run_pipeline_streaming(
+    user_prompt: str,
+    mode: str,
+    model: Optional[str],
+    assessor_model: Optional[str] = None,
+    file_context: Optional[str] = None,
+) -> Generator[str, None, None]:
+    """
+    Generator that yields SSE frames as each pipeline stage completes,
+    then streams LLM tokens if the Ollama model supports streaming.
+    """
+    import sys
+    backend = Path(__file__).resolve().parent.parent
+    if str(backend) not in sys.path:
+        sys.path.insert(0, str(backend))
+
+    token_budget = 1800
+
+    # ── File-scope short-circuit ──────────────────────────────────────────
+    # When the user chose "Current File" in the extension, file_context holds
+    # the raw editor text. Skip retrieve/prune/assess and feed the file
+    # directly into inject+generate.
+    if file_context:
+        file_lines = file_context.count('\n') + 1
+        skipped_note = "Skipped — using current file as context"
+        for stage in ("retrieve", "prune", "assess"):
+            yield _sse({"event": "stage_start", "stage": stage, "label": stage.capitalize()})
+            yield _sse({"event": "stage", "stage": stage, "status": "skipped",
+                        "label": stage.capitalize(), "duration_ms": 0,
+                        "summary": {"note": skipped_note}})
+        context_for_injection = [{
+            "text": file_context,
+            "path": "<current file>",
+            "symbol": "",
+            "language": "",
+            "score": 1.0,
+        }]
+        retrieve_summary_note = f"{file_lines} lines from current file"
+        logging.info("file-scope mode: injecting %d chars from editor", len(file_context))
+    else:
+        # ── Stage 1: Retrieve ──────────────────────────────────────────────
+        yield _sse({"event": "stage_start", "stage": "retrieve", "label": "Retrieve context"})
+        try:
+            context, duration_ms = _time_stage(lambda: call_tool("retrieve_context", user_prompt))
+            summary = _retrieval_summary(context)
+            yield _sse({"event": "stage", "stage": "retrieve", "status": "complete",
+                        "label": "Retrieve context", "duration_ms": duration_ms, "summary": summary})
+        except Exception as exc:
+            yield _sse({"event": "stage", "stage": "retrieve", "status": "error", "error": str(exc)})
+            yield _sse({"event": "done", "output": f"[Retrieval error: {exc}]"})
+            return
+
+        # ── Stage 2: Prune ────────────────────────────────────────────────
+        yield _sse({"event": "stage_start", "stage": "prune", "label": "Prune context"})
+        try:
+            (pruned_context, pruning_stats), duration_ms = _time_stage(
+                lambda: prune_context_with_stats(user_prompt, context, token_budget=token_budget)
+            )
+            summary = _pruning_summary(pruned_context, pruning_stats, token_budget)
+            yield _sse({"event": "stage", "stage": "prune", "status": "complete",
+                        "label": "Prune context", "duration_ms": duration_ms, "summary": summary})
+        except Exception as exc:
+            yield _sse({"event": "stage", "stage": "prune", "status": "error", "error": str(exc)})
+            yield _sse({"event": "done", "output": f"[Pruning error: {exc}]"})
+            return
+
+        # ── Stage 3: Assess (SELF_ROUTE) ──────────────────────────────────
+        def _build_lc_chunks_sse(raw_retrieved: list) -> list:
+            lc_chunks = []
+            for item in raw_retrieved:
+                pc = item.get("parent_context") or item.get("code") or ""
+                if not pc.strip():
+                    continue
+                meta = item.get("metadata") or {}
+                lc_chunks.append({
+                    "text": pc, "path": meta.get("file") or "",
+                    "symbol": meta.get("function") or "", "language": meta.get("language") or "",
+                })
+            return lc_chunks
+
+        yield _sse({"event": "stage_start", "stage": "assess", "label": "Sufficiency assessment"})
+        try:
+            if mode == "SELF_ROUTE":
+                decision, duration_ms = _time_stage(
+                    lambda: assess_sufficiency(user_prompt, pruned_context, model=assessor_model)
+                )
+                assess_summary = {
+                    "route": decision["route"], "sufficient": decision["sufficient"],
+                    "confidence": decision["confidence"], "reason": decision["reason"]
+                }
+                context_for_injection = (
+                    _build_lc_chunks_sse(context) if decision["route"] == "LC" else pruned_context
+                )
+            elif mode == "LC":
+                decision = {"route": "LC", "sufficient": False, "confidence": "high",
+                            "reason": "LC mode forced — assessment skipped."}
+                duration_ms = 0
+                assess_summary = decision
+                context_for_injection = _build_lc_chunks_sse(context)
+            else:  # RAG
+                decision = {"route": "RAG", "sufficient": True, "confidence": "high",
+                            "reason": "RAG mode forced — assessment skipped."}
+                duration_ms = 0
+                assess_summary = decision
+                context_for_injection = pruned_context
+            yield _sse({"event": "stage", "stage": "assess", "status": "complete",
+                        "label": "Sufficiency assessment", "duration_ms": duration_ms,
+                        "summary": assess_summary})
+        except Exception as exc:
+            yield _sse({"event": "stage", "stage": "assess", "status": "error", "error": str(exc)})
+            context_for_injection = pruned_context
+
+    # ── Stage 4: Inject ───────────────────────────────────────────────────
+    yield _sse({"event": "stage_start", "stage": "inject", "label": "Build final prompt"})
+    try:
+        final_prompt, duration_ms = _time_stage(
+            lambda: call_tool("inject_context", user_prompt, context_for_injection)
+        )
+        yield _sse({"event": "stage", "stage": "inject", "status": "complete",
+                    "label": "Build final prompt", "duration_ms": duration_ms,
+                    "summary": _prompt_summary(final_prompt)})
+    except Exception as exc:
+        yield _sse({"event": "stage", "stage": "inject", "status": "error", "error": str(exc)})
+        yield _sse({"event": "done", "output": f"[Injection error: {exc}]"})
+        return
+
+    # ── Stage 5: Generate (streaming tokens) ──────────────────────────────
+    yield _sse({"event": "stage_start", "stage": "generate", "label": "Generating answer"})
+    system_text = final_prompt.get("system", "") or ""
+    user_text = final_prompt.get("user", "") or ""
+    chosen_model = model or os.environ.get("OLLAMA_MODEL", "qwen3.5:9b")
+
+    try:
+        import urllib.request, urllib.error
+        body_dict = {
+            "model": chosen_model,
+            "messages": [
+                {"role": "system", "content": system_text},
+                {"role": "user",   "content": user_text},
+            ],
+            "stream": True,
+            "options": {"num_predict": 8192},
+        }
+        req_obj = urllib.request.Request(
+            "http://localhost:11434/api/chat",
+            data=json.dumps(body_dict).encode(),
+            method="POST",
+        )
+        req_obj.add_header("Content-Type", "application/json")
+        full_answer = ""
+        with urllib.request.urlopen(req_obj, timeout=600) as resp:
+            for raw_line in resp:
+                line = raw_line.decode().strip()
+                if not line:
+                    continue
+                try:
+                    chunk = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                token = (chunk.get("message") or {}).get("content") or ""
+                if token:
+                    full_answer += token
+                    yield _sse({"event": "token", "content": token})
+                if chunk.get("done"):
+                    break
+        yield _sse({"event": "stage", "stage": "generate", "status": "complete",
+                    "label": "Generating answer", "duration_ms": 0,
+                    "summary": {"output_chars": len(full_answer), "preview": _preview_text(full_answer)}})
+        yield _sse({"event": "done", "output": full_answer})
+    except Exception as exc:
+        logging.exception("streaming generate failed, falling back to synchronous")
+        try:
+            result = call_tool("ollama_generate", final_prompt)
+            full_answer = result if isinstance(result, str) else str(result)
+            yield _sse({"event": "token", "content": full_answer})
+            yield _sse({"event": "done", "output": full_answer})
+        except Exception as exc2:
+            yield _sse({"event": "done", "output": f"[Generation error: {exc2}]"})
+
+
+@app.post("/generate/stream")
+def generate_stream(req: StreamGenerateRequest):
+    """SSE endpoint: yields pipeline stage events + streaming LLM tokens."""
+    return StreamingResponse(
+        _run_pipeline_streaming(
+            req.prompt, req.mode, req.model, req.assessor_model, req.file_context
+        ),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.post("/evaluate")
