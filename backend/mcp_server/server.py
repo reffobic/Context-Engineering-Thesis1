@@ -78,6 +78,7 @@ def _persist_eval_metrics(
 class GenerateRequest(BaseModel):
     prompt: str
     mode: Literal["RAG", "LC", "SELF_ROUTE"] = "SELF_ROUTE"
+    pruning_method: Literal["heuristic", "selective"] = "heuristic"
 
 
 class EvaluateRequest(BaseModel):
@@ -89,6 +90,7 @@ class EvaluateRequest(BaseModel):
     prompt: str
     top_k: int = 10
     token_budget: int = 1800
+    pruning_method: Literal["heuristic", "selective"] = "heuristic"
     relevant_files: Optional[List[str]] = None
     judge_retrieval_relevancy: bool = False
     faithfulness: bool = False
@@ -247,7 +249,7 @@ def _stage(name: str, duration_ms: int, summary: dict, raw: Any = None) -> dict:
 
 
 # Current pipeline
-def run_pipeline(user_prompt: str, mode: str = "SELF_ROUTE") -> dict:
+def run_pipeline(user_prompt: str, mode: str = "SELF_ROUTE", pruning_method: str = "heuristic") -> dict:
     token_budget = 1800
     pipeline = {
         "prompt": user_prompt,
@@ -268,7 +270,9 @@ def run_pipeline(user_prompt: str, mode: str = "SELF_ROUTE") -> dict:
     # P4 expects (query, retrieved_items). Use the core function here so the
     # dashboard can show the same pruning stats used to choose the final chunks.
     (pruned_context, pruning_stats), duration_ms = _time_stage(
-        lambda: prune_context_with_stats(user_prompt, context, token_budget=token_budget)
+        lambda: prune_context_with_stats(
+            user_prompt, context, token_budget=token_budget, method=pruning_method
+        )
     )
     pipeline["stages"]["prune"] = _stage(
         "Pruning",
@@ -430,7 +434,7 @@ def index(
 
 @app.post("/generate")
 def generate(req: GenerateRequest):
-    return run_pipeline(req.prompt, mode=req.mode)
+    return run_pipeline(req.prompt, mode=req.mode, pruning_method=req.pruning_method)
 
 
 @app.post("/evaluate")
@@ -449,8 +453,8 @@ def evaluate(req: EvaluateRequest) -> dict[str, Any]:
     )
 
     retrieved = call_tool("retrieve_context", req.prompt, req.top_k)
-    pruned, _stats = prune_context_with_stats(
-        req.prompt, retrieved, token_budget=req.token_budget
+    pruned, prune_stats = prune_context_with_stats(
+        req.prompt, retrieved, token_budget=req.token_budget, method=req.pruning_method
     )
     retrieve_ctx = chunks_as_retrieval_context(retrieved)
 
@@ -460,6 +464,10 @@ def evaluate(req: EvaluateRequest) -> dict[str, Any]:
         "prompt": req.prompt,
         "top_k": req.top_k,
         "token_budget": req.token_budget,
+        # Method actually applied; "selective" falls back to "heuristic" if the model is unavailable.
+        "pruning_method": prune_stats.method,
+        "requested_pruning_method": req.pruning_method,
+        "pruning_fallback_reason": prune_stats.fallback_reason,
         "pipeline_counts": {
             "retrieved_chunks": len(retrieved),
             "pruned_chunks": len(pruned),
