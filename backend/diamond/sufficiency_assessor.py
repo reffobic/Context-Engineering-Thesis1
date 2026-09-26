@@ -83,15 +83,16 @@ PROBE_DIR = Path(os.getenv("ROUTER_PROBE_DIR", str(Path(__file__).resolve().pare
 #   "reason": "<one sentence>"
 # }
 
+"""
 Rules:
 - sufficient=true  → the chunks contain enough information to answer the query directly
   (return value, quoted lines, named callees, or the asked symbols are present).
 - sufficient=false → key information is missing; a broader search is needed.
 - Do NOT require a perfect essay — if the answerable facts are in the chunks, mark sufficient=true.
 - confidence reflects how certain you are of your judgment.
-"""
 
-_SYSTEM_AFTER_EXPAND = """\
+
+_SYSTEM_AFTER_EXPAND = \
 You are a routing judge AFTER a graph-neighbor expand.
 Chunks may include seed hits plus graph neighbors (callees/callers/imports).
 
@@ -110,7 +111,6 @@ Rules:
 - sufficient=true for simple return-value / quote-from-shown-body questions if the body is here.
 - sufficient=false only if the asked symbols or facts are still clearly absent.
 - Prefer sufficient=true when unsure but relevant neighbor symbols are visible.
-"""
 
 # _USER_TEMPLATE = """\
 # QUERY:
