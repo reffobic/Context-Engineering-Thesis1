@@ -359,6 +359,95 @@ def test_prune_context_custom_weights():
     assert isinstance(chunks, list)
 
 
+# ── prune_context: selective fallback reporting (no torch needed) ──
+
+
+class _FakePruner:
+    """Stand-in for SelectiveContextPruner; optionally fails on pruning."""
+
+    def __init__(self, fail: bool = False):
+        self.fail = fail
+        self.calls: list[str] = []
+
+    def chunk_informativeness(self, code: str) -> float:
+        return 5.0
+
+    def _result(self, pruned: str):
+        class _Result:
+            pruned_text = pruned
+
+        return _Result()
+
+    def prune_text(self, text: str, target_ratio: float = 0.5):
+        self.calls.append("paper")
+        if self.fail:
+            raise RuntimeError("model blew up")
+        return self._result(text[: max(1, int(len(text) * target_ratio))])
+
+    def prune_code(self, text: str, target_ratio: float = 0.5, **_kw):
+        self.calls.append("code")
+        if self.fail:
+            raise RuntimeError("model blew up")
+        return self._result(text[: max(1, int(len(text) * target_ratio))])
+
+    @staticmethod
+    def prepare_code(text: str, language: str = "python", query: str = "") -> str:
+        return text
+
+
+def test_selective_reports_heuristic_when_torch_missing(monkeypatch):
+    # Importing a module set to None in sys.modules raises ImportError.
+    monkeypatch.setitem(sys.modules, "backend.pruning.selective_context", None)
+    chunks, stats = prune_context("func_0", _make_items(3), method="selective")
+    assert len(chunks) >= 1
+    assert stats.requested_method == "selective"
+    assert stats.method == "heuristic"
+    assert "not installed" in stats.fallback_reason
+
+
+def test_selective_reports_heuristic_when_model_fails_to_load(monkeypatch):
+    import backend.pruning.file as pruning_file
+
+    monkeypatch.setattr(
+        pruning_file, "_load_selective_pruner", lambda model_name: (None, "failed to load model")
+    )
+    _, stats = prune_context("func_0", _make_items(3), method="selective")
+    assert stats.method == "heuristic"
+    assert stats.fallback_reason == "failed to load model"
+
+
+def test_selective_counts_per_chunk_fallbacks(monkeypatch):
+    import backend.pruning.file as pruning_file
+
+    monkeypatch.setattr(
+        pruning_file, "_load_selective_pruner", lambda model_name: (_FakePruner(fail=True), None)
+    )
+    chunks, stats = prune_context("func_0", _make_items(3), method="selective")
+    assert len(chunks) == 3
+    assert stats.method == "selective"
+    assert stats.fallback_chunks == 3
+    assert "3 chunk(s)" in stats.fallback_reason
+
+
+def test_selective_success_has_no_fallback(monkeypatch):
+    import backend.pruning.file as pruning_file
+
+    monkeypatch.setattr(
+        pruning_file, "_load_selective_pruner", lambda model_name: (_FakePruner(), None)
+    )
+    _, stats = prune_context("func_0", _make_items(3), method="selective")
+    assert stats.method == "selective"
+    assert stats.requested_method == "selective"
+    assert stats.fallback_chunks == 0
+    assert stats.fallback_reason is None
+
+
+def test_heuristic_stats_have_no_fallback():
+    _, stats = prune_context("func_0", _make_items(2))
+    assert stats.requested_method == "heuristic"
+    assert stats.fallback_reason is None
+
+
 # ── Integration: pruning output → PromptBuilder ──────────────
 
 
@@ -475,24 +564,6 @@ class TestSelectiveContextPruner:
         result = pruner.prune_text("")
         assert result.pruned_text == ""
 
-    def test_prune_lines_reduces_line_count(self):
-        from backend.pruning.selective_context import SelectiveContextPruner
-        pruner = SelectiveContextPruner.get_instance("Salesforce/codegen-350M-multi")
-        code = (
-            "# This is a header comment\n"
-            "# Another boilerplate comment\n"
-            "import os\n"
-            "import sys\n"
-            "\n"
-            "def important_function(x):\n"
-            "    result = x ** 2 + 3 * x - 7\n"
-            "    return result\n"
-        )
-        result = pruner.prune_lines(code, target_ratio=0.5)
-        original_lines = len(code.strip().split("\n"))
-        pruned_lines = len(result.pruned_text.strip().split("\n"))
-        assert pruned_lines < original_lines
-
     def test_chunk_informativeness_returns_float(self):
         from backend.pruning.selective_context import SelectiveContextPruner
         pruner = SelectiveContextPruner.get_instance("Salesforce/codegen-350M-multi")
@@ -578,3 +649,288 @@ class TestSelectivePruneContext:
         )
         if chunks_aggressive and chunks_gentle:
             assert len(chunks_aggressive[0]["text"]) <= len(chunks_gentle[0]["text"])
+
+
+# ── Code-aware selective pruning: lexical units (no torch needed) ──
+
+from collections import OrderedDict
+import ast
+import re
+
+from backend.pruning.code_units import (
+    CodeUnitWeights,
+    filter_comments,
+    lex_units,
+)
+from backend.pruning.selective_context import SelectiveContextPruner, TokenSelfInfo
+
+_PY_SAMPLE = '''def load(path, retries=3):
+    """Load a config file.
+
+    Args:
+        path: where to read from
+    """
+    # ────────────────────────
+    # data = old_loader(path)
+    data = read_file(path)  # noqa: E501
+    if not data:
+        # NOTE: empty files must raise, callers rely on it
+        raise ValueError("empty")
+    # increment the counter
+    count += 1
+    return parse(data)
+'''
+
+
+def _kinds(text, language):
+    return {u.text: u.kind for u in lex_units(text, language) if u.kind not in ("whitespace", "newline")}
+
+
+def test_lex_units_cover_text_exactly():
+    for text, lang in [
+        (_PY_SAMPLE, "python"),
+        ("function f(a) { return g(a); } // done", "javascript"),
+        ("def broken(a,\n    b", "python"),  # unbalanced: tokenize fails, regex fallback
+    ]:
+        assert "".join(u.text for u in lex_units(text, lang)) == text
+
+
+def test_lex_python_kinds():
+    k = _kinds(_PY_SAMPLE, "python")
+    assert k["def"] == "other_kw"
+    assert k["load"] == "definition"
+    assert k["read_file"] == "call"
+    assert k["data"] == "identifier"
+    assert k["if"] == "control_kw"
+    assert k["return"] == "control_kw"
+    assert k["3"] == "literal"
+    assert k["("] == "punct"
+    assert k["+="] == "operator"
+    assert k["# noqa: E501"] == "comment"
+
+
+def test_lex_logic_operators_and_compared_literals():
+    k = _kinds("if a is None and not b or c == 0:\n    pass\n", "python")
+    for word in ("is", "and", "not", "or", "==", "None"):
+        assert k[word] == "logic_op", word
+    k = _kinds("x = None\n", "python")
+    assert k["None"] == "literal"  # not part of a comparison
+
+
+def test_lex_detects_docstring_but_not_argument_string():
+    units = lex_units(_PY_SAMPLE, "python")
+    doc = [u for u in units if u.kind == "docstring"]
+    assert len(doc) == 1 and doc[0].text.startswith('"""Load')
+    assert any(u.kind == "literal" and u.text == '"empty"' for u in units)
+
+
+def test_lex_javascript_comments_and_calls():
+    k = _kinds("/* block */\nconst x = compute(a); // trailing", "javascript")
+    assert k["/* block */"] == "comment"
+    assert k["// trailing"] == "comment"
+    assert k["compute"] == "call"
+    assert k["const"] == "other_kw"
+
+
+def test_lex_broken_fragment_still_classifies():
+    k = _kinds("def broken(a,\n    b", "python")
+    assert k["broken"] == "definition"
+
+
+def test_filter_comments_drops_valueless_comments():
+    out = filter_comments(_PY_SAMPLE, "python", query="how are config files loaded")
+    assert "────" not in out                 # decorative separator
+    assert "old_loader" not in out           # commented-out code
+    assert "noqa" not in out                 # pragma (trailing: code kept)
+    assert "data = read_file(path)" in out
+    assert "increment the counter" not in out  # no why-word / query / code overlap
+
+
+def test_filter_comments_keeps_valuable_comments():
+    out = filter_comments(_PY_SAMPLE, "python", query="how are config files loaded")
+    assert "NOTE: empty files must raise" in out   # why-words
+    assert "Load a config file." in out            # docstring summary always kept
+    assert "Args:" not in out                      # docstring section header dropped
+    ast.parse(out)                                 # still valid Python
+
+
+def test_filter_comments_keeps_query_and_code_overlap():
+    code = "# retry budget for flaky mounts\nx = 1\n# parse the payload\nresult = parse(payload)\n"
+    out = filter_comments(code, "python", query="what is the retry budget")
+    assert "retry budget" in out          # shares words with the query
+    assert "parse the payload" in out     # shares identifiers with the next code line
+
+
+def test_filter_comments_drops_license_header():
+    code = "# Copyright 2024 Example Corp. All rights reserved.\nx = 1\n"
+    assert filter_comments(code, "python") == "x = 1\n"
+
+
+# ── prune_code with a stub model (uniform self-information) ──
+
+
+class _CharTokenizer:
+    is_fast = False
+
+    def encode(self, text, **_kw):
+        return re.findall(r"\S+", text)
+
+
+class _UniformPruner(SelectiveContextPruner):
+    """Every character carries 1.0 nats, so only the kind weights and unit
+    length decide what is kept. Skips model loading."""
+
+    def __init__(self):
+        self._cache = OrderedDict()
+        self._tokenizer = _CharTokenizer()
+
+    def compute_self_information(self, text):
+        return [TokenSelfInfo(ch, 0, 1.0, i, i + 1) for i, ch in enumerate(text)]
+
+
+def _words(text):
+    return set(re.findall(r"[A-Za-z_][A-Za-z0-9_]*", text))
+
+
+def test_prune_code_keeps_logic_over_syntax():
+    out = _UniformPruner().prune_code(_PY_SAMPLE, target_ratio=0.5, language="python")
+    for kept in ("load", "read_file", "parse", "return", "raise", "ValueError"):
+        assert kept in out.pruned_text
+    # Punctuation is weighted lowest, so most of it goes first.
+    assert out.pruned_text.count("(") < _PY_SAMPLE.count("(")
+    assert "noqa" not in out.pruned_text
+
+
+def test_prune_code_never_splits_identifiers():
+    out = _UniformPruner().prune_code(_PY_SAMPLE, target_ratio=0.3, language="python")
+    assert _words(out.pruned_text) <= _words(_PY_SAMPLE)
+
+
+def test_prune_code_preserves_indentation():
+    out = _UniformPruner().prune_code(_PY_SAMPLE, target_ratio=0.5, language="python")
+    original_indents = {re.match(r"\s*", ln).group() for ln in _PY_SAMPLE.split("\n")}
+    for ln in out.pruned_text.split("\n"):
+        assert re.match(r"\s*", ln).group() in original_indents
+    assert "\n        raise" in out.pruned_text
+
+
+def test_prune_code_weights_change_what_is_kept():
+    strong_punct = CodeUnitWeights(punct=5.0, call=0.1, identifier=0.1, definition=0.1)
+    out = _UniformPruner().prune_code(
+        _PY_SAMPLE, target_ratio=0.3, language="python", weights=strong_punct
+    )
+    assert "read_file" not in out.pruned_text
+
+
+def test_prune_code_caches_self_information():
+    calls = []
+
+    class _Counting(_UniformPruner):
+        def compute_self_information(self, text):
+            cached = self._cache.get(text)
+            if cached is not None:
+                return cached
+            calls.append(text)
+            result = super().compute_self_information(text)
+            self._cache[text] = result
+            return result
+
+    p = _Counting()
+    prepared = p.prepare_code(_PY_SAMPLE, "python", "")
+    p.chunk_informativeness(prepared)
+    p.prune_code(_PY_SAMPLE, language="python")
+    assert len(calls) == 1
+
+
+# ── selective_mode switch in prune_context ──
+
+
+def test_selective_mode_code_is_default(monkeypatch):
+    import backend.pruning.file as pruning_file
+
+    fake = _FakePruner()
+    monkeypatch.setattr(pruning_file, "_load_selective_pruner", lambda model_name: (fake, None))
+    _, stats = prune_context("func_0", _make_items(2), method="selective")
+    assert set(fake.calls) == {"code"}
+    assert stats.selective_mode == "code"
+
+
+def test_selective_mode_paper_uses_prune_text(monkeypatch):
+    import backend.pruning.file as pruning_file
+
+    fake = _FakePruner()
+    monkeypatch.setattr(pruning_file, "_load_selective_pruner", lambda model_name: (fake, None))
+    _, stats = prune_context("func_0", _make_items(2), method="selective", selective_mode="paper")
+    assert set(fake.calls) == {"paper"}
+    assert stats.selective_mode == "paper"
+
+
+def test_default_target_ratio_depends_on_mode(monkeypatch):
+    import backend.pruning.file as pruning_file
+
+    ratios = []
+
+    class _Recording(_FakePruner):
+        def prune_code(self, text, target_ratio=None, **kw):
+            ratios.append(("code", target_ratio))
+            return super().prune_code(text, target_ratio)
+
+        def prune_text(self, text, target_ratio=None):
+            ratios.append(("paper", target_ratio))
+            return super().prune_text(text, target_ratio)
+
+    fake = _Recording()
+    monkeypatch.setattr(pruning_file, "_load_selective_pruner", lambda model_name: (fake, None))
+    prune_context("func_0", _make_items(1), method="selective")
+    prune_context("func_0", _make_items(1), method="selective", selective_mode="paper")
+    prune_context("func_0", _make_items(1), method="selective", target_ratio=0.3)
+    assert ratios == [("code", 0.7), ("paper", 0.5), ("code", 0.3)]
+
+
+def test_invalid_selective_mode_raises():
+    with pytest.raises(ValueError):
+        prune_context("func_0", _make_items(1), method="selective", selective_mode="lines")
+
+
+def test_selective_mode_is_none_for_heuristic():
+    _, stats = prune_context("func_0", _make_items(1))
+    assert stats.selective_mode is None
+
+
+# ── Code-aware selective pruning with the real model ──
+
+
+@requires_torch
+class TestPruneCodeRealModel:
+    CODE = '''def prune_single_item_selective(query, item, target_ratio=0.5):
+    """Selective Context: prune tokens with low self-information."""
+    pruner, reason = load_pruner(model_name)
+    if pruner is None:
+        # Fallback to heuristic windowing if model unavailable
+        return prune_single_item_heuristic(query, item)
+    try:
+        return build_chunk(item, pruner, target_ratio)
+    except Exception:
+        logger.exception("Selective Context failed on chunk")
+        return prune_single_item_heuristic(query, item)
+'''
+
+    def _pruner(self):
+        return SelectiveContextPruner.get_instance("Salesforce/codegen-350M-multi")
+
+    def test_identifiers_stay_whole(self):
+        out = self._pruner().prune_code(self.CODE, target_ratio=0.5, language="python")
+        assert _words(out.pruned_text) <= _words(self.CODE)
+
+    def test_control_flow_survives(self):
+        out = self._pruner().prune_code(self.CODE, target_ratio=0.5, language="python")
+        for kw in ("if", "return", "try", "except"):
+            assert re.search(rf"\b{kw}\b", out.pruned_text), kw
+
+    def test_conditions_keep_their_meaning(self):
+        out = self._pruner().prune_code(self.CODE, target_ratio=0.5, language="python")
+        assert "is None" in out.pruned_text
+
+    def test_compresses(self):
+        out = self._pruner().prune_code(self.CODE, target_ratio=0.5, language="python")
+        assert 0.0 < out.compression_ratio < 1.0

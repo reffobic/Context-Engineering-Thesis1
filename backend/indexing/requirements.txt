@@ -7,6 +7,11 @@ rank-bm25>=0.2.2
 # Newer transformers need PIL.Image.Resampling (avoid Debian/Ubuntu system python3-pil shadowing).
 pillow>=10
 
+# P4 — Selective Context pruning (pruning_method="selective"). Listed explicitly
+# rather than relying on sentence-transformers to pull them in.
+torch>=2.0
+transformers>=4.30
+
 # Already used by P1 (listed here for completeness)
 fastapi>=0.100.0
 requests>=2.31.0

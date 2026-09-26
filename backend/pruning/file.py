@@ -12,11 +12,13 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
+logger = logging.getLogger(__name__)
 
 # ── Config ─────────────────────────────────────────────────────
 
@@ -52,8 +54,16 @@ class PruningStats:
     dropped_chunks: int
     original_est_tokens: int
     kept_est_tokens: int
+    # Method actually applied. Can differ from requested_method when
+    # "selective" was requested but the model could not be used.
     method: str = "heuristic"
     compression_ratio: float = 1.0
+    requested_method: str = "heuristic"
+    # "code" or "paper" when method == "selective", else None.
+    selective_mode: Optional[str] = None
+    # Chunks pruned with the heuristic because selective failed on them.
+    fallback_chunks: int = 0
+    fallback_reason: Optional[str] = None
 
 
 # Injection-compatible output contract
@@ -327,21 +337,48 @@ prune_single_item = prune_single_item_heuristic
 
 # ── Selective Context pruning (single item) ────────────────────
 
-def prune_single_item_selective(
-    query: str,
-    item: dict,
-    target_ratio: float = 0.5,
-    model_name: str = "Salesforce/codegen-350M-multi",
-) -> Optional[ContextChunk]:
-    """
-    Selective Context: prune tokens with low self-information.
+def _load_selective_pruner(model_name: str) -> tuple[Optional[Any], Optional[str]]:
+    """Load the Selective Context model; on failure return (None, reason) and log it."""
+    try:
+        from .selective_context import SelectiveContextPruner
 
-    Falls back to heuristic if torch/transformers are not available.
+        return SelectiveContextPruner.get_instance(model_name), None
+    except ImportError as e:
+        logger.warning("Selective Context unavailable, using heuristic pruning: %s", e)
+        return None, f"torch/transformers not installed: {e}"
+    except Exception as e:
+        logger.exception(
+            "Failed to load Selective Context model %r, using heuristic pruning", model_name
+        )
+        return None, f"failed to load model {model_name!r}: {e}"
+
+
+SELECTIVE_MODES = ("code", "paper")
+# Fraction of tokens kept per chunk when target_ratio isn't given. Code mode
+# protects structure and needs more room to keep meaning (0.5 dropped
+# repeated subjects, e.g. "if pruner is None" -> "if is None"); paper mode
+# keeps the paper's 0.5.
+DEFAULT_TARGET_RATIO = {"code": 0.7, "paper": 0.5}
+
+
+def _selective_chunk(
+    item: dict,
+    pruner: Any,
+    target_ratio: float,
+    query: str = "",
+    selective_mode: str = "code",
+    code_weights: Optional[Any] = None,
+) -> Optional[ContextChunk]:
+    """Selective Context pruning of one item. Model errors propagate to the caller.
+
+    "code": comment filter + weighted lexical-unit pruning (prune_code).
+    "paper": raw token-level pruning as in Li et al. (prune_text).
     """
     code = item.get("code", "") or ""
     meta = item.get("metadata", {}) or {}
     path = meta.get("file", "") or "(unknown path)"
     fn_name = meta.get("function", "") or ""
+    language = infer_language_from_path(path)
 
     if not code.strip():
         return None
@@ -351,16 +388,13 @@ def prune_single_item_selective(
     if not compact:
         return None
 
-    try:
-        from .selective_context import SelectiveContextPruner
-
-        pruner = SelectiveContextPruner.get_instance(model_name)
+    if selective_mode == "code":
+        result = pruner.prune_code(
+            compact, target_ratio=target_ratio, language=language, query=query, weights=code_weights
+        )
+    else:
         result = pruner.prune_text(compact, target_ratio=target_ratio)
-        pruned_text = result.pruned_text
-    except (ImportError, Exception):
-        # Fallback to heuristic windowing if model unavailable
-        return prune_single_item_heuristic(query, item)
-
+    pruned_text = result.pruned_text
     if not pruned_text.strip():
         return None
 
@@ -368,7 +402,7 @@ def prune_single_item_selective(
         "text": pruned_text,
         "path": path,
         "symbol": fn_name,
-        "language": infer_language_from_path(path),
+        "language": language,
     }
 
     dep_note = detect_dependencies(pruned_text)
@@ -378,6 +412,30 @@ def prune_single_item_selective(
     return chunk
 
 
+def prune_single_item_selective(
+    query: str,
+    item: dict,
+    target_ratio: Optional[float] = None,
+    model_name: str = "Salesforce/codegen-350M-multi",
+    selective_mode: str = "code",
+) -> Optional[ContextChunk]:
+    """
+    Selective Context: prune tokens with low self-information.
+
+    Falls back to heuristic (with a logged warning) if the model is unavailable
+    or fails on this item.
+    """
+    pruner, _reason = _load_selective_pruner(model_name)
+    if pruner is None:
+        return prune_single_item_heuristic(query, item)
+    try:
+        ratio = target_ratio if target_ratio is not None else DEFAULT_TARGET_RATIO[selective_mode]
+        return _selective_chunk(item, pruner, ratio, query, selective_mode)
+    except Exception:
+        logger.exception("Selective Context failed on chunk, using heuristic pruning")
+        return prune_single_item_heuristic(query, item)
+
+
 # ── Main API ───────────────────────────────────────────────────
 
 def prune_context(
@@ -385,9 +443,11 @@ def prune_context(
     retrieved_items: list[dict],
     token_budget: int = DEFAULT_TOKEN_BUDGET,
     method: str = "heuristic",
-    target_ratio: float = 0.5,
+    target_ratio: Optional[float] = None,
     weights: Optional[HeuristicWeights] = None,
     model_name: str = "Salesforce/codegen-350M-multi",
+    selective_mode: str = "code",
+    code_weights: Optional[Any] = None,
 ) -> tuple[list[ContextChunk], PruningStats]:
     """
     Main API for Person 4.
@@ -399,13 +459,21 @@ def prune_context(
         method: "heuristic" (weighted scoring, default) or
                 "selective" (Selective Context; opt-in, needs torch + transformers).
         target_ratio: fraction of tokens to keep per chunk (selective only).
+                Defaults to 0.7 in "code" mode and 0.5 in "paper" mode.
         weights: override heuristic signal weights (heuristic only).
         model_name: HuggingFace causal LM for self-information (selective only).
+        selective_mode: "code" (default; comment filter + weighted lexical units)
+                or "paper" (raw token-level pruning, Li et al. baseline).
+        code_weights: CodeUnitWeights override for "code" mode.
 
     Returns:
         (pruned_chunks, stats) — chunks are directly consumable by
         PromptBuilder.build(...).
     """
+    if selective_mode not in SELECTIVE_MODES:
+        raise ValueError(f"selective_mode must be one of {SELECTIVE_MODES}, got {selective_mode!r}")
+    if target_ratio is None:
+        target_ratio = DEFAULT_TARGET_RATIO[selective_mode]
     w = weights or DEFAULT_WEIGHTS
     original_est_tokens = sum(estimate_tokens((x.get("code", "") or "")) for x in retrieved_items)
 
@@ -420,24 +488,38 @@ def prune_context(
         item_copy["pruning_score"] = score_candidate(query, item_copy, weights=w)
         scored_items.append(item_copy)
 
-    # If selective, add informativeness bonus to ranking
+    # If selective, load the model once. If that fails, the whole call is
+    # heuristic and the stats say so.
+    pruner = None
+    fallback_reason: Optional[str] = None
     if method == "selective":
-        try:
-            from .selective_context import SelectiveContextPruner
+        pruner, fallback_reason = _load_selective_pruner(model_name)
+    method_used = "selective" if pruner is not None else "heuristic"
 
-            pruner = SelectiveContextPruner.get_instance(model_name)
+    # If selective, add informativeness bonus to ranking
+    if pruner is not None:
+        try:
             for item in scored_items:
                 code = item.get("code", "") or ""
                 if code.strip():
-                    info_score = pruner.chunk_informativeness(code)
+                    # Score the same text the pruning step will, so the model's
+                    # forward pass is cached and shared between ranking and pruning.
+                    text = remove_noise_lines(code)
+                    if selective_mode == "code":
+                        path = (item.get("metadata") or {}).get("file", "") or ""
+                        text = pruner.prepare_code(text, infer_language_from_path(path), query)
+                    info_score = pruner.chunk_informativeness(text)
                     # Normalize to [0, 1] range (self-info in nats, typical range 0-15)
                     normalized = min(info_score / 10.0, 1.0)
                     # Blend: 60% heuristic rank + 40% informativeness
                     item["pruning_score"] = round(
                         0.6 * item["pruning_score"] + 0.4 * normalized, 4
                     )
-        except (ImportError, Exception):
-            pass  # Fall through — heuristic scores remain
+        except Exception as e:
+            logger.exception("Selective Context ranking failed, using heuristic ranking")
+            fallback_reason = f"informativeness ranking failed: {e}"
+            for item in scored_items:
+                item["pruning_score"] = score_candidate(query, item, weights=w)
 
     scored_items.sort(key=lambda x: x["pruning_score"], reverse=True)
 
@@ -446,12 +528,19 @@ def prune_context(
     kept_est_tokens = 0
     total_compression = 0.0
     compression_count = 0
+    fallback_chunks = 0
 
     for item in scored_items:
-        if method == "selective":
-            chunk = prune_single_item_selective(
-                query, item, target_ratio=target_ratio, model_name=model_name
-            )
+        if pruner is not None:
+            try:
+                chunk = _selective_chunk(
+                    item, pruner, target_ratio, query, selective_mode, code_weights
+                )
+            except Exception as e:
+                logger.exception("Selective Context failed on chunk, using heuristic pruning")
+                fallback_chunks += 1
+                fallback_reason = f"selective pruning failed on {fallback_chunks} chunk(s): {e}"
+                chunk = prune_single_item_heuristic(query, item)
         else:
             chunk = prune_single_item_heuristic(query, item)
 
@@ -480,8 +569,12 @@ def prune_context(
         dropped_chunks=max(0, len(retrieved_items) - len(kept_chunks)),
         original_est_tokens=original_est_tokens,
         kept_est_tokens=kept_est_tokens,
-        method=method,
+        method=method_used,
         compression_ratio=round(avg_compression, 4),
+        requested_method=method,
+        selective_mode=selective_mode if method_used == "selective" else None,
+        fallback_chunks=fallback_chunks,
+        fallback_reason=fallback_reason,
     )
 
     return kept_chunks, stats

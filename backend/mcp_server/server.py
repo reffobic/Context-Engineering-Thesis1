@@ -453,7 +453,7 @@ def evaluate(req: EvaluateRequest) -> dict[str, Any]:
     )
 
     retrieved = call_tool("retrieve_context", req.prompt, req.top_k)
-    pruned, _stats = prune_context_with_stats(
+    pruned, prune_stats = prune_context_with_stats(
         req.prompt, retrieved, token_budget=req.token_budget, method=req.pruning_method
     )
     retrieve_ctx = chunks_as_retrieval_context(retrieved)
@@ -464,7 +464,10 @@ def evaluate(req: EvaluateRequest) -> dict[str, Any]:
         "prompt": req.prompt,
         "top_k": req.top_k,
         "token_budget": req.token_budget,
-        "pruning_method": req.pruning_method,
+        # Method actually applied; "selective" falls back to "heuristic" if the model is unavailable.
+        "pruning_method": prune_stats.method,
+        "requested_pruning_method": req.pruning_method,
+        "pruning_fallback_reason": prune_stats.fallback_reason,
         "pipeline_counts": {
             "retrieved_chunks": len(retrieved),
             "pruned_chunks": len(pruned),

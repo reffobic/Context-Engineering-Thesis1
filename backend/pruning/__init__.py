@@ -10,6 +10,7 @@ from .file import (
     estimate_tokens,
     DEFAULT_WEIGHTS,
 )
+from .code_units import CodeUnitWeights, DEFAULT_CODE_WEIGHTS
 
 __all__ = [
     "ContextChunk",
@@ -22,4 +23,6 @@ __all__ = [
     "score_candidate",
     "estimate_tokens",
     "DEFAULT_WEIGHTS",
+    "CodeUnitWeights",
+    "DEFAULT_CODE_WEIGHTS",
 ]
