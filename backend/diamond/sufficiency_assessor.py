@@ -1,30 +1,47 @@
 """
-SELF-ROUTE sufficiency assessor. (the 'unanswerable?' diamond)
-
-Asks the local Ollama LLM whether the pruned context chunks are sufficient
-to answer the query, or whether escalation to the long-context pipeline is needed.
-
-Returns a dict:
-    {
-        "sufficient": bool,
-        "confidence": "high" | "medium" | "low",
-        "reason": str,
-        "route": "RAG" | "LC"
-    }
-
-Method: combination of LLM-as-a-judge and a score threshold
+Routing judges for the pipeline.
+ 
+assess_sufficiency: the two "Enough" diamonds. Implements the pre-route method
+from He et al., 2025 (arXiv:2505.20664).
+    1. Pre-inference: the local model writes a brief plan for answering the
+       query from the given chunks.
+    2. The hidden state of the last decoded token at one intermediate layer is
+       the capability embedding.
+    3. A linear probe outputs P(q), the probability that these chunks are enough.
+    4. P(q) >= tau means sufficient.
+ 
+Two probes exist, one per stage, because the chunk distribution differs.
+    stage="rag"    chunks after Prune_1800 (first diamond)
+    stage="graph"  chunks after expand and re-prune (second diamond)
+If the graph probe is missing, the rag probe is reused. If no probe exists,
+the router answers "not sufficient".
+ 
 """
 
 from __future__ import annotations
 
 import json
+import os
 import re
 import logging
+from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 import requests
+import torch
+ 
+from diamond.capability_embedding import (
+    HF_MODEL_ID,
+    extract_capability_embedding,
+    format_chunks as _format_chunks,
+)
+
 
 logger = logging.getLogger(__name__)
+
+
+
 
 # ── tunables ──────────────────────────────────────────────────────────────────
 
@@ -34,38 +51,42 @@ REQUEST_TIMEOUT = 120   # seconds — sufficiency call is short, but give extra 
 
 # Queries whose top-chunk score falls below this are escalated immediately
 # without an LLM call (cheap fast-path).
-SCORE_SHORTCUT_THRESHOLD = 0.30
+# SCORE_SHORTCUT_THRESHOLD = 0.30
 
-# ── prompt ────────────────────────────────────────────────────────────────────
+PROBE_DIR = Path(os.getenv("ROUTER_PROBE_DIR", str(Path(__file__).resolve().parent)))
 
-_SYSTEM = """\
-You are a routing judge for a code-search RAG system.
-You will be given a user query and a set of retrieved code chunks.
-Your job is to decide whether the chunks are sufficient to answer the query.
 
-Reply ONLY with a JSON object — no markdown, no explanation outside the JSON.
-Schema:
-{
-  "sufficient": true | false,
-  "confidence": "high" | "medium" | "low",
-  "reason": "<one sentence>"
-}
 
-Rules:
-- sufficient=true  → the chunks contain enough information to answer the query directly.
-- sufficient=false → key information is missing; a broader search is needed.
-- confidence reflects how certain you are of your judgment.
-"""
+# ── prompts ────────────────────────────────────────────────────────────────────
 
-_USER_TEMPLATE = """\
-QUERY:
-{query}
+# _SYSTEM = """\
+# You are a routing judge for a code-search RAG system.
+# You will be given a user query and a set of retrieved code chunks.
+# Your job is to decide whether the chunks are sufficient to answer the query.
 
-RETRIEVED CHUNKS ({n} chunks):
-{chunks}
+# Reply ONLY with a JSON object — no markdown, no explanation outside the JSON.
+# Schema:
+# {
+#   "sufficient": true | false,
+#   "confidence": "high" | "medium" | "low",
+#   "reason": "<one sentence>"
+# }
 
-Is the context sufficient to answer the query? Reply with JSON only.
-"""
+# Rules:
+# - sufficient=true  → the chunks contain enough information to answer the query directly.
+# - sufficient=false → key information is missing; a broader search is needed.
+# - confidence reflects how certain you are of your judgment.
+# """
+
+# _USER_TEMPLATE = """\
+# QUERY:
+# {query}
+
+# RETRIEVED CHUNKS ({n} chunks):
+# {chunks}
+
+# Is the context sufficient to answer the query? Reply with JSON only.
+# """
 
 _STRUCTURE_SYSTEM = """\
 You are a routing judge for a repository code Q&A system.
@@ -95,6 +116,58 @@ CURRENT CHUNKS ({n} chunks):
 What is missing — STRUCTURE (graph neighbors) or CONTEXT (same-file long context)? JSON only.
 """
 
+
+
+# ── pre-route probe ───────────────────────────────────────────────────────────
+ 
+@lru_cache(maxsize=None)
+def _load_probe(stage: str) -> dict[str, Any] | None:
+    path = PROBE_DIR / f"router_probe_{stage}.pt"
+    if not path.is_file():
+        if stage != "rag":
+            logger.warning("No %s probe at %s, falling back to the rag probe", stage, path)
+            return _load_probe("rag")
+        logger.warning("No rag probe at %s", path)
+        return None
+    ckpt = torch.load(path, map_location="cpu")
+    if ckpt.get("hf_model") != HF_MODEL_ID:
+        logger.warning(
+            "Probe %s was trained on %s but ROUTER_HF_MODEL is %s",
+            path.name, ckpt.get("hf_model"), HF_MODEL_ID,
+        )
+    return ckpt
+ 
+ 
+def _p_sufficient(h: torch.Tensor, ckpt: dict[str, Any]) -> float:
+    x = (h[ckpt["layer"]] - ckpt["mean"]) / ckpt["std"]
+    return float(torch.sigmoid(torch.dot(x, ckpt["w"]) + ckpt["b"]).item())
+ 
+ 
+def _confidence(p: float, tau: float) -> str:
+    margin = abs(p - tau)
+    if margin >= 0.25:
+        return "high"
+    if margin >= 0.10:
+        return "medium"
+    return "low"
+ 
+ 
+def _not_sufficient(reason: str, confidence: str = "low") -> dict[str, Any]:
+    return {
+        "sufficient": False,
+        "confidence": confidence,
+        "reason": reason,
+        "route": "LC",
+        "p_rag": None,
+        "tau": None,
+        "layer": None,
+        "pre_inference_tokens": None,
+    }
+
+
+
+
+
 def _format_chunks(items: list[dict[str, Any]]) -> str:
     parts: list[str] = []
     for i, item in enumerate(items, 1):
@@ -107,50 +180,50 @@ def _format_chunks(items: list[dict[str, Any]]) -> str:
     return "\n\n".join(parts)
 
 
-def _top_score(items: list[dict[str, Any]]) -> float | None:
-    for key in ("final_score", "hybrid_score", "similarity"):
-        v = items[0].get(key) if items else None
-        if v is not None:
-            try:
-                return float(v)
-            except (TypeError, ValueError):
-                pass
-    return None
+# def _top_score(items: list[dict[str, Any]]) -> float | None:
+#     for key in ("final_score", "hybrid_score", "similarity"):
+#         v = items[0].get(key) if items else None
+#         if v is not None:
+#             try:
+#                 return float(v)
+#             except (TypeError, ValueError):
+#                 pass
+#     return None
 
 
-def _parse_response(raw: str) -> dict[str, Any]:
-    """Extract JSON from the model reply, stripping think-tags and fences."""
-    s = raw.strip()
+# def _parse_response(raw: str) -> dict[str, Any]:
+#     """Extract JSON from the model reply, stripping think-tags and fences."""
+#     s = raw.strip()
 
-    # strip </think> and everything before it (Qwen-style reasoning)
-    for marker in ("</think>", "</Think>"):
-        if marker in s:
-            s = s.split(marker, 1)[-1].strip()
+#     # strip </think> and everything before it (Qwen-style reasoning)
+#     for marker in ("</think>", "</Think>"):
+#         if marker in s:
+#             s = s.split(marker, 1)[-1].strip()
 
-    # strip markdown fences
-    if s.startswith("```"):
-        lines = s.splitlines()
-        s = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:]).strip()
+#     # strip markdown fences
+#     if s.startswith("```"):
+#         lines = s.splitlines()
+#         s = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:]).strip()
 
-    # find first {...}
-    m = re.search(r"\{[\s\S]*?\}", s)
-    if m:
-        s = m.group(0)
+#     # find first {...}
+#     m = re.search(r"\{[\s\S]*?\}", s)
+#     if m:
+#         s = m.group(0)
 
-    data = json.loads(s)
+#     data = json.loads(s)
 
-    sufficient = bool(data.get("sufficient", False))
-    confidence = str(data.get("confidence", "low")).lower()
-    if confidence not in ("high", "medium", "low"):
-        confidence = "low"
-    reason = str(data.get("reason", ""))
+#     sufficient = bool(data.get("sufficient", False))
+#     confidence = str(data.get("confidence", "low")).lower()
+#     if confidence not in ("high", "medium", "low"):
+#         confidence = "low"
+#     reason = str(data.get("reason", ""))
 
-    return {
-        "sufficient": sufficient,
-        "confidence": confidence,
-        "reason":     reason,
-        "route":      "RAG" if sufficient else "LC",
-    }
+#     return {
+#         "sufficient": sufficient,
+#         "confidence": confidence,
+#         "reason":     reason,
+#         "route":      "RAG" if sufficient else "LC",
+#     }
 
 
 # ── public API ────────────────────────────────────────────────────────────────
@@ -159,94 +232,45 @@ def assess_sufficiency(
     query:  str,
     chunks: list[dict[str, Any]],
     model:  str = DEFAULT_MODEL,
+    stage: str = "rag",
 ) -> dict[str, Any]:
     """
-    Assess whether *chunks* are sufficient to answer *query*.
-
-    Fast-path: if the top chunk score is below SCORE_SHORTCUT_THRESHOLD,
-    escalate to LC immediately without an LLM call.
-
-    Returns a routing dict with keys: sufficient, confidence, reason, route.
+    Estimate whether *chunks* are enough to answer *query*.
+ 
+    Returns: sufficient, confidence, reason, route ("RAG" or "LC"),
+    plus p_rag, tau, layer, pre_inference_tokens for the dashboard.
+    A route of "LC" only means "not sufficient". The caller decides whether
+    that leads to graph expand or long context.
     """
     if not chunks:
-        logger.info("assess_sufficiency: no chunks → routing to LC")
-        return {
-            "sufficient": False,
-            "confidence": "high",
-            "reason":     "No chunks were retrieved.",
-            "route":      "LC",
-        }
-
-    # ── score-based shortcut ──────────────────────────────────────────────────
-    top = _top_score(chunks)
-    if top is not None and top < SCORE_SHORTCUT_THRESHOLD:
-        logger.info(
-            "assess_sufficiency: top score %.3f < %.3f threshold → LC (no LLM call)",
-            top, SCORE_SHORTCUT_THRESHOLD,
-        )
-        return {
-            "sufficient": False,
-            "confidence": "high",
-            "reason":     f"Top retrieval score {top:.3f} is below threshold {SCORE_SHORTCUT_THRESHOLD}.",
-            "route":      "LC",
-        }
-
-    # ── LLM call ─────────────────────────────────────────────────────────────
-    chunk_text = _format_chunks(chunks)
-    user_msg   = _USER_TEMPLATE.format(
-        query=query,
-        n=len(chunks),
-        chunks=chunk_text,
-    )
-
-    payload = {
-    "model":  model,
-    "messages": [
-        {"role": "system", "content": _SYSTEM},
-        {"role": "user",   "content": user_msg},
-    ],
-    "stream": False,
-    "options": {"temperature": 0.0, "num_ctx": 4096},
+        return _not_sufficient("No chunks were retrieved.", "high")
+ 
+    ckpt = _load_probe(stage)
+    if ckpt is None:
+        return _not_sufficient("Router probe not trained; treating as not sufficient.")
+ 
+    try:
+        h, meta = extract_capability_embedding(query, chunks)
+        p = _p_sufficient(h, ckpt)
+    except Exception as exc:   # model load, CUDA OOM, shape mismatch
+        logger.warning("assess_sufficiency: router failed (%s)", exc)
+        return _not_sufficient(f"Router failed ({exc}); treating as not sufficient.")
+ 
+    tau = float(ckpt["tau"])
+    ok = p >= tau
+    result = {
+        "sufficient": ok,
+        "confidence": _confidence(p, tau),
+        "reason": f"stage={stage} P(sufficient)={p:.3f} vs tau={tau:.2f} at layer {ckpt['layer'] + 1}.",
+        "route": "RAG" if ok else "LC",
+        "p_rag": p,
+        "tau": tau,
+        "layer": int(ckpt["layer"]) + 1,
+        "pre_inference_tokens": meta["pre_inference_tokens"],
     }
-
-    try:
-        resp = requests.post(
-            f"{OLLAMA_BASE_URL}/api/chat",    # ← changed
-            json=payload,
-            timeout=REQUEST_TIMEOUT,
-        )
-        resp.raise_for_status()
-        raw = resp.json().get("message", {}).get("content", "")
-    except requests.RequestException as exc:
-        logger.warning("assess_sufficiency: Ollama call failed (%s) → defaulting to LC", exc)
-        # Ollama call failed
-        return {
-            "sufficient": False,
-            "confidence": "low",
-            "reason":     f"Judge unavailable ({exc}); defaulting to LC for safety.",
-            "route":      "LC",
-        }
-
-
-
-    try:
-        result = _parse_response(raw)
-    except (json.JSONDecodeError, KeyError, ValueError) as exc:
-        logger.warning(
-            "assess_sufficiency: could not parse judge response (%s) → defaulting to LC\nRaw: %s",
-            exc, raw[:300],
-        )
-        # Unparseable response
-        return {
-            "sufficient": False,
-            "confidence": "low",
-            "reason":     "Could not parse judge response; defaulting to LC for safety.",
-            "route":      "LC",
-        }
-
     logger.info(
-        "assess_sufficiency: route=%s confidence=%s reason=%s",
-        result["route"], result["confidence"], result["reason"],
+        "assess_sufficiency[%s]: sufficient=%s p=%.3f tau=%.2f pre_tokens=%d",
+        stage, ok, p, tau, meta["pre_inference_tokens"],
     )
     return result
 
