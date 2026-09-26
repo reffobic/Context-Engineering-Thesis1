@@ -86,7 +86,7 @@ class OllamaAgent:
 
     def __init__(
         self,
-        model: str = "qwen3.8:27b",
+        model: str = "qwen3.5:9b",
         base_url: str = "http://localhost:11434",
         timeout: int = 600,
         *,
