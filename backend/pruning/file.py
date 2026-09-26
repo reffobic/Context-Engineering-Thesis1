@@ -578,3 +578,168 @@ def prune_context(
     )
 
     return kept_chunks, stats
+
+
+# ── Graph-aware pruning ────────────────────────────────────────
+# Used by the graph branch's _re_prune step after a graph expand.
+#
+# Problem with flat prune_context() on seeds + neighbours:
+#   - Seeds have high lexical overlap with the query → high pruning score.
+#   - Neighbours (callees, callers, imports …) have final_score ≈ 0.5 from
+#     the graph expand step and zero lexical match → they always lose.
+#   - Under the 1800-token budget ~5 seeds fill it; neighbours are dropped.
+#   - assess_sufficiency then escalates to LC even though the answer was
+#     already in hop-1.
+#
+# Fix: two-pass strategy
+#   Pass 1 – reserve NEIGHBOR_BUDGET_FRACTION of the budget exclusively for
+#             neighbours, scored by structural relationship type.
+#   Pass 2 – fill the remainder (+ any unused neighbour budget) with seeds
+#             via the standard heuristic scorer.
+
+# Fraction of the total token budget reserved for graph neighbours.
+NEIGHBOR_BUDGET_FRACTION: float = 0.55
+
+# Priority weights by graph edge / relation type.
+# Keys should match whatever the graph branch stores in item["relation_type"]
+# or item["edge_type"].  "default" is used when neither key is present.
+_RELATION_PRIORITY: dict[str, float] = {
+    "callee":   1.00,   # functions the seed calls — most likely the answer
+    "inherits": 0.95,   # base-class relationships
+    "caller":   0.85,   # functions that call the seed
+    "import":   0.75,   # imported symbols
+    "default":  0.65,   # unknown graph relationship
+}
+
+
+def _neighbor_structural_score(item: dict) -> float:
+    """Score a graph neighbour purely by its structural relationship to the seed.
+
+    Does NOT use lexical query overlap — neighbours legitimately lack it.
+    """
+    relation = (
+        item.get("relation_type")
+        or item.get("edge_type")
+        or "default"
+    ).lower()
+    base = _RELATION_PRIORITY.get(relation, _RELATION_PRIORITY["default"])
+
+    # Small bonus when the function name actually appears inside the code body
+    # (sanity-check: confirms this is the right symbol).
+    meta = item.get("metadata") or {}
+    fn = meta.get("function") or ""
+    code = item.get("code") or ""
+    if fn and fn in code:
+        base = min(base + 0.05, 1.0)
+
+    return round(base, 4)
+
+
+def prune_context_graph_aware(
+    query: str,
+    seeds: list[dict],
+    neighbors: list[dict],
+    token_budget: int = DEFAULT_TOKEN_BUDGET,
+    neighbor_budget_fraction: float = NEIGHBOR_BUDGET_FRACTION,
+    weights: Optional[HeuristicWeights] = None,
+) -> tuple[list[ContextChunk], PruningStats]:
+    """Graph-aware two-pass pruning for the post-expand re-prune step.
+
+    Unlike flat ``prune_context(seeds + neighbors)``, this function:
+
+    1. **Reserves** ``neighbor_budget_fraction`` of the token budget
+       exclusively for graph neighbours so they cannot be crowded out by seeds.
+    2. **Scores neighbours** by structural relationship type
+       (callee > inherits > caller > import) — not by lexical query overlap,
+       which they naturally lack.
+    3. **Fills** the remaining budget with seeds via the standard heuristic
+       scorer; unused neighbour budget rolls over to seeds.
+    4. Returns neighbours **first** in the output list so the LLM reads the
+       called/inherited symbols before the broader seed context.
+
+    Args:
+        query:                    The user's natural-language question / task.
+        seeds:                    RAG retrieval results (source="retrieval").
+        neighbors:                Graph-expand results (source="graph").
+        token_budget:             Total token budget (default 1800).
+        neighbor_budget_fraction: Fraction reserved for neighbours (default 0.55).
+        weights:                  Heuristic weights for seed scoring.
+
+    Returns:
+        ``(pruned_chunks, stats)`` — chunks are directly consumable by
+        ``PromptBuilder.build(...)``.
+
+    Usage in the graph branch ``_re_prune``::
+
+        from backend.pruning.file import prune_context_graph_aware
+
+        def _re_prune(seeds, neighbors):
+            pruned, stats = prune_context_graph_aware(
+                user_prompt, seeds, neighbors, token_budget=token_budget
+            )
+            ...
+    """
+    w = weights or DEFAULT_WEIGHTS
+    neighbor_budget = int(token_budget * neighbor_budget_fraction)
+    seed_budget = token_budget - neighbor_budget
+
+    all_items = list(seeds) + list(neighbors)
+    original_est_tokens = sum(estimate_tokens(x.get("code") or "") for x in all_items)
+
+    # ── Pass 1: pack neighbours (structural scoring) ───────────
+    scored_neighbors = sorted(
+        [dict(item, pruning_score=_neighbor_structural_score(item)) for item in neighbors],
+        key=lambda x: x["pruning_score"],
+        reverse=True,
+    )
+
+    neighbor_chunks: list[ContextChunk] = []
+    neighbor_tokens = 0
+    for item in scored_neighbors:
+        chunk = prune_single_item_heuristic(query, item)
+        if chunk is None:
+            continue
+        t = estimate_tokens(chunk["text"])
+        if neighbor_tokens + t > neighbor_budget:
+            continue
+        neighbor_chunks.append(chunk)
+        neighbor_tokens += t
+
+    # ── Pass 2: fill with seeds (heuristic scoring) ────────────
+    # Any unused neighbour budget rolls over so seeds are not penalised when
+    # there are few neighbours.
+    effective_seed_budget = seed_budget + (neighbor_budget - neighbor_tokens)
+    scored_seeds = sorted(
+        [dict(item, pruning_score=score_candidate(query, item, weights=w)) for item in seeds],
+        key=lambda x: x["pruning_score"],
+        reverse=True,
+    )
+
+    seed_chunks: list[ContextChunk] = []
+    seed_tokens = 0
+    for item in scored_seeds:
+        chunk = prune_single_item_heuristic(query, item)
+        if chunk is None:
+            continue
+        t = estimate_tokens(chunk["text"])
+        if seed_tokens + t > effective_seed_budget:
+            continue
+        seed_chunks.append(chunk)
+        seed_tokens += t
+
+    # Neighbours first so the LLM sees called/inherited symbols before seeds.
+    kept_chunks = neighbor_chunks + seed_chunks
+    kept_tokens = neighbor_tokens + seed_tokens
+
+    stats = PruningStats(
+        original_chunks=len(all_items),
+        kept_chunks=len(kept_chunks),
+        dropped_chunks=max(0, len(all_items) - len(kept_chunks)),
+        original_est_tokens=original_est_tokens,
+        kept_est_tokens=kept_tokens,
+        method="heuristic",
+        compression_ratio=round(kept_tokens / max(1, original_est_tokens), 4),
+        requested_method="heuristic",
+    )
+
+    return kept_chunks, stats
