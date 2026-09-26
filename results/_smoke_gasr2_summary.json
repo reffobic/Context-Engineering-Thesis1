@@ -1,0 +1,20 @@
+{
+  "http": "HTTP:200 TIME:15.672888",
+  "route": "RAG",
+  "hops_used": 0,
+  "assessor_model": "ornith:9b",
+  "trace": [
+    {
+      "phase": "rag",
+      "hops": 0,
+      "sufficient": true,
+      "confidence": "high",
+      "reason": "Chunk [2] from superset/app.py shows the create_app function and its callees including fromobject, start_localextensions_w_thread, app_initializer, appconfig.APP, SupInitial, and app_initial.init(). Chunk [3] from superset/cli/main.py shows create_app calling supers.app.create_app.",
+      "route": "RAG",
+      "duration_ms": 6385
+    }
+  ],
+  "expand": null,
+  "inject_route": "RAG",
+  "tokens": 446
+}

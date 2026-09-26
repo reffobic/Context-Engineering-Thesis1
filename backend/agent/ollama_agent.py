@@ -59,12 +59,18 @@ class OllamaAgent:
             self.num_predict = 8192
         # Encourage GPU layers in Ollama when supported by the runner
         self.num_gpu = int(os.environ.get("OLLAMA_NUM_GPU", "99") or "99")
+        try:
+            self.num_ctx = int(os.environ.get("OLLAMA_NUM_CTX", "0") or "0")
+        except ValueError:
+            self.num_ctx = 0
 
     def _ollama_options(self) -> dict[str, Any]:
         """Caps generation length; raise OLLAMA_NUM_PREDICT if answers truncate early."""
         opts: dict[str, Any] = {"num_predict": self.num_predict}
         if self.num_gpu:
             opts["num_gpu"] = self.num_gpu
+        if self.num_ctx and self.num_ctx > 0:
+            opts["num_ctx"] = self.num_ctx
         return opts
 
     def generate_response(self, prompt: str, system: Optional[str] = None) -> str:
@@ -118,7 +124,19 @@ class OllamaAgent:
             with urlopen(req, timeout=self.timeout) as resp:
                 return json.loads(resp.read().decode())
         except URLError as e:
-            return {"error": str(e), "response": "", "message": {"content": f"[Ollama error: {e}]"}}
+            detail = str(e)
+            # Prefer HTTP body when Ollama returns 4xx/5xx
+            fp = getattr(e, "fp", None)
+            if fp is not None:
+                try:
+                    detail = f"{e} | body={fp.read().decode('utf-8', errors='replace')[:800]}"
+                except Exception:
+                    pass
+            return {
+                "error": detail,
+                "response": "",
+                "message": {"content": f"[Ollama error: {detail}]"},
+            }
 
     def generate_with_context(
         self,

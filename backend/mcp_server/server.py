@@ -367,6 +367,9 @@ def run_pipeline(
                 "sufficient": decision["sufficient"],
                 "confidence": decision["confidence"],
                 "reason":     decision["reason"],
+                "assessor_model": os.environ.get("ASSESSOR_MODEL")
+                or os.environ.get("OLLAMA_ASSESSOR_MODEL")
+                or "",
             },
         )
         logging.info(
@@ -428,7 +431,9 @@ def run_pipeline(
 
         def _assess_graph():
             decision, ms = _time_stage(
-                lambda: assess_sufficiency(user_prompt, state["pruned"])
+                lambda: assess_sufficiency(
+                    user_prompt, state["pruned"], phase="graph"
+                )
             )
             return {**decision, "duration_ms": ms}
 
@@ -467,6 +472,9 @@ def run_pipeline(
                 "hops_used": hops_used,
                 "gasr_hard_cap": gasr_hard_cap,
                 "re_prune_kind": "flat_merge",
+                "assessor_model": os.environ.get("ASSESSOR_MODEL")
+                or os.environ.get("OLLAMA_ASSESSOR_MODEL")
+                or "",
                 "trace": ladder.assess_trace,
             },
         )
