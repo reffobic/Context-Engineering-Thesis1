@@ -105,7 +105,7 @@ class OllamaJudgeModel(OllamaModel):
         response = chat_model.chat(
             model=self.name,
             messages=messages,
-            format=schema.model_json_schema() if schema else None,
+            format="json",
             options=opts,
         )
         msg = response.message
@@ -148,7 +148,6 @@ class OllamaJudgeModel(OllamaModel):
             messages = self.generate_messages(prompt)
         else:
             messages = [{"role": "user", "content": prompt}]
-
         opts = self._chat_options()
         response = await chat_model.chat(
             model=self.name,

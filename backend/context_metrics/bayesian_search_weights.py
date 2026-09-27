@@ -1,9 +1,23 @@
 #!/usr/bin/env python3
 """
-Bayesian optimization (Optuna, TPE sampler) over the same 3 weight groups
-used in random_search_weights.py. Each trial still runs run_pipeline_metrics.py
-in its own subprocess, for the same reason as before: weights are read once
-at import time, so a fresh process is the reliable way to apply new values.
+Multi-objective Bayesian optimization (Optuna, TPE sampler) over the 3 weight
+groups used across retrieval_tool.py and pruning_tool.py. Each trial runs
+run_pipeline_metrics.py in its own subprocess, because the weight constants
+are read once at import time — a fresh process is the reliable way to apply
+new env-var values each trial.
+
+This optimizes the 4 thesis metrics SEPARATELY and simultaneously — Precision@k,
+Recall@k, Faithfulness, Contextual Relevancy — rather than averaging them into
+one composite score. The result is a Pareto front: the set of trials where no
+other trial beats it on every metric at once. There is no single "best" trial;
+study.best_trials gives you the whole non-dominated set to choose from.
+
+Prerequisites before running:
+  - Ollama running with your judge model warmed up (`ollama run <model>` once,
+    wait for a real response) — this script re-enables generation calls
+    (faithfulness/relevancy both need a real LLM answer), which are the slow,
+    timeout-prone part of the pipeline.
+  - Consider `export OLLAMA_KEEP_ALIVE=30m` so the model doesn't unload mid-run.
 
 Usage:
     cd backend
@@ -65,62 +79,69 @@ HYBRID_DEFAULTS = {
 PRUNE_WEIGHT_NAMES = ["PRUNE_W_RETRIEVAL", "PRUNE_W_QUERY_MATCH", "PRUNE_W_FUNCTION", "PRUNE_W_STRUCTURE"]
 PRUNE_DEFAULTS = {"PRUNE_W_RETRIEVAL": 0.40, "PRUNE_W_QUERY_MATCH": 0.25, "PRUNE_W_FUNCTION": 0.20, "PRUNE_W_STRUCTURE": 0.15}
 
+# The 4 thesis metrics, kept SEPARATE — order here must match `directions` in
+# main() and the tuple returned by objective(). Precision/Recall are the
+# non-LLM metrics (cheap, from retrieval metadata); Faithfulness/Relevancy are
+# the LLM-as-judge metrics (require a real Ollama generation call per query).
+METRIC_NAMES = ["precision_at_k", "recall_at_k", "faithfulness", "relevancy"]
+
 
 def run_one_query(query: str, gold_files: list[str], env_overrides: dict[str, str]) -> dict:
-    import os
+    import os, time
     env = os.environ.copy()
     env.update(env_overrides)
 
     cmd = [
         sys.executable, "-m", "context_metrics.run_pipeline_metrics",
         "-q", query,
-        "--metrics", "none",
+        "--metrics", "faithfulness,contextual_relevancy",
         "--compact-json",
     ]
     for gf in gold_files:
         cmd += ["--relevant-file", gf]
 
+    print(f"    -> running query: {query[:60]}...")
+    start = time.time()
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=600)
     except subprocess.TimeoutExpired:
-        print("  [warn] query timed out")
+        print(f"  [warn] query timed out after {time.time()-start:.0f}s")
         return {}
+    print(f"    <- done in {time.time()-start:.0f}s")
     if proc.returncode != 0:
         print(f"  [warn] query failed: {proc.stderr[-500:]}")
         return {}
     return json.loads(proc.stdout)
 
 
-def composite_score(result: dict) -> float:
+def extract_metrics(result: dict) -> dict[str, float]:
+    """Pull out the 4 thesis metrics individually — no averaging here."""
     metrics = result.get("metrics", {})
-
     retrieval = metrics.get("precision_at_k_retrieval", {})
-    pruned = metrics.get("precision_at_k_pruned", {})
-
-    retrieval_precision = retrieval.get("precision_at_k", 0) or 0
-    retrieval_recall = retrieval.get("recall_at_k", 0) or 0
-
-    pruned_precision = pruned.get("precision_at_k", 0) or 0
-    pruned_recall = pruned.get("recall_at_k", 0) or 0
-
-    return statistics.mean([
-        retrieval_precision,
-        retrieval_recall,
-        pruned_precision,
-        pruned_recall,
-    ])
+    return {
+        "precision_at_k": retrieval.get("precision_at_k", 0) or 0,
+        "recall_at_k": retrieval.get("recall_at_k", 0) or 0,
+        "faithfulness": metrics.get("faithfulness", {}).get("score", 0) or 0,
+        "relevancy": metrics.get("contextual_relevancy_pruned", {}).get("score", 0) or 0,
+    }
 
 
-def run_trial(env_overrides: dict[str, str]) -> float:
-    scores = []
+def run_trial(env_overrides: dict[str, str]) -> dict[str, float]:
+    """Run every test query; average EACH metric across queries separately (still no combining across metrics)."""
+    per_metric: dict[str, list[float]] = {name: [] for name in METRIC_NAMES}
+
     for tc in TEST_QUERIES:
         result = run_one_query(tc["query"], tc["gold_files"], env_overrides)
-        if result:
-            scores.append(composite_score(result))
-    return statistics.mean(scores) if scores else 0.0
+        if not result:
+            continue
+        m = extract_metrics(result)
+        for name in METRIC_NAMES:
+            per_metric[name].append(m[name])
+
+    return {name: (statistics.mean(values) if values else 0.0) for name, values in per_metric.items()}
 
 
-def objective(trial: optuna.Trial) -> float:
+def objective(trial: optuna.Trial) -> tuple[float, float, float, float]:
     # Simplex groups: sample each freely, then normalize to sum to 1.
     # (Simplification vs. true Dirichlet sampling — worth noting in your write-up.)
     final_raw = {n: trial.suggest_float(n, 0.01, 1.0) for n in FINAL_WEIGHT_NAMES}
@@ -140,10 +161,18 @@ def objective(trial: optuna.Trial) -> float:
     }
 
     try:
-        return run_trial(env_overrides)
+        breakdown = run_trial(env_overrides)
     except Exception as exc:
         print(f"  [warn] trial failed entirely: {exc}")
-        return 0.0  # worst possible score, don't crash the whole study
+        return 0.0, 0.0, 0.0, 0.0
+
+    # Order MUST match METRIC_NAMES / directions
+    return (
+        breakdown["precision_at_k"],
+        breakdown["recall_at_k"],
+        breakdown["faithfulness"],
+        breakdown["relevancy"],
+    )
 
 
 def main() -> None:
@@ -152,28 +181,33 @@ def main() -> None:
     args = parser.parse_args()
 
     study = optuna.create_study(
-        direction="maximize",
-        sampler=optuna.samplers.TPESampler(seed=42),
-        storage="sqlite:///bayes_search.db",   # resumable if interrupted/crashes
-        study_name="weight_search",
+        directions=["maximize", "maximize", "maximize", "maximize"],  # one per METRIC_NAMES entry
+        sampler=optuna.samplers.TPESampler(seed=42),  # TPESampler handles multi-objective automatically
+        storage="sqlite:///bayes_search_multiobj.db",
+        study_name="weight_search_multiobj",
         load_if_exists=True,
     )
 
-    # Seed the very first trial with your repo's current default weights,
-    # so trial 0 is a real baseline comparison point.
-    study.enqueue_trial({**FINAL_DEFAULTS, **HYBRID_DEFAULTS, **PRUNE_DEFAULTS})
+    if len(study.trials) == 0:
+        study.enqueue_trial({**FINAL_DEFAULTS, **HYBRID_DEFAULTS, **PRUNE_DEFAULTS})
 
     study.optimize(objective, n_trials=args.trials)
 
-    print(f"\nBest composite score: {study.best_value:.4f}")
-    print(f"Best weights: {study.best_params}")
+    front = study.best_trials  # the Pareto front — no single "best" anymore
+    print(f"\n{len(front)} trials on the Pareto front (out of {len(study.trials)} total):\n")
+    for t in sorted(front, key=lambda t: t.number):
+        vals = dict(zip(METRIC_NAMES, t.values))
+        print(f"trial {t.number}: " + "  ".join(f"{k}={v:.4f}" for k, v in vals.items()))
 
-    out_path = Path(__file__).parent / "bayesian_search_results.json"
+    out_path = Path(__file__).parent / "pareto_front_results.json"
     out_path.write_text(json.dumps(
-        [{"trial": t.number, "value": t.value, "params": t.params} for t in study.trials],
+        [
+            {"trial": t.number, "values": dict(zip(METRIC_NAMES, t.values)), "params": t.params}
+            for t in study.trials
+        ],
         indent=2,
     ))
-    print(f"Full results saved to: {out_path}")
+    print(f"\nAll trials (front + dominated) saved to: {out_path}")
 
 
 if __name__ == "__main__":
