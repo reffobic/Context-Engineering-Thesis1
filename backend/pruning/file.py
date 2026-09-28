@@ -737,9 +737,9 @@ def prune_context_graph_aware(
         dropped_chunks=max(0, len(all_items) - len(kept_chunks)),
         original_est_tokens=original_est_tokens,
         kept_est_tokens=kept_tokens,
-        method="heuristic",
+        method="graph_aware",
         compression_ratio=round(kept_tokens / max(1, original_est_tokens), 4),
-        requested_method="heuristic",
+        requested_method="graph_aware",
     )
 
     return kept_chunks, stats

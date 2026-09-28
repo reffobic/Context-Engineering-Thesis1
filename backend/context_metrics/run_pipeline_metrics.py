@@ -284,6 +284,24 @@ def measure_faithfulness_only(
     return row
 
 
+def measure_answer_relevancy_only(query: str, answer: str) -> dict[str, Any]:
+    """DeepEval answer relevancy: whether the answer addresses the question (ignores CONTEXT)."""
+    if not (answer or "").strip():
+        return {"skipped": True, "reason": "Empty answer."}
+    from deepeval.metrics import AnswerRelevancyMetric
+    from deepeval.test_case import LLMTestCase
+
+    judge = build_judge_model()
+    m = AnswerRelevancyMetric(model=judge, async_mode=False)
+    m.measure(LLMTestCase(input=query, actual_output=answer))
+    row = metric_result(m, "after_generate")
+    row["judge_model"] = judge.get_model_name()
+    row["note"] = (
+        "Accuracy proxy: whether the answer addresses the question (ignores CONTEXT)."
+    )
+    return row
+
+
 _VALID_METRICS = frozenset(
     {"faithfulness", "contextual_relevancy", "answer_relevancy", "hallucination"}
 )

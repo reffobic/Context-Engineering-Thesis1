@@ -15,12 +15,20 @@ from pydantic import BaseModel
 try:
     from tool_registry import call_tool
     from indexing.code_indexer_endpoint import get_index_summary
-    from pruning.file import prune_context as prune_context_with_stats, estimate_tokens
+    from pruning.file import (
+        prune_context as prune_context_with_stats,
+        prune_context_graph_aware,
+        estimate_tokens,
+    )
     from diamond.sufficiency_assessor import assess_sufficiency, assess_structure_vs_context
 except ModuleNotFoundError:  # when running as package: python -m uvicorn mcp_server.server:app
     from mcp_server.tool_registry import call_tool
     from indexing.code_indexer_endpoint import get_index_summary
-    from pruning.file import prune_context as prune_context_with_stats, estimate_tokens
+    from pruning.file import (
+        prune_context as prune_context_with_stats,
+        prune_context_graph_aware,
+        estimate_tokens,
+    )
     from diamond.sufficiency_assessor import assess_sufficiency, assess_structure_vs_context
 
 app = FastAPI()
@@ -416,12 +424,14 @@ def run_pipeline(
             hops_box["n"] += 1
             return result
 
-        # Flat re-prune after expand: score seeds+neighbors together under token_budget.
+        # Graph-aware re-prune after expand: reserve budget for neighbors, then seeds.
         def _re_prune(seeds, neighbors):
-            merged = list(seeds) + list(neighbors)
             (pruned, stats), p_ms = _time_stage(
-                lambda: prune_context_with_stats(
-                    user_prompt, merged, token_budget=token_budget
+                lambda: prune_context_graph_aware(
+                    user_prompt,
+                    list(seeds),
+                    list(neighbors),
+                    token_budget=token_budget,
                 )
             )
             state["pruned"] = pruned
@@ -462,7 +472,7 @@ def run_pipeline(
             if i == len(ladder.expand_trace) - 1 and state["last_re_prune_ms"]:
                 exp["re_prune_ms"] = state["last_re_prune_ms"]
                 exp["re_prune_kept"] = state["last_re_prune_kept"]
-                exp["re_prune_kind"] = "flat_merge"
+                exp["re_prune_kind"] = "graph_aware"
 
         pipeline["stages"]["assess"] = _stage(
             "GASR assessment",
@@ -471,7 +481,7 @@ def run_pipeline(
                 "route": route,
                 "hops_used": hops_used,
                 "gasr_hard_cap": gasr_hard_cap,
-                "re_prune_kind": "flat_merge",
+                "re_prune_kind": "graph_aware",
                 "assessor_model": os.environ.get("ASSESSOR_MODEL")
                 or os.environ.get("OLLAMA_ASSESSOR_MODEL")
                 or "",
@@ -486,11 +496,11 @@ def run_pipeline(
                 ladder.expand_trace,
             )
             pipeline["stages"]["re_prune"] = _stage(
-                "Flat-merge re-prune",
+                "Graph-aware re-prune",
                 sum(t.get("re_prune_ms", 0) for t in ladder.expand_trace),
                 {
                     "token_budget": token_budget,
-                    "re_prune_kind": "flat_merge",
+                    "re_prune_kind": "graph_aware",
                     "kept": len(context_for_injection)
                     if hasattr(context_for_injection, "__len__")
                     else None,
@@ -535,11 +545,21 @@ def run_pipeline(
     final_prompt, duration_ms = _time_stage(
         lambda: call_tool("inject_context", user_prompt, context_for_injection)
     )
+    inject_chunks = (
+        list(context_for_injection)
+        if isinstance(context_for_injection, list)
+        else []
+    )
     pipeline["stages"]["inject"] = _stage(
         "Build final prompt",
         duration_ms,
-        {**_prompt_summary(final_prompt), "route": route, "tokens_injected_est": pipeline["tokens_injected_est"]},
-        final_prompt,
+        {
+            **_prompt_summary(final_prompt),
+            "route": route,
+            "tokens_injected_est": pipeline["tokens_injected_est"],
+            "chunk_count": len(inject_chunks),
+        },
+        {"prompt": final_prompt, "chunks": inject_chunks},
     )
 
     logging.info("Generating response")

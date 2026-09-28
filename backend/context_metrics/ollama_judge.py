@@ -45,7 +45,11 @@ def _strip_leading_fenced_json(text: str) -> str:
 
 
 def normalize_ollama_metric_json(raw: Optional[str]) -> str:
-    """Turn raw assistant text into a JSON string for ``model_validate_json``."""
+    """Turn raw assistant text into a JSON string for ``model_validate_json``.
+
+    Qwen-class judges often emit a valid JSON object followed by trailing prose
+    (``Let's write it.``). Prefer the first complete JSON value via ``raw_decode``.
+    """
     s = (raw or "").strip()
     if not s:
         return s
@@ -54,12 +58,22 @@ def normalize_ollama_metric_json(raw: Optional[str]) -> str:
         if marker in s:
             s = s.split(marker, 1)[-1].strip()
 
+    s = _strip_leading_fenced_json(s)
+
+    decoder = json.JSONDecoder()
+    for i, ch in enumerate(s):
+        if ch not in "{[":
+            continue
+        try:
+            obj, _end = decoder.raw_decode(s[i:])
+            return json.dumps(obj, ensure_ascii=False)
+        except json.JSONDecodeError:
+            continue
+
     if not s.startswith("{") and not s.startswith("["):
         m = re.search(r"[\[{][\s\S]*[\]}]", s)
         if m:
             s = m.group(0).strip()
-
-    s = _strip_leading_fenced_json(s)
     return s.strip()
 
 
