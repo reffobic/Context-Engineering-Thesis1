@@ -14,15 +14,27 @@ HuggingFace transformers.  CodeGen is a code-aware model trained on
 multi-language code, giving better self-information estimates for source
 code than a general-purpose LM like GPT-2.
 
-transformers + torch are already available as transitive dependencies
-of sentence-transformers.
+Two pruning modes:
+  prune_text  — the paper's token-level pruning on raw BPE tokens (baseline).
+  prune_code  — code-aware: rule-based comment filter, then pruning of whole
+                lexical units (Li et al.'s lexical-unit aggregation) whose
+                self-information is weighted by kind (code logic > syntax).
 """
 
 from __future__ import annotations
 
 import math
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from typing import Optional
+
+from .code_units import (
+    DEFAULT_CODE_WEIGHTS,
+    PROTECTED_KINDS,
+    CodeUnitWeights,
+    filter_comments,
+    lex_units,
+)
 
 # Lazy imports — torch / transformers are heavy; only load when actually used.
 # This lets the heuristic fallback work even if torch is not installed.
@@ -60,6 +72,8 @@ class TokenSelfInfo:
     token: str
     token_id: int
     self_info: float  # nats; higher = more informative
+    start: int = -1   # char offsets of the token in the input text
+    end: int = -1
 
 
 @dataclass
@@ -99,6 +113,9 @@ class SelectiveContextPruner:
     _model: object = field(default=None, repr=False)
     _tokenizer: object = field(default=None, repr=False)
     _device: str = field(default="", repr=False)
+    # Self-information per text, so ranking and pruning share one forward pass.
+    _cache: "OrderedDict[str, list[TokenSelfInfo]]" = field(default_factory=OrderedDict, repr=False)
+    cache_size: int = 256
 
     def __post_init__(self) -> None:
         _ensure_imports()
@@ -126,15 +143,40 @@ class SelectiveContextPruner:
         """
         if not text.strip():
             return []
+        cached = self._cache.get(text)
+        if cached is not None:
+            self._cache.move_to_end(text)
+            return cached
 
-        input_ids = self._tokenizer.encode(text, return_tensors="pt")
+        offsets = None
+        if getattr(self._tokenizer, "is_fast", False):
+            enc = self._tokenizer(text, return_offsets_mapping=True, return_tensors="pt")
+            input_ids = enc["input_ids"]
+            offsets = enc["offset_mapping"][0].tolist()
+        else:
+            input_ids = self._tokenizer.encode(text, return_tensors="pt")
 
         # Handle texts longer than the model's context window
         # Process in sliding windows with overlap
         if input_ids.shape[1] > self.max_seq_len:
-            return self._compute_windowed(input_ids)
+            result = self._compute_windowed(input_ids)
+        else:
+            result = self._compute_single(input_ids)
 
-        return self._compute_single(input_ids)
+        if offsets is None:
+            # Slow tokenizer: approximate offsets from cumulative decoded length.
+            pos = 0
+            offsets = []
+            for ti in result:
+                offsets.append((pos, pos + len(ti.token)))
+                pos += len(ti.token)
+        for ti, (start, end) in zip(result, offsets):
+            ti.start, ti.end = start, end
+
+        self._cache[text] = result
+        if len(self._cache) > self.cache_size:
+            self._cache.popitem(last=False)
+        return result
 
     def _compute_single(self, input_ids) -> list[TokenSelfInfo]:
         """Self-information for a sequence that fits in one context window."""
@@ -313,83 +355,119 @@ class SelectiveContextPruner:
             threshold_used=threshold,
         )
 
-    def prune_lines(
+    def prune_code(
         self,
         text: str,
-        target_ratio: float = 0.5,
+        target_ratio: float = 0.7,
+        language: str = "python",
+        query: str = "",
+        weights: Optional[CodeUnitWeights] = None,
     ) -> PruneResult:
         """
-        Line-level pruning: compute mean self-information per line,
-        drop the least informative lines.
+        Code-aware Selective Context pruning.
 
-        Better for code than raw token-level pruning because it preserves
-        syntactic structure within each kept line.
+        1. filter_comments() drops comments/docstring lines with no semantic
+           value (rules + query match; no model involved). Surviving comments
+           are kept whole.
+        2. The rest is split into lexical units. A unit's score is the summed
+           self-information of its BPE tokens times a per-kind weight, so the
+           model still decides which identifiers/calls/syntax are redundant
+           while syntax is pruned before code logic.
+        3. The highest-scoring units are kept until they use *target_ratio* of
+           the prunable tokens (control flow, logic operators and definition
+           names are always kept); identifiers are
+           never split, and indentation/newlines are preserved.
         """
-        lines = text.split("\n")
-        if len(lines) <= 1:
-            return PruneResult(
-                original_text=text,
-                pruned_text=text,
-                original_token_count=len(text) // 4,
-                kept_token_count=len(text) // 4,
-                compression_ratio=1.0,
-                mean_self_info=0.0,
-                threshold_used=0.0,
-            )
+        w = weights or DEFAULT_CODE_WEIGHTS
+        original_token_count = len(self._tokenizer.encode(text)) if text else 0
+        filtered = self.prepare_code(text, language, query)
+        if not filtered.strip():
+            return PruneResult(text, "", original_token_count, 0, 0.0, 0.0, 0.0)
 
-        token_infos = self.compute_self_information(text)
-        if not token_infos:
-            return PruneResult(
-                original_text=text,
-                pruned_text=text,
-                original_token_count=0,
-                kept_token_count=0,
-                compression_ratio=1.0,
-                mean_self_info=0.0,
-                threshold_used=0.0,
-            )
+        token_infos = self.compute_self_information(filtered)
+        units, keep, threshold = self.select_units(filtered, target_ratio, language, w)
 
-        # Map tokens to lines by reconstructing text position
-        line_self_infos: list[list[float]] = [[] for _ in lines]
-        reconstructed = ""
-        current_line = 0
-
-        for ti in token_infos:
-            if current_line < len(lines) and math.isfinite(ti.self_info):
-                line_self_infos[current_line].append(ti.self_info)
-            reconstructed += ti.token
-            # Count newlines in token to advance line counter
-            newline_count = ti.token.count("\n")
-            current_line += newline_count
-
-        # Compute mean self-info per line
-        line_scores: list[tuple[int, float]] = []
-        for i, infos in enumerate(line_self_infos):
-            avg = sum(infos) / len(infos) if infos else 0.0
-            line_scores.append((i, avg))
-
-        # Find threshold
-        score_vals = sorted(s for _, s in line_scores)
-        cutoff_idx = int(len(score_vals) * (1 - target_ratio))
-        cutoff_idx = max(0, min(cutoff_idx, len(score_vals) - 1))
-        line_threshold = score_vals[cutoff_idx]
-
-        kept_indices = {i for i, s in line_scores if s >= line_threshold}
-        kept_lines = [line for i, line in enumerate(lines) if i in kept_indices]
-        pruned_text = "\n".join(kept_lines)
-
+        pruned_text = _rebuild(units, keep)
         all_finite = [ti.self_info for ti in token_infos if math.isfinite(ti.self_info)]
-        mean_si = sum(all_finite) / len(all_finite) if all_finite else 0.0
-
+        kept_token_count = len(self._tokenizer.encode(pruned_text)) if pruned_text else 0
         return PruneResult(
             original_text=text,
             pruned_text=pruned_text,
-            original_token_count=len(token_infos),
-            kept_token_count=sum(1 for i, line in enumerate(lines) if i in kept_indices for _ in line),
-            compression_ratio=len(kept_lines) / len(lines) if lines else 1.0,
-            mean_self_info=mean_si,
-            threshold_used=line_threshold,
+            original_token_count=original_token_count,
+            kept_token_count=kept_token_count,
+            compression_ratio=kept_token_count / original_token_count if original_token_count else 1.0,
+            mean_self_info=sum(all_finite) / len(all_finite) if all_finite else 0.0,
+            threshold_used=threshold,
         )
+
+    def select_units(
+        self,
+        filtered: str,
+        target_ratio: float = 0.7,
+        language: str = "python",
+        weights: Optional[CodeUnitWeights] = None,
+    ) -> tuple[list, set[int], float]:
+        """Score lexical units of an already-filtered text and choose which to keep.
+
+        Returns (units, indices of kept units, score threshold). Exposed separately
+        so experiments (e.g. rules-only vs model ablations) can compare decisions.
+        """
+        w = weights or DEFAULT_CODE_WEIGHTS
+        token_infos = self.compute_self_information(filtered)
+        units = lex_units(filtered, language)
+
+        # Distribute each token's self-information over the non-layout units it overlaps.
+        unit_at = [-1] * len(filtered)
+        for idx, u in enumerate(units):
+            if u.kind not in ("whitespace", "newline"):
+                for c in range(u.start, u.end):
+                    unit_at[c] = idx
+        unit_si = [0.0] * len(units)
+        unit_cost = [0.0] * len(units)  # BPE tokens attributed to each unit
+        for ti in token_infos:
+            if ti.start < 0:
+                continue
+            chars = [unit_at[c] for c in range(ti.start, min(ti.end, len(filtered))) if unit_at[c] >= 0]
+            if not chars:
+                continue
+            for idx in chars:
+                unit_si[idx] += ti.self_info / len(chars)
+                unit_cost[idx] += 1.0 / len(chars)
+
+        always = set(w.keep_kinds)
+        prunable = [
+            i for i, u in enumerate(units) if u.kind not in PROTECTED_KINDS and u.kind not in always
+        ]
+        finite_unit_si = [unit_si[i] for i in prunable if math.isfinite(unit_si[i])]
+        mean_unit_si = sum(finite_unit_si) / len(finite_unit_si) if finite_unit_si else 0.0
+        scores = {
+            i: (unit_si[i] + w.prior * mean_unit_si) * w.for_kind(units[i].kind)
+            for i in prunable
+        }
+
+        # Keep the highest-scoring units until they use target_ratio of the
+        # prunable tokens, so target_ratio means "fraction of tokens kept" as in
+        # the paper (dropped units are often 1-char punctuation; a unit count
+        # would barely shrink the text).
+        budget = target_ratio * sum(unit_cost[i] for i in prunable)
+        keep: set[int] = {i for i, u in enumerate(units) if u.kind in always}
+        used = 0.0
+        threshold = 0.0
+        for i in sorted(prunable, key=lambda i: scores[i], reverse=True):
+            if used + unit_cost[i] > budget and used > 0:
+                continue  # skip; a cheaper lower-scoring unit may still fit
+            keep.add(i)
+            used += unit_cost[i]
+            threshold = scores[i]
+        return units, keep, threshold
+
+    @staticmethod
+    def prepare_code(text: str, language: str = "python", query: str = "") -> str:
+        """The text prune_code() actually scores (after the comment filter).
+
+        Use it for chunk_informativeness() too, so both share the cached forward pass.
+        """
+        return filter_comments(text, language, query)
 
     def chunk_informativeness(self, text: str) -> float:
         """
@@ -401,3 +479,48 @@ class SelectiveContextPruner:
         token_infos = self.compute_self_information(text)
         finite = [ti.self_info for ti in token_infos if math.isfinite(ti.self_info)]
         return sum(finite) / len(finite) if finite else 0.0
+
+
+def _rebuild(units: list, keep: set[int]) -> str:
+    """Join kept units line by line: keep indentation, collapse gaps left by
+    dropped units, and drop lines that pruning emptied."""
+    lines: list[list[tuple[int, object]]] = [[]]
+    for i, u in enumerate(units):
+        if u.kind == "newline":
+            lines.append([])
+        else:
+            lines[-1].append((i, u))
+
+    out: list[str] = []
+    for line in lines:
+        if not line:
+            out.append("")
+            continue
+        indent = ""
+        rest = line
+        if line[0][1].kind == "whitespace":
+            indent, rest = line[0][1].text, line[1:]
+        pieces: list[str] = []
+        prev_space = True  # suppress whitespace right after the indent
+        had_content = any(u.kind != "whitespace" for _, u in rest)
+        for i, u in rest:
+            if u.kind == "whitespace":
+                if not prev_space:
+                    pieces.append(" ")
+                    prev_space = True
+                continue
+            if u.kind in PROTECTED_KINDS or i in keep:
+                # Dropping e.g. "(" between two names must not fuse them into a new identifier.
+                if pieces and not prev_space and _is_word_char(pieces[-1][-1]) and _is_word_char(u.text[0]):
+                    pieces.append(" ")
+                pieces.append(u.text)
+                prev_space = False
+        body = "".join(pieces).rstrip()
+        if had_content and not body:
+            continue  # line emptied by pruning
+        out.append(indent + body)
+    return "\n".join(out)
+
+
+def _is_word_char(ch: str) -> bool:
+    return ch.isalnum() or ch in "_$"
