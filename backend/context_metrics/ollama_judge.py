@@ -103,6 +103,26 @@ class OllamaJudgeModel(OllamaModel):
             raise ValueError("empty assistant text after normalize")
         return schema.model_validate_json(cleaned)
 
+    def _parse_message(self, msg: Any, schema: BaseModel) -> BaseModel:
+        """Try content-only, thinking-only, then combined (Qwen often mixes both)."""
+        if msg is None:
+            raise ValueError("empty judge message")
+        errors: list[str] = []
+        for attr in ("content", "thinking"):
+            val = getattr(msg, attr, None)
+            if not (isinstance(val, str) and val.strip()):
+                continue
+            try:
+                return self._parse_schema_text(val, schema)
+            except (ValidationError, ValueError, json.JSONDecodeError) as exc:
+                errors.append(f"{attr}:{exc}")
+        combined = self._combined_assistant_text(msg)
+        try:
+            return self._parse_schema_text(combined, schema)
+        except (ValidationError, ValueError, json.JSONDecodeError) as exc:
+            errors.append(f"combined:{exc}")
+            raise ValueError("; ".join(errors)) from exc
+
     @retry_ollama
     def generate(  # type: ignore[override]
         self, prompt: str, schema: Optional[BaseModel] = None
@@ -128,10 +148,9 @@ class OllamaJudgeModel(OllamaModel):
             raw = getattr(msg, "content", None) if msg else None
             return (raw or ""), 0.0
 
-        raw = self._combined_assistant_text(msg)
         first_err: Optional[BaseException] = None
         try:
-            return self._parse_schema_text(raw, schema), 0.0
+            return self._parse_message(msg, schema), 0.0
         except (ValidationError, ValueError, json.JSONDecodeError) as exc:
             first_err = exc
 
@@ -141,9 +160,8 @@ class OllamaJudgeModel(OllamaModel):
             format="json",
             options=opts,
         )
-        raw2 = self._combined_assistant_text(response2.message)
         try:
-            return self._parse_schema_text(raw2, schema), 0.0
+            return self._parse_message(response2.message, schema), 0.0
         except (ValidationError, ValueError, json.JSONDecodeError) as exc2:
             raise RuntimeError(
                 "Ollama judge returned no parseable JSON (tried schema format and json format). "
@@ -176,10 +194,9 @@ class OllamaJudgeModel(OllamaModel):
             raw = getattr(msg, "content", None) if msg else None
             return (raw or ""), 0.0
 
-        raw = self._combined_assistant_text(msg)
         first_err: Optional[BaseException] = None
         try:
-            return self._parse_schema_text(raw, schema), 0.0
+            return self._parse_message(msg, schema), 0.0
         except (ValidationError, ValueError, json.JSONDecodeError) as exc:
             first_err = exc
 
@@ -189,9 +206,8 @@ class OllamaJudgeModel(OllamaModel):
             format="json",
             options=opts,
         )
-        raw2 = self._combined_assistant_text(response2.message)
         try:
-            return self._parse_schema_text(raw2, schema), 0.0
+            return self._parse_message(response2.message, schema), 0.0
         except (ValidationError, ValueError, json.JSONDecodeError) as exc2:
             raise RuntimeError(
                 "Ollama judge returned no parseable JSON (tried schema format and json format). "

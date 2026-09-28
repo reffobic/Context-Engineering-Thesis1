@@ -261,6 +261,8 @@ def measure_faithfulness_only(
     query: str,
     pruned_items: list[dict[str, Any]],
     answer: str,
+    *,
+    retries: int = 0,
 ) -> dict[str, Any]:
     """DeepEval faithfulness: whether answer claims are supported by pruned chunk strings."""
     grounded = chunks_as_retrieval_context(pruned_items)
@@ -269,37 +271,83 @@ def measure_faithfulness_only(
     from deepeval.metrics import FaithfulnessMetric
     from deepeval.test_case import LLMTestCase
 
-    judge = build_judge_model()
-    m = FaithfulnessMetric(model=judge, async_mode=False)
-    m.measure(
-        LLMTestCase(
-            input=query,
-            actual_output=answer,
-            retrieval_context=grounded,
-        )
-    )
-    row = metric_result(m, "after_generate")
-    row["judge_model"] = judge.get_model_name()
-    row["note"] = "Score reflects grounding in pruned CONTEXT only, not full-repo truth."
-    return row
+    last_row: dict[str, Any] = {}
+    last_err: str | None = None
+    for attempt in range(max(1, retries + 1)):
+        try:
+            judge = build_judge_model()
+            # Faster without changing score definition: skip reason LLM call;
+            # parallel truths∥claims; cap truths so verdict prompts stay small.
+            m = FaithfulnessMetric(
+                model=judge,
+                async_mode=True,
+                include_reason=False,
+                truths_extraction_limit=10,
+            )
+            m.measure(
+                LLMTestCase(
+                    input=query,
+                    actual_output=answer,
+                    retrieval_context=grounded,
+                )
+            )
+            row = metric_result(m, "after_generate")
+            row["judge_model"] = judge.get_model_name()
+            row["note"] = (
+                "Score reflects grounding in pruned CONTEXT only, not full-repo truth."
+            )
+            row["attempt"] = attempt + 1
+            last_row = row
+            if row.get("score") is not None:
+                return row
+            last_err = f"null score (success={row.get('success')})"
+        except Exception as exc:
+            last_err = str(exc)
+            last_row = {"error": last_err, "attempt": attempt + 1, "stage": "after_generate"}
+    if last_row.get("score") is None and last_err and "error" not in last_row:
+        last_row["error"] = last_err
+    return last_row
 
 
-def measure_answer_relevancy_only(query: str, answer: str) -> dict[str, Any]:
+def measure_answer_relevancy_only(
+    query: str,
+    answer: str,
+    *,
+    retries: int = 0,
+) -> dict[str, Any]:
     """DeepEval answer relevancy: whether the answer addresses the question (ignores CONTEXT)."""
     if not (answer or "").strip():
         return {"skipped": True, "reason": "Empty answer."}
     from deepeval.metrics import AnswerRelevancyMetric
     from deepeval.test_case import LLMTestCase
 
-    judge = build_judge_model()
-    m = AnswerRelevancyMetric(model=judge, async_mode=False)
-    m.measure(LLMTestCase(input=query, actual_output=answer))
-    row = metric_result(m, "after_generate")
-    row["judge_model"] = judge.get_model_name()
-    row["note"] = (
-        "Accuracy proxy: whether the answer addresses the question (ignores CONTEXT)."
-    )
-    return row
+    last_row: dict[str, Any] = {}
+    last_err: str | None = None
+    for attempt in range(max(1, retries + 1)):
+        try:
+            judge = build_judge_model()
+            m = AnswerRelevancyMetric(
+                model=judge,
+                async_mode=True,
+                include_reason=False,
+            )
+            m.measure(LLMTestCase(input=query, actual_output=answer))
+            row = metric_result(m, "after_generate")
+            row["judge_model"] = judge.get_model_name()
+            row["note"] = (
+                "Accuracy proxy: whether the answer addresses the question (ignores CONTEXT)."
+            )
+            row["attempt"] = attempt + 1
+            last_row = row
+            if row.get("score") is not None:
+                return row
+            last_err = f"null score (success={row.get('success')})"
+        except Exception as exc:
+            last_err = str(exc)
+            last_row = {"error": last_err, "attempt": attempt + 1, "stage": "after_generate"}
+    if last_row.get("score") is None and last_err and "error" not in last_row:
+        last_row["error"] = last_err
+    return last_row
 
 
 _VALID_METRICS = frozenset(
