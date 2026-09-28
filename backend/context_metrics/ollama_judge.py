@@ -5,15 +5,21 @@ Fixes common failures with thinking models (e.g. Qwen) and structured ``format``
 
 1. **Empty ``message.content``** — Ollama may put reasoning in ``message.thinking``; we merge
    ``content`` + ``thinking`` before JSON extraction.
-2. **Strict JSON schema** — some models return nothing usable; we retry once with
-   Ollama's simpler ``format=\"json\"`` and parse the same pydantic schema.
+2. **Trailing prose after the JSON** — we extract the first valid JSON value.
+3. **Strict JSON schema** — round 1 uses the pydantic schema; if that is unparseable we retry
+   once with Ollama's simpler ``format="json"``.
+
+Env knobs:
+  JUDGE_THINK=1          keep the model's reasoning trace (default: off, much faster on Qwen)
+  JUDGE_STRICT_SCHEMA=0  use format="json" in round 1 instead of the pydantic schema
 """
 
 from __future__ import annotations
 
 import json
-import re
-from typing import Any, Optional, Tuple, Union
+import os
+import sys
+from typing import Any, Optional, Tuple, Union, get_args, get_origin
 
 from pydantic import BaseModel, ValidationError
 
@@ -32,6 +38,19 @@ _THINK_END_MARKERS = (
 )
 
 
+def _log(msg: str) -> None:
+    """stderr only: stdout is reserved for the pipeline's JSON payload."""
+    print(f"[ollama_judge] {msg}", file=sys.stderr)
+
+
+def _think_kwargs() -> dict[str, Any]:
+    return {} if os.environ.get("JUDGE_THINK", "0") == "1" else {"think": False}
+
+
+def _strict_schema() -> bool:
+    return os.environ.get("JUDGE_STRICT_SCHEMA", "1") != "0"
+
+
 def _strip_leading_fenced_json(text: str) -> str:
     t = text.strip()
     if not t.startswith("```"):
@@ -44,6 +63,20 @@ def _strip_leading_fenced_json(text: str) -> str:
     return "\n".join(lines).strip()
 
 
+def _first_json_value(text: str) -> Optional[str]:
+    """Return the first JSON object/array in ``text``, ignoring trailing prose."""
+    decoder = json.JSONDecoder()
+    for i, ch in enumerate(text):
+        if ch not in "{[":
+            continue
+        try:
+            _obj, end = decoder.raw_decode(text[i:])
+            return text[i : i + end].strip()
+        except json.JSONDecodeError:
+            continue
+    return None
+
+
 def normalize_ollama_metric_json(raw: Optional[str]) -> str:
     """Turn raw assistant text into a JSON string for ``model_validate_json``."""
     s = (raw or "").strip()
@@ -54,13 +87,42 @@ def normalize_ollama_metric_json(raw: Optional[str]) -> str:
         if marker in s:
             s = s.split(marker, 1)[-1].strip()
 
-    if not s.startswith("{") and not s.startswith("["):
-        m = re.search(r"[\[{][\s\S]*[\]}]", s)
-        if m:
-            s = m.group(0).strip()
-
     s = _strip_leading_fenced_json(s)
-    return s.strip()
+    extracted = _first_json_value(s)
+    return extracted if extracted is not None else s.strip()
+
+
+def _list_field_names(schema: type[BaseModel]) -> list[str]:
+    names: list[str] = []
+    for name, info in schema.model_fields.items():
+        ann = info.annotation
+        origin = get_origin(ann)
+        if origin is list:
+            names.append(name)
+            continue
+        if origin is Union and any(get_origin(a) is list for a in get_args(ann)):
+            names.append(name)
+    # Fallback when annotations are unresolved strings under future annotations.
+    if not names:
+        for candidate in ("verdicts", "claims", "truths", "statements"):
+            if candidate in schema.model_fields:
+                names.append(candidate)
+    return names
+
+
+def _coerce_to_schema_dict(data: Any, schema: type[BaseModel]) -> Any:
+    """
+    Lossless repair only: a bare JSON list becomes {"<the schema's one list field>": list}.
+    Anything else is returned unchanged and will fail validation on purpose. A lone verdict
+    object must NOT be turned into a one-item list: faithfulness scores the share of
+    non-"no" verdicts, so one repaired "yes" would read as a perfect 1.0.
+    """
+    if isinstance(data, list):
+        list_fields = _list_field_names(schema)
+        if len(list_fields) == 1:
+            _log(f"repaired bare list -> {{'{list_fields[0]}': [...]}} for {schema.__name__}")
+            return {list_fields[0]: data}
+    return data
 
 
 class OllamaJudgeModel(OllamaModel):
@@ -68,14 +130,18 @@ class OllamaJudgeModel(OllamaModel):
 
     @staticmethod
     def _combined_assistant_text(message: Any) -> str:
+        """Prefer ``content`` when it already holds JSON; else merge thinking."""
         if message is None:
             return ""
-        parts: list[str] = []
-        for attr in ("content", "thinking"):
-            val = getattr(message, attr, None)
-            if isinstance(val, str) and val.strip():
-                parts.append(val.strip())
-        return "\n\n".join(parts)
+        content = getattr(message, "content", None)
+        thinking = getattr(message, "thinking", None)
+        c = content.strip() if isinstance(content, str) else ""
+        t = thinking.strip() if isinstance(thinking, str) else ""
+        if c and _first_json_value(c) is not None:
+            return c
+        if t and _first_json_value(t) is not None:
+            return t
+        return "\n\n".join(p for p in (c, t) if p)
 
     def _chat_options(self) -> dict[str, Any]:
         return {
@@ -87,7 +153,28 @@ class OllamaJudgeModel(OllamaModel):
         cleaned = normalize_ollama_metric_json(raw)
         if not cleaned:
             raise ValueError("empty assistant text after normalize")
-        return schema.model_validate_json(cleaned)
+        schema_cls = schema if isinstance(schema, type) else type(schema)
+        try:
+            return schema_cls.model_validate_json(cleaned)
+        except ValidationError:
+            data = _coerce_to_schema_dict(json.loads(cleaned), schema_cls)
+            return schema_cls.model_validate(data)
+
+    def _chat(self, chat_model: Any, messages: list, fmt: Any, opts: dict) -> Any:
+        kwargs = dict(model=self.name, messages=messages, format=fmt, options=opts)
+        try:
+            return chat_model.chat(**kwargs, **_think_kwargs())
+        except TypeError:
+            _log("ollama client does not accept think=...; run: pip install -U ollama")
+            return chat_model.chat(**kwargs)
+
+    async def _a_chat(self, chat_model: Any, messages: list, fmt: Any, opts: dict) -> Any:
+        kwargs = dict(model=self.name, messages=messages, format=fmt, options=opts)
+        try:
+            return await chat_model.chat(**kwargs, **_think_kwargs())
+        except TypeError:
+            _log("ollama client does not accept think=...; run: pip install -U ollama")
+            return await chat_model.chat(**kwargs)
 
     @retry_ollama
     def generate(  # type: ignore[override]
@@ -102,12 +189,9 @@ class OllamaJudgeModel(OllamaModel):
             messages = [{"role": "user", "content": prompt}]
 
         opts = self._chat_options()
-        response = chat_model.chat(
-            model=self.name,
-            messages=messages,
-            format="json",
-            options=opts,
-        )
+        strict = _strict_schema()
+        fmt1 = (schema.model_json_schema() if strict else "json") if schema else None
+        response = self._chat(chat_model, messages, fmt1, opts)
         msg = response.message
 
         if schema is None:
@@ -121,19 +205,19 @@ class OllamaJudgeModel(OllamaModel):
         except (ValidationError, ValueError, json.JSONDecodeError) as exc:
             first_err = exc
 
-        response2 = chat_model.chat(
-            model=self.name,
-            messages=messages,
-            format="json",
-            options=opts,
-        )
+        if not strict:
+            raise RuntimeError(
+                f"Ollama judge returned no parseable JSON (format=json). round1={first_err!s}"
+            ) from first_err
+
+        response2 = self._chat(chat_model, messages, "json", opts)
         raw2 = self._combined_assistant_text(response2.message)
         try:
             return self._parse_schema_text(raw2, schema), 0.0
         except (ValidationError, ValueError, json.JSONDecodeError) as exc2:
             raise RuntimeError(
                 "Ollama judge returned no parseable JSON (tried schema format and json format). "
-                "Try: export EVAL_JUDGE_MODEL=llama3.2:3b  or  export EVAL_OLLAMA_NUM_CTX=16384. "
+                "Try: export EVAL_OLLAMA_NUM_CTX=16384. "
                 f"schema_round={first_err!s}; json_round={exc2!s}"
             ) from exc2
 
@@ -148,13 +232,11 @@ class OllamaJudgeModel(OllamaModel):
             messages = self.generate_messages(prompt)
         else:
             messages = [{"role": "user", "content": prompt}]
+
         opts = self._chat_options()
-        response = await chat_model.chat(
-            model=self.name,
-            messages=messages,
-            format=schema.model_json_schema() if schema else None,
-            options=opts,
-        )
+        strict = _strict_schema()
+        fmt1 = (schema.model_json_schema() if strict else "json") if schema else None
+        response = await self._a_chat(chat_model, messages, fmt1, opts)
         msg = response.message
 
         if schema is None:
@@ -168,18 +250,18 @@ class OllamaJudgeModel(OllamaModel):
         except (ValidationError, ValueError, json.JSONDecodeError) as exc:
             first_err = exc
 
-        response2 = await chat_model.chat(
-            model=self.name,
-            messages=messages,
-            format="json",
-            options=opts,
-        )
+        if not strict:
+            raise RuntimeError(
+                f"Ollama judge returned no parseable JSON (format=json). round1={first_err!s}"
+            ) from first_err
+
+        response2 = await self._a_chat(chat_model, messages, "json", opts)
         raw2 = self._combined_assistant_text(response2.message)
         try:
             return self._parse_schema_text(raw2, schema), 0.0
         except (ValidationError, ValueError, json.JSONDecodeError) as exc2:
             raise RuntimeError(
                 "Ollama judge returned no parseable JSON (tried schema format and json format). "
-                "Try: export EVAL_JUDGE_MODEL=llama3.2:3b  or  export EVAL_OLLAMA_NUM_CTX=16384. "
+                "Try: export EVAL_OLLAMA_NUM_CTX=16384. "
                 f"schema_round={first_err!s}; json_round={exc2!s}"
             ) from exc2

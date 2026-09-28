@@ -6,8 +6,8 @@ Supports:
   - /api/chat when system + user are separate (recommended)
   - /api/generate for a single combined prompt
 
-You only need Ollama installed. Optional models: pull any coding model, e.g.
-  ollama pull llama3.2:3b
+You only need Ollama installed. Default model is qwen3.5:9b, e.g.
+  ollama pull qwen3.5:9b
   ollama pull deepseek-coder:6.7b   # optional; Ollama is enough without it
 """
 
@@ -42,8 +42,8 @@ class OllamaAgent:
         *,
         think: Optional[bool] = None,
     ):
-        # Prefer OLLAMA_MODEL env (e.g. llama3.2:3b on 4GB GPUs); default kept for back-compat.
-        self.model = model or os.environ.get("OLLAMA_MODEL", "llama3.2:3b")
+        # Prefer OLLAMA_MODEL env; default is qwen3.5:9b for generation + DeepEval judge.
+        self.model = model or os.environ.get("OLLAMA_MODEL", "qwen3.5:9b")
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         # Default: no thinking (faster). Enable with OLLAMA_THINK=1 if you want reasoning traces.
@@ -147,7 +147,7 @@ class OllamaAgent:
         return self.generate_response(user, system=system)
 
 
-def generate_response(prompt: str, *, model: str = "llama3.2:3b", system: Optional[str] = None) -> str:
+def generate_response(prompt: str, *, model: str = "qwen3.5:9b", system: Optional[str] = None) -> str:
     """Functional shortcut."""
     return OllamaAgent(model=model).generate_response(prompt, system=system)
 
@@ -164,7 +164,7 @@ if __name__ == "__main__":
             "text": "def hello():\n    return 'world'\n",
         }
     ]
-    agent = OllamaAgent(model=sys.argv[1] if len(sys.argv) > 1 else "llama3.2:3b")
+    agent = OllamaAgent(model=sys.argv[1] if len(sys.argv) > 1 else "qwen3.5:9b")
     print("--- Built user message (preview) ---")
     sys_p, user = build_coding_prompt("Add type hints to hello().", demo_chunks)
     print("SYSTEM (first 200 chars):", sys_p[:200], "...")

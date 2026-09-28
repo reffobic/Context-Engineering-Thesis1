@@ -1,0 +1,2141 @@
+[
+  {
+    "trial": 0,
+    "values": {
+      "precision_at_k": 0.55,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.6019230769230769,
+      "relevancy": 0.5108437314319667
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.46,
+      "FINAL_W_PROXIMITY": 0.26,
+      "FINAL_W_FUNCTION": 0.18,
+      "FINAL_W_SYMBOL": 0.1,
+      "DENSE_WEIGHT": 0.42,
+      "BM25_WEIGHT": 0.28,
+      "EXACT_WEIGHT": 0.22,
+      "KEYWORD_WEIGHT": 0.08,
+      "SOURCE_WEIGHT": 0.14,
+      "PATH_MATCH_WEIGHT": 0.32,
+      "CLASS_DEF_WEIGHT": 0.28,
+      "PRUNE_W_RETRIEVAL": 0.4,
+      "PRUNE_W_QUERY_MATCH": 0.25,
+      "PRUNE_W_FUNCTION": 0.2,
+      "PRUNE_W_STRUCTURE": 0.15
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.6,
+          "relevancy": 0.3333333333333333,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.5,
+          "relevancy": 0.8636363636363636,
+          "retrieval_precision": 1.0,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.75,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.6923076923076923,
+          "relevancy": 0.6111111111111112,
+          "retrieval_precision": 0.6,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.25,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.6153846153846154,
+          "relevancy": 0.23529411764705882,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.5,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 1,
+    "values": {
+      "precision_at_k": 0.4125,
+      "recall_at_k": 0.75,
+      "faithfulness": 0.8915441176470589,
+      "relevancy": 0.3095168988648091
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.3807947176588889,
+      "FINAL_W_PROXIMITY": 0.951207163345817,
+      "FINAL_W_FUNCTION": 0.7346740023932911,
+      "FINAL_W_SYMBOL": 0.6026718993550663,
+      "DENSE_WEIGHT": 0.17800932022121826,
+      "BM25_WEIGHT": 0.1467983561008608,
+      "EXACT_WEIGHT": 0.06742508365045984,
+      "KEYWORD_WEIGHT": 0.17323522915498704,
+      "SOURCE_WEIGHT": 0.18033450352296262,
+      "PATH_MATCH_WEIGHT": 0.35403628889802274,
+      "CLASS_DEF_WEIGHT": 0.008233797718320978,
+      "PRUNE_W_RETRIEVAL": 0.9702107536403743,
+      "PRUNE_W_QUERY_MATCH": 0.8341182143924175,
+      "PRUNE_W_FUNCTION": 0.2202157195714934,
+      "PRUNE_W_STRUCTURE": 0.19000671753502962
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.0,
+          "recall_at_k": 0.0,
+          "faithfulness": 0.9166666666666666,
+          "relevancy": 0.0,
+          "retrieval_precision": 0.0,
+          "retrieval_recall": 0.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.4,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.8333333333333334,
+          "relevancy": 0.6875,
+          "retrieval_precision": 0.4,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.9411764705882353,
+          "relevancy": 0.14705882352941177,
+          "retrieval_precision": 1.0,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.25,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.875,
+          "relevancy": 0.40350877192982454,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.4,
+      "retrieval_recall": 0.75
+    }
+  },
+  {
+    "trial": 2,
+    "values": {
+      "precision_at_k": 0.4125,
+      "recall_at_k": 0.75,
+      "faithfulness": 0.7283653846153846,
+      "relevancy": 0.3095168988648091
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.3807947176588889,
+      "FINAL_W_PROXIMITY": 0.951207163345817,
+      "FINAL_W_FUNCTION": 0.7346740023932911,
+      "FINAL_W_SYMBOL": 0.6026718993550663,
+      "DENSE_WEIGHT": 0.17800932022121826,
+      "BM25_WEIGHT": 0.1467983561008608,
+      "EXACT_WEIGHT": 0.06742508365045984,
+      "KEYWORD_WEIGHT": 0.17323522915498704,
+      "SOURCE_WEIGHT": 0.18033450352296262,
+      "PATH_MATCH_WEIGHT": 0.35403628889802274,
+      "CLASS_DEF_WEIGHT": 0.008233797718320978,
+      "PRUNE_W_RETRIEVAL": 0.9702107536403743,
+      "PRUNE_W_QUERY_MATCH": 0.8341182143924175,
+      "PRUNE_W_FUNCTION": 0.2202157195714934,
+      "PRUNE_W_STRUCTURE": 0.19000671753502962
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.0,
+          "recall_at_k": 0.0,
+          "faithfulness": 0.625,
+          "relevancy": 0.0,
+          "retrieval_precision": 0.0,
+          "retrieval_recall": 0.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.4,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.7692307692307693,
+          "relevancy": 0.6875,
+          "retrieval_precision": 0.4,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.75,
+          "relevancy": 0.14705882352941177,
+          "retrieval_precision": 1.0,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.25,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.7692307692307693,
+          "relevancy": 0.40350877192982454,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.4,
+      "retrieval_recall": 0.75
+    }
+  },
+  {
+    "trial": 4,
+    "values": {
+      "precision_at_k": 0.5,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.8083333333333333,
+      "relevancy": 0.4865626198695819
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.611469403382424,
+      "FINAL_W_PROXIMITY": 0.17881888245041863,
+      "FINAL_W_FUNCTION": 0.07440107705542671,
+      "FINAL_W_SYMBOL": 0.9493966818808,
+      "DENSE_WEIGHT": 0.5828160165372797,
+      "BM25_WEIGHT": 0.3425192044349384,
+      "EXACT_WEIGHT": 0.1413841307520112,
+      "KEYWORD_WEIGHT": 0.019534422801276777,
+      "SOURCE_WEIGHT": 0.20526990795364705,
+      "PATH_MATCH_WEIGHT": 0.22007624686980065,
+      "CLASS_DEF_WEIGHT": 0.048815293937911536,
+      "PRUNE_W_RETRIEVAL": 0.5002251410101575,
+      "PRUNE_W_QUERY_MATCH": 0.044044635904066216,
+      "PRUNE_W_FUNCTION": 0.9102271980579942,
+      "PRUNE_W_STRUCTURE": 0.26619218178401677
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.9,
+          "relevancy": 0.3333333333333333,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.8,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.7727272727272727,
+          "retrieval_precision": 0.8,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.8,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.8333333333333334,
+          "relevancy": 0.625,
+          "retrieval_precision": 0.8,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.5,
+          "relevancy": 0.21518987341772153,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.5,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 5,
+    "values": {
+      "precision_at_k": 0.45,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.6583333333333333,
+      "relevancy": 0.5874542124542125
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.6658970615104421,
+      "FINAL_W_PROXIMITY": 0.31859396532851686,
+      "FINAL_W_FUNCTION": 0.5248673409660327,
+      "FINAL_W_SYMBOL": 0.5512431765498469,
+      "DENSE_WEIGHT": 0.19242722776276353,
+      "BM25_WEIGHT": 0.39087538832936763,
+      "EXACT_WEIGHT": 0.28253984700833434,
+      "KEYWORD_WEIGHT": 0.18789978831283782,
+      "SOURCE_WEIGHT": 0.26844820512829465,
+      "PATH_MATCH_WEIGHT": 0.29894998940554257,
+      "CLASS_DEF_WEIGHT": 0.36874969400924673,
+      "PRUNE_W_RETRIEVAL": 0.0976075770314003,
+      "PRUNE_W_QUERY_MATCH": 0.20402303379495376,
+      "PRUNE_W_FUNCTION": 0.054775016021432685,
+      "PRUNE_W_STRUCTURE": 0.3320770274556317
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.8333333333333334,
+          "relevancy": 0.5333333333333333,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.8,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.5,
+          "relevancy": 0.8,
+          "retrieval_precision": 0.8,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.6,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.8,
+          "relevancy": 0.7857142857142857,
+          "retrieval_precision": 0.6,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.5,
+          "relevancy": 0.23076923076923078,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.45,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 6,
+    "values": {
+      "precision_at_k": 0.35000000000000003,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.90625,
+      "relevancy": 0.3638053467000835
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.3947905167925872,
+      "FINAL_W_PROXIMITY": 0.27863554145615693,
+      "FINAL_W_FUNCTION": 0.83045013406041,
+      "FINAL_W_SYMBOL": 0.3631857934266534,
+      "DENSE_WEIGHT": 0.2404672548436904,
+      "BM25_WEIGHT": 0.2628088249474746,
+      "EXACT_WEIGHT": 0.09227726749242879,
+      "KEYWORD_WEIGHT": 0.16043939615080793,
+      "SOURCE_WEIGHT": 0.022365193103931248,
+      "PATH_MATCH_WEIGHT": 0.49344346830025865,
+      "CLASS_DEF_WEIGHT": 0.308897907718663,
+      "PRUNE_W_RETRIEVAL": 0.2067285247188307,
+      "PRUNE_W_QUERY_MATCH": 0.015466895952366375,
+      "PRUNE_W_FUNCTION": 0.8173068141702858,
+      "PRUNE_W_STRUCTURE": 0.7097887704091409
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.5333333333333333,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.4444444444444444,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.8,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.625,
+          "relevancy": 0.2631578947368421,
+          "retrieval_precision": 0.8,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.21428571428571427,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.35000000000000003,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 7,
+    "values": {
+      "precision_at_k": 0.5125,
+      "recall_at_k": 0.75,
+      "faithfulness": 0.7916666666666666,
+      "relevancy": 0.27707509881422926
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.7317170963605775,
+      "FINAL_W_PROXIMITY": 0.7735576432190863,
+      "FINAL_W_FUNCTION": 0.08330420521674946,
+      "FINAL_W_SYMBOL": 0.3648810712588299,
+      "DENSE_WEIGHT": 0.15793452976256486,
+      "BM25_WEIGHT": 0.35893102776267805,
+      "EXACT_WEIGHT": 0.2369894380482674,
+      "KEYWORD_WEIGHT": 0.06617960497052984,
+      "SOURCE_WEIGHT": 0.01906750508580709,
+      "PATH_MATCH_WEIGHT": 0.1554911608578311,
+      "CLASS_DEF_WEIGHT": 0.13007332881069883,
+      "PRUNE_W_RETRIEVAL": 0.7323101165546835,
+      "PRUNE_W_QUERY_MATCH": 0.641181896641661,
+      "PRUNE_W_FUNCTION": 0.8883406151505633,
+      "PRUNE_W_STRUCTURE": 0.4774927759103298
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.0,
+          "recall_at_k": 0.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.09090909090909091,
+          "retrieval_precision": 0.0,
+          "retrieval_recall": 0.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.8,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.8,
+          "retrieval_precision": 0.8,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.21739130434782608,
+          "retrieval_precision": 1.0,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.25,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.16666666666666666,
+          "relevancy": 0.0,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.5,
+      "retrieval_recall": 0.75
+    }
+  },
+  {
+    "trial": 8,
+    "values": {
+      "precision_at_k": 0.30000000000000004,
+      "recall_at_k": 0.75,
+      "faithfulness": 0.6971153846153846,
+      "relevancy": 0.23899711399711399
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.12839830347891867,
+      "FINAL_W_PROXIMITY": 0.716112339350765,
+      "FINAL_W_FUNCTION": 0.7631771981307285,
+      "FINAL_W_SYMBOL": 0.5656644255938013,
+      "DENSE_WEIGHT": 0.48548358997728047,
+      "BM25_WEIGHT": 0.24813867890931726,
+      "EXACT_WEIGHT": 0.2068198488145982,
+      "KEYWORD_WEIGHT": 0.08550820367170993,
+      "SOURCE_WEIGHT": 0.007625738023228556,
+      "PATH_MATCH_WEIGHT": 0.053945713496652226,
+      "CLASS_DEF_WEIGHT": 0.012571674274693702,
+      "PRUNE_W_RETRIEVAL": 0.6400463071511426,
+      "PRUNE_W_QUERY_MATCH": 0.32121242126556343,
+      "PRUNE_W_FUNCTION": 0.5134849842530558,
+      "PRUNE_W_STRUCTURE": 0.9084908091868321
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.0,
+          "recall_at_k": 0.0,
+          "faithfulness": 0.5384615384615384,
+          "relevancy": 0.0,
+          "retrieval_precision": 0.0,
+          "retrieval_recall": 0.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.25,
+          "relevancy": 0.5,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.8,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.09090909090909091,
+          "retrieval_precision": 0.8,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.36507936507936506,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.30000000000000004,
+      "retrieval_recall": 0.75
+    }
+  },
+  {
+    "trial": 9,
+    "values": {
+      "precision_at_k": 0.425,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.84375,
+      "relevancy": 0.36176470588235293
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.25679930685738617,
+      "FINAL_W_PROXIMITY": 0.41627909380527345,
+      "FINAL_W_FUNCTION": 0.7579956271576181,
+      "FINAL_W_SYMBOL": 0.23651018383670624,
+      "DENSE_WEIGHT": 0.1384899549143965,
+      "BM25_WEIGHT": 0.1869254358741304,
+      "EXACT_WEIGHT": 0.09836638617620133,
+      "KEYWORD_WEIGHT": 0.18593953046851464,
+      "SOURCE_WEIGHT": 0.24243611386932507,
+      "PATH_MATCH_WEIGHT": 0.31670187825521173,
+      "CLASS_DEF_WEIGHT": 0.3485842360750871,
+      "PRUNE_W_RETRIEVAL": 0.8056353561301233,
+      "PRUNE_W_QUERY_MATCH": 0.1947043582971755,
+      "PRUNE_W_FUNCTION": 0.893633408505078,
+      "PRUNE_W_STRUCTURE": 0.5439488194964942
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.375,
+          "relevancy": 0.5333333333333333,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.25,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.5,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.14705882352941177,
+          "retrieval_precision": 1.0,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.25,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.26666666666666666,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.4,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 10,
+    "values": {
+      "precision_at_k": 0.3,
+      "recall_at_k": 0.5,
+      "faithfulness": 0.8791666666666667,
+      "relevancy": 0.08155080213903743
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.8093657536124219,
+      "FINAL_W_PROXIMITY": 0.8971303869242583,
+      "FINAL_W_FUNCTION": 0.32482344022214527,
+      "FINAL_W_SYMBOL": 0.11895140528239999,
+      "DENSE_WEIGHT": 0.21396758127097085,
+      "BM25_WEIGHT": 0.2281323365878769,
+      "EXACT_WEIGHT": 0.2954044297767479,
+      "KEYWORD_WEIGHT": 0.1721461166512687,
+      "SOURCE_WEIGHT": 0.002085639159357211,
+      "PATH_MATCH_WEIGHT": 0.25537365128878287,
+      "CLASS_DEF_WEIGHT": 0.16696440125951162,
+      "PRUNE_W_RETRIEVAL": 0.22988673236602294,
+      "PRUNE_W_QUERY_MATCH": 0.128666713660346,
+      "PRUNE_W_FUNCTION": 0.3442390196895917,
+      "PRUNE_W_STRUCTURE": 0.943480606873394
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.0,
+          "recall_at_k": 0.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.09090909090909091,
+          "retrieval_precision": 0.0,
+          "retrieval_recall": 0.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.9166666666666666,
+          "relevancy": 0.23529411764705882,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.6,
+          "relevancy": 0.0,
+          "retrieval_precision": 1.0,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.0,
+          "recall_at_k": 0.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.0,
+          "retrieval_precision": 0.0,
+          "retrieval_recall": 0.0
+        }
+      ],
+      "retrieval_precision": 0.3,
+      "retrieval_recall": 0.5
+    }
+  },
+  {
+    "trial": 11,
+    "values": {
+      "precision_at_k": 0.45,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.6878205128205128,
+      "relevancy": 0.4951923076923077
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.963535276245701,
+      "FINAL_W_PROXIMITY": 0.015937211126258954,
+      "FINAL_W_FUNCTION": 0.9698417396799871,
+      "FINAL_W_SYMBOL": 0.9356370707590099,
+      "DENSE_WEIGHT": 0.5883832207856136,
+      "BM25_WEIGHT": 0.32075834426691374,
+      "EXACT_WEIGHT": 0.15839359893254282,
+      "KEYWORD_WEIGHT": 0.003184646026588661,
+      "SOURCE_WEIGHT": 0.10043855286697084,
+      "PATH_MATCH_WEIGHT": 0.006155584782468665,
+      "CLASS_DEF_WEIGHT": 0.18797823672166492,
+      "PRUNE_W_RETRIEVAL": 0.5150336280608598,
+      "PRUNE_W_QUERY_MATCH": 0.5082472740600948,
+      "PRUNE_W_FUNCTION": 0.640606890787895,
+      "PRUNE_W_STRUCTURE": 0.726209283826823
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.8666666666666667,
+          "relevancy": 0.5333333333333333,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.8,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.5,
+          "relevancy": 0.8,
+          "retrieval_precision": 0.8,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.6,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.7692307692307693,
+          "relevancy": 0.4166666666666667,
+          "retrieval_precision": 0.6,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.6153846153846154,
+          "relevancy": 0.23076923076923078,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.45,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 12,
+    "values": {
+      "precision_at_k": 0.45,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.7658730158730158,
+      "relevancy": 0.4951923076923077
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.6233386037022631,
+      "FINAL_W_PROXIMITY": 0.0205108159763793,
+      "FINAL_W_FUNCTION": 0.46515492866496144,
+      "FINAL_W_SYMBOL": 0.9218685950629938,
+      "DENSE_WEIGHT": 0.35477194981233007,
+      "BM25_WEIGHT": 0.390674177355721,
+      "EXACT_WEIGHT": 0.3485478697918416,
+      "KEYWORD_WEIGHT": 0.12181477268674894,
+      "SOURCE_WEIGHT": 0.2826411095748712,
+      "PATH_MATCH_WEIGHT": 0.1776488777734888,
+      "CLASS_DEF_WEIGHT": 0.3946543956700056,
+      "PRUNE_W_RETRIEVAL": 0.015783094378108833,
+      "PRUNE_W_QUERY_MATCH": 0.40365042231914694,
+      "PRUNE_W_FUNCTION": 0.5239097910488903,
+      "PRUNE_W_STRUCTURE": 0.35475874337322943
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.7777777777777778,
+          "relevancy": 0.5333333333333333,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.8,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.8,
+          "retrieval_precision": 0.8,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.6,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.4166666666666667,
+          "retrieval_precision": 0.6,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.2857142857142857,
+          "relevancy": 0.23076923076923078,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.45,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 13,
+    "values": {
+      "precision_at_k": 0.45,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.9436274509803921,
+      "relevancy": 0.46364468864468866
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.5859063479896833,
+      "FINAL_W_PROXIMITY": 0.48103227971079765,
+      "FINAL_W_FUNCTION": 0.5019276964481176,
+      "FINAL_W_SYMBOL": 0.7560118447186488,
+      "DENSE_WEIGHT": 0.300477984841022,
+      "BM25_WEIGHT": 0.39965704067153207,
+      "EXACT_WEIGHT": 0.14927385254204445,
+      "KEYWORD_WEIGHT": 0.006396259299802587,
+      "SOURCE_WEIGHT": 0.29792478102743736,
+      "PATH_MATCH_WEIGHT": 0.2080157334586989,
+      "CLASS_DEF_WEIGHT": 0.08270404671070675,
+      "PRUNE_W_RETRIEVAL": 0.0458753112386982,
+      "PRUNE_W_QUERY_MATCH": 0.03152977704702245,
+      "PRUNE_W_FUNCTION": 0.6922642647550137,
+      "PRUNE_W_STRUCTURE": 0.3276416768336189
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.35714285714285715,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.8,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.85,
+          "retrieval_precision": 0.8,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.6,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.8333333333333334,
+          "relevancy": 0.4166666666666667,
+          "retrieval_precision": 0.6,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.9411764705882353,
+          "relevancy": 0.23076923076923078,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.45,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 14,
+    "values": {
+      "precision_at_k": 0.5125,
+      "recall_at_k": 0.75,
+      "faithfulness": 0.84375,
+      "relevancy": 0.42467105263157895
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.56478671971977,
+      "FINAL_W_PROXIMITY": 0.5297756184451495,
+      "FINAL_W_FUNCTION": 0.01324858362460337,
+      "FINAL_W_SYMBOL": 0.7990739762399082,
+      "DENSE_WEIGHT": 0.3035772888207072,
+      "BM25_WEIGHT": 0.32773778972862116,
+      "EXACT_WEIGHT": 0.1535437761986031,
+      "KEYWORD_WEIGHT": 0.000779166939424026,
+      "SOURCE_WEIGHT": 0.22450198497426083,
+      "PATH_MATCH_WEIGHT": 0.18062924765380112,
+      "CLASS_DEF_WEIGHT": 0.08729048979578505,
+      "PRUNE_W_RETRIEVAL": 0.3165890865960357,
+      "PRUNE_W_QUERY_MATCH": 0.01260952776610233,
+      "PRUNE_W_FUNCTION": 0.7242552914517936,
+      "PRUNE_W_STRUCTURE": 0.04275853161551038
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.0,
+          "recall_at_k": 0.0,
+          "faithfulness": 0.75,
+          "relevancy": 0.0,
+          "retrieval_precision": 0.0,
+          "retrieval_recall": 0.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.8,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.85,
+          "retrieval_precision": 0.8,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.625,
+          "relevancy": 0.625,
+          "retrieval_precision": 1.0,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.25,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.2236842105263158,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.5,
+      "retrieval_recall": 0.75
+    }
+  },
+  {
+    "trial": 15,
+    "values": {
+      "precision_at_k": 0.45,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.8263888888888888,
+      "relevancy": 0.4951923076923077
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.8291239628941262,
+      "FINAL_W_PROXIMITY": 0.21114317874793637,
+      "FINAL_W_FUNCTION": 0.4718042049319711,
+      "FINAL_W_SYMBOL": 0.778066320340581,
+      "DENSE_WEIGHT": 0.5907819905238256,
+      "BM25_WEIGHT": 0.33383297253267163,
+      "EXACT_WEIGHT": 0.27913109541454206,
+      "KEYWORD_WEIGHT": 0.03936786093509406,
+      "SOURCE_WEIGHT": 0.24370566550115383,
+      "PATH_MATCH_WEIGHT": 0.45122133309894596,
+      "CLASS_DEF_WEIGHT": 0.2294757870022368,
+      "PRUNE_W_RETRIEVAL": 0.46561722114303417,
+      "PRUNE_W_QUERY_MATCH": 0.41879046128201847,
+      "PRUNE_W_FUNCTION": 0.0762967252424378,
+      "PRUNE_W_STRUCTURE": 0.35684665168454466
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.75,
+          "relevancy": 0.5333333333333333,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.8,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.8,
+          "retrieval_precision": 0.8,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.6,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.5555555555555556,
+          "relevancy": 0.4166666666666667,
+          "retrieval_precision": 0.6,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.23076923076923078,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.45,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 16,
+    "values": {
+      "precision_at_k": 0.45,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.8611111111111112,
+      "relevancy": 0.4951923076923077
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.670089263259249,
+      "FINAL_W_PROXIMITY": 0.12692302915247594,
+      "FINAL_W_FUNCTION": 0.2888641493485011,
+      "FINAL_W_SYMBOL": 0.4349494083037173,
+      "DENSE_WEIGHT": 0.5078649186547715,
+      "BM25_WEIGHT": 0.3638798428836944,
+      "EXACT_WEIGHT": 0.3475791207219779,
+      "KEYWORD_WEIGHT": 0.12908931016110062,
+      "SOURCE_WEIGHT": 0.19967143427425904,
+      "PATH_MATCH_WEIGHT": 0.10913301914870158,
+      "CLASS_DEF_WEIGHT": 0.250291837121126,
+      "PRUNE_W_RETRIEVAL": 0.128794537032707,
+      "PRUNE_W_QUERY_MATCH": 0.20754529546806022,
+      "PRUNE_W_FUNCTION": 0.9965751480577292,
+      "PRUNE_W_STRUCTURE": 0.49621532937702895
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.7777777777777778,
+          "relevancy": 0.5333333333333333,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.8,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.8,
+          "retrieval_precision": 0.8,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.6,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.4166666666666667,
+          "retrieval_precision": 0.6,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.6666666666666666,
+          "relevancy": 0.23076923076923078,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.45,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 17,
+    "values": {
+      "precision_at_k": 0.475,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.7649305555555556,
+      "relevancy": 0.6182783719548426
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.9552119541936605,
+      "FINAL_W_PROXIMITY": 0.3815500168212127,
+      "FINAL_W_FUNCTION": 0.6247890171105521,
+      "FINAL_W_SYMBOL": 0.5076207168733025,
+      "DENSE_WEIGHT": 0.10751060581284363,
+      "BM25_WEIGHT": 0.2984755658008243,
+      "EXACT_WEIGHT": 0.2790324991458397,
+      "KEYWORD_WEIGHT": 0.1312388506637882,
+      "SOURCE_WEIGHT": 0.13391962884605133,
+      "PATH_MATCH_WEIGHT": 0.26721519814964073,
+      "CLASS_DEF_WEIGHT": 0.3826017928025867,
+      "PRUNE_W_RETRIEVAL": 0.6010742282890456,
+      "PRUNE_W_QUERY_MATCH": 0.12950231630635525,
+      "PRUNE_W_FUNCTION": 0.010782481830483838,
+      "PRUNE_W_STRUCTURE": 0.2783571710463866
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.9375,
+          "relevancy": 0.47058823529411764,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.8,
+          "relevancy": 0.8636363636363636,
+          "retrieval_precision": 1.0,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.5,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.3888888888888889,
+          "relevancy": 0.9166666666666666,
+          "retrieval_precision": 0.4,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.9333333333333333,
+          "relevancy": 0.2222222222222222,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.45,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 18,
+    "values": {
+      "precision_at_k": 0.5625,
+      "recall_at_k": 0.75,
+      "faithfulness": 0.7954545454545454,
+      "relevancy": 0.3342245989304813
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.9647219680143762,
+      "FINAL_W_PROXIMITY": 0.5697258142369351,
+      "FINAL_W_FUNCTION": 0.3263745619627898,
+      "FINAL_W_SYMBOL": 0.21505762817221463,
+      "DENSE_WEIGHT": 0.4065602269140455,
+      "BM25_WEIGHT": 0.296660425363493,
+      "EXACT_WEIGHT": 0.18235074229637507,
+      "KEYWORD_WEIGHT": 0.11477297233642596,
+      "SOURCE_WEIGHT": 0.09700222923732121,
+      "PATH_MATCH_WEIGHT": 0.24499776520741967,
+      "CLASS_DEF_WEIGHT": 0.0644259717994558,
+      "PRUNE_W_RETRIEVAL": 0.5572190440769562,
+      "PRUNE_W_QUERY_MATCH": 0.12084166496050674,
+      "PRUNE_W_FUNCTION": 0.4220161305732559,
+      "PRUNE_W_STRUCTURE": 0.051574071183804804
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.0,
+          "recall_at_k": 0.0,
+          "faithfulness": 0.18181818181818182,
+          "relevancy": 0.09090909090909091,
+          "retrieval_precision": 0.0,
+          "retrieval_recall": 0.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.8636363636363636,
+          "retrieval_precision": 1.0,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.14705882352941177,
+          "retrieval_precision": 1.0,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.25,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.23529411764705882,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.55,
+      "retrieval_recall": 0.75
+    }
+  },
+  {
+    "trial": 19,
+    "values": {
+      "precision_at_k": 0.4,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.7375,
+      "relevancy": 0.4396250808015514
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.028129076109606244,
+      "FINAL_W_PROXIMITY": 0.4037985149046278,
+      "FINAL_W_FUNCTION": 0.6303342989000634,
+      "FINAL_W_SYMBOL": 0.9929403919402106,
+      "DENSE_WEIGHT": 0.10719696014663838,
+      "BM25_WEIGHT": 0.21076752840244534,
+      "EXACT_WEIGHT": 0.11387887023094803,
+      "KEYWORD_WEIGHT": 0.041393112791384315,
+      "SOURCE_WEIGHT": 0.13654894053089112,
+      "PATH_MATCH_WEIGHT": 0.4167946710910203,
+      "CLASS_DEF_WEIGHT": 0.3287387432323946,
+      "PRUNE_W_RETRIEVAL": 0.6562890611724437,
+      "PRUNE_W_QUERY_MATCH": 0.9656893646511513,
+      "PRUNE_W_FUNCTION": 0.34300069377432224,
+      "PRUNE_W_STRUCTURE": 0.23940956889695542
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.7,
+          "relevancy": 0.47058823529411764,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.6,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.7,
+          "retrieval_precision": 0.6,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.6,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.35714285714285715,
+          "retrieval_precision": 0.6,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.25,
+          "relevancy": 0.23076923076923078,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.4,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 20,
+    "values": {
+      "precision_at_k": 0.275,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.81875,
+      "relevancy": 0.5361111111111111
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.8483475020447995,
+      "FINAL_W_PROXIMITY": 0.1128924348606809,
+      "FINAL_W_FUNCTION": 0.9328007523940685,
+      "FINAL_W_SYMBOL": 0.6824190438733307,
+      "DENSE_WEIGHT": 0.5179134585116849,
+      "BM25_WEIGHT": 0.107124374451288,
+      "EXACT_WEIGHT": 0.3022426019910434,
+      "KEYWORD_WEIGHT": 0.0349346655231306,
+      "SOURCE_WEIGHT": 0.06496362618670148,
+      "PATH_MATCH_WEIGHT": 0.10011003542796702,
+      "CLASS_DEF_WEIGHT": 0.21288512315628288,
+      "PRUNE_W_RETRIEVAL": 0.8301495667622258,
+      "PRUNE_W_QUERY_MATCH": 0.3224299952763547,
+      "PRUNE_W_FUNCTION": 0.5995000092408261,
+      "PRUNE_W_STRUCTURE": 0.6462302414886113
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.875,
+          "relevancy": 0.5333333333333333,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.4444444444444444,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.5,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.9166666666666666,
+          "retrieval_precision": 0.4,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.4,
+          "relevancy": 0.25,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.25,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 21,
+    "values": {
+      "precision_at_k": 0.5125000000000001,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.6220238095238095,
+      "relevancy": 0.41890497520396736
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.4943898536831568,
+      "FINAL_W_PROXIMITY": 0.569914407266037,
+      "FINAL_W_FUNCTION": 0.5958832873327174,
+      "FINAL_W_SYMBOL": 0.7518982801233428,
+      "DENSE_WEIGHT": 0.2863383890376079,
+      "BM25_WEIGHT": 0.3052879863926118,
+      "EXACT_WEIGHT": 0.2583288759910501,
+      "KEYWORD_WEIGHT": 0.14485992001234088,
+      "SOURCE_WEIGHT": 0.29443408320158804,
+      "PATH_MATCH_WEIGHT": 0.27316550761702674,
+      "CLASS_DEF_WEIGHT": 0.12903837162634035,
+      "PRUNE_W_RETRIEVAL": 0.3654730287134616,
+      "PRUNE_W_QUERY_MATCH": 0.11220425843335072,
+      "PRUNE_W_FUNCTION": 0.01616679289275552,
+      "PRUNE_W_STRUCTURE": 0.4202868805294276
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.5714285714285714,
+          "relevancy": 0.35714285714285715,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.8,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.8,
+          "retrieval_precision": 0.8,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.8,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.0,
+          "relevancy": 0.2631578947368421,
+          "retrieval_precision": 0.8,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.25,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.9166666666666666,
+          "relevancy": 0.2553191489361702,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.5,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 22,
+    "values": {
+      "precision_at_k": 0.4,
+      "recall_at_k": 0.75,
+      "faithfulness": 0.5686147186147186,
+      "relevancy": 0.3822052947052947
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.5333299801354402,
+      "FINAL_W_PROXIMITY": 0.4566499743338808,
+      "FINAL_W_FUNCTION": 0.2087266203424848,
+      "FINAL_W_SYMBOL": 0.8658725819695243,
+      "DENSE_WEIGHT": 0.283675118973579,
+      "BM25_WEIGHT": 0.36129027657364204,
+      "EXACT_WEIGHT": 0.13388038856453455,
+      "KEYWORD_WEIGHT": 0.02167834030057464,
+      "SOURCE_WEIGHT": 0.14513412738425563,
+      "PATH_MATCH_WEIGHT": 0.21940229376611758,
+      "CLASS_DEF_WEIGHT": 0.0634698036942187,
+      "PRUNE_W_RETRIEVAL": 0.5905704997080219,
+      "PRUNE_W_QUERY_MATCH": 0.01609487585148904,
+      "PRUNE_W_FUNCTION": 0.7574342509563281,
+      "PRUNE_W_STRUCTURE": 0.27120848191389685
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.0,
+          "recall_at_k": 0.0,
+          "faithfulness": 0.0,
+          "relevancy": 0.09090909090909091,
+          "retrieval_precision": 0.0,
+          "retrieval_recall": 0.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.8,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.9047619047619048,
+          "relevancy": 0.85,
+          "retrieval_precision": 0.8,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.6,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.6363636363636364,
+          "relevancy": 0.35714285714285715,
+          "retrieval_precision": 0.6,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.7333333333333333,
+          "relevancy": 0.23076923076923078,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.4,
+      "retrieval_recall": 0.75
+    }
+  },
+  {
+    "trial": 23,
+    "values": {
+      "precision_at_k": 0.45,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.5447368421052632,
+      "relevancy": 0.4920060331825038
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.7508866475482046,
+      "FINAL_W_PROXIMITY": 0.36725427994548543,
+      "FINAL_W_FUNCTION": 0.4282219666784316,
+      "FINAL_W_SYMBOL": 0.8730015345017685,
+      "DENSE_WEIGHT": 0.35628710233402316,
+      "BM25_WEIGHT": 0.3470613978294209,
+      "EXACT_WEIGHT": 0.1893621997184449,
+      "KEYWORD_WEIGHT": 0.0624571761572319,
+      "SOURCE_WEIGHT": 0.20607415412282132,
+      "PATH_MATCH_WEIGHT": 0.21549072628471297,
+      "CLASS_DEF_WEIGHT": 0.1008083088400542,
+      "PRUNE_W_RETRIEVAL": 0.4507487494586246,
+      "PRUNE_W_QUERY_MATCH": 0.10332833094385128,
+      "PRUNE_W_FUNCTION": 0.9507190284429528,
+      "PRUNE_W_STRUCTURE": 0.12773036501495466
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.5789473684210527,
+          "relevancy": 0.47058823529411764,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.8,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.0,
+          "relevancy": 0.85,
+          "retrieval_precision": 0.8,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.6,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.4166666666666667,
+          "retrieval_precision": 0.6,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.6,
+          "relevancy": 0.23076923076923078,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.45,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 24,
+    "values": {
+      "precision_at_k": 0.5,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.7446428571428572,
+      "relevancy": 0.4536288402000476
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.2508045634775492,
+      "FINAL_W_PROXIMITY": 0.4821028998981221,
+      "FINAL_W_FUNCTION": 0.6238175075763395,
+      "FINAL_W_SYMBOL": 0.6887786110216101,
+      "DENSE_WEIGHT": 0.44419815570318066,
+      "BM25_WEIGHT": 0.38336373952966013,
+      "EXACT_WEIGHT": 0.1584481339243885,
+      "KEYWORD_WEIGHT": 0.018265858150784766,
+      "SOURCE_WEIGHT": 0.16855494637138954,
+      "PATH_MATCH_WEIGHT": 0.12634781942523424,
+      "CLASS_DEF_WEIGHT": 0.03783903540646766,
+      "PRUNE_W_RETRIEVAL": 0.26844919322925814,
+      "PRUNE_W_QUERY_MATCH": 0.08366265439922532,
+      "PRUNE_W_FUNCTION": 0.6848863880818936,
+      "PRUNE_W_STRUCTURE": 0.2730855750409071
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.9285714285714286,
+          "relevancy": 0.47058823529411764,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.8,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.75,
+          "relevancy": 0.85,
+          "retrieval_precision": 0.8,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.8,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.8,
+          "relevancy": 0.2631578947368421,
+          "retrieval_precision": 0.8,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.5,
+          "relevancy": 0.23076923076923078,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.5,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 25,
+    "values": {
+      "precision_at_k": 0.45,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.9166666666666666,
+      "relevancy": 0.4951923076923077
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.9151921622534379,
+      "FINAL_W_PROXIMITY": 0.18690969330760215,
+      "FINAL_W_FUNCTION": 0.4033806682949342,
+      "FINAL_W_SYMBOL": 0.4587408010642691,
+      "DENSE_WEIGHT": 0.36116489734850177,
+      "BM25_WEIGHT": 0.30304975850615135,
+      "EXACT_WEIGHT": 0.12353950364432467,
+      "KEYWORD_WEIGHT": 0.09538879448754434,
+      "SOURCE_WEIGHT": 0.10461575657334723,
+      "PATH_MATCH_WEIGHT": 0.20500050082771293,
+      "CLASS_DEF_WEIGHT": 0.14213806413377017,
+      "PRUNE_W_RETRIEVAL": 0.7741918328343507,
+      "PRUNE_W_QUERY_MATCH": 0.2887302647124196,
+      "PRUNE_W_FUNCTION": 0.824755791189501,
+      "PRUNE_W_STRUCTURE": 0.42360256074513347
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.5333333333333333,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 0.8,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.8,
+          "retrieval_precision": 0.8,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.6,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.4166666666666667,
+          "retrieval_precision": 0.6,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.6666666666666666,
+          "relevancy": 0.23076923076923078,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.45,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 26,
+    "values": {
+      "precision_at_k": 0.45,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.725,
+      "relevancy": 0.42915064102564104
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.9107376280223556,
+      "FINAL_W_PROXIMITY": 0.1823130884621838,
+      "FINAL_W_FUNCTION": 0.3809487274052637,
+      "FINAL_W_SYMBOL": 0.4650068756885546,
+      "DENSE_WEIGHT": 0.5514453482891761,
+      "BM25_WEIGHT": 0.2857850457830209,
+      "EXACT_WEIGHT": 0.12293519451643922,
+      "KEYWORD_WEIGHT": 0.10321619881904572,
+      "SOURCE_WEIGHT": 0.08235514175057128,
+      "PATH_MATCH_WEIGHT": 0.3767735907977774,
+      "CLASS_DEF_WEIGHT": 0.1628789559326869,
+      "PRUNE_W_RETRIEVAL": 0.7362598513246724,
+      "PRUNE_W_QUERY_MATCH": 0.32234712590669823,
+      "PRUNE_W_FUNCTION": 0.8010854163842898,
+      "PRUNE_W_STRUCTURE": 0.4489515597183798
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.5333333333333333,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.0,
+          "relevancy": 0.64,
+          "retrieval_precision": 1.0,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.4,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.3125,
+          "retrieval_precision": 0.4,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.9,
+          "relevancy": 0.23076923076923078,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.45,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 27,
+    "values": {
+      "precision_at_k": 0.55,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.8285024154589372,
+      "relevancy": 0.4505594405594406
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.911924519826869,
+      "FINAL_W_PROXIMITY": 0.1229213638159238,
+      "FINAL_W_FUNCTION": 0.17931374171251757,
+      "FINAL_W_SYMBOL": 0.2779406492009744,
+      "DENSE_WEIGHT": 0.3582645056039373,
+      "BM25_WEIGHT": 0.31944226208389825,
+      "EXACT_WEIGHT": 0.05336896646104676,
+      "KEYWORD_WEIGHT": 0.14220635793143668,
+      "SOURCE_WEIGHT": 0.11770092234411822,
+      "PATH_MATCH_WEIGHT": 0.28155862076214244,
+      "CLASS_DEF_WEIGHT": 0.265350421658476,
+      "PRUNE_W_RETRIEVAL": 0.8597333090973284,
+      "PRUNE_W_QUERY_MATCH": 0.4703196219662509,
+      "PRUNE_W_FUNCTION": 0.867411501699872,
+      "PRUNE_W_STRUCTURE": 0.614438908384211
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.4444444444444444,
+          "relevancy": 0.4,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.64,
+          "retrieval_precision": 1.0,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.6,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.8695652173913043,
+          "relevancy": 0.45454545454545453,
+          "retrieval_precision": 0.6,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.4,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.3076923076923077,
+          "retrieval_precision": 0.4,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.55,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 28,
+    "values": {
+      "precision_at_k": 0.475,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.7135416666666666,
+      "relevancy": 0.567964135021097
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.9962857159216469,
+      "FINAL_W_PROXIMITY": 0.10470529947859018,
+      "FINAL_W_FUNCTION": 0.20300965598794096,
+      "FINAL_W_SYMBOL": 0.28204855672268936,
+      "DENSE_WEIGHT": 0.34196303843608034,
+      "BM25_WEIGHT": 0.265311154023132,
+      "EXACT_WEIGHT": 0.06003031049266029,
+      "KEYWORD_WEIGHT": 0.14174881113361892,
+      "SOURCE_WEIGHT": 0.051002440165069676,
+      "PATH_MATCH_WEIGHT": 0.2694197677742733,
+      "CLASS_DEF_WEIGHT": 0.27813782810083404,
+      "PRUNE_W_RETRIEVAL": 0.872940797307495,
+      "PRUNE_W_QUERY_MATCH": 0.5731295228694641,
+      "PRUNE_W_FUNCTION": 0.8324599541870238,
+      "PRUNE_W_STRUCTURE": 0.5601897239873175
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.3333333333333333,
+          "relevancy": 0.5,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.64,
+          "retrieval_precision": 1.0,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.5,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.6875,
+          "relevancy": 0.9166666666666666,
+          "retrieval_precision": 0.4,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.8333333333333334,
+          "relevancy": 0.21518987341772153,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.45,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 29,
+    "values": {
+      "precision_at_k": 0.5875,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.6547619047619048,
+      "relevancy": 0.6442245030954709
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.8935150540223353,
+      "FINAL_W_PROXIMITY": 0.34406621664999093,
+      "FINAL_W_FUNCTION": 0.24272710869042574,
+      "FINAL_W_SYMBOL": 0.033813639709315224,
+      "DENSE_WEIGHT": 0.2516486609550424,
+      "BM25_WEIGHT": 0.31267778799480817,
+      "EXACT_WEIGHT": 0.050435003537826095,
+      "KEYWORD_WEIGHT": 0.10189910716799692,
+      "SOURCE_WEIGHT": 0.11740922974587498,
+      "PATH_MATCH_WEIGHT": 0.2814524646823445,
+      "CLASS_DEF_WEIGHT": 0.39859198803722745,
+      "PRUNE_W_RETRIEVAL": 0.727960711477649,
+      "PRUNE_W_QUERY_MATCH": 0.46306480723782484,
+      "PRUNE_W_FUNCTION": 0.5595198036824962,
+      "PRUNE_W_STRUCTURE": 0.8337203601120308
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.6666666666666666,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.8636363636363636,
+          "retrieval_precision": 1.0,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.75,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.2857142857142857,
+          "relevancy": 0.6111111111111112,
+          "retrieval_precision": 0.6,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.4,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.3333333333333333,
+          "relevancy": 0.43548387096774194,
+          "retrieval_precision": 0.4,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.55,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 30,
+    "values": {
+      "precision_at_k": 0.55,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.975,
+      "relevancy": 0.45338080168776373
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.7530428369929955,
+      "FINAL_W_PROXIMITY": 0.25265120165519683,
+      "FINAL_W_FUNCTION": 0.13205591969245423,
+      "FINAL_W_SYMBOL": 0.4727567681873189,
+      "DENSE_WEIGHT": 0.40425533524322516,
+      "BM25_WEIGHT": 0.2787753549331606,
+      "EXACT_WEIGHT": 0.09039715766373771,
+      "KEYWORD_WEIGHT": 0.14600845538260215,
+      "SOURCE_WEIGHT": 0.1269797639910158,
+      "PATH_MATCH_WEIGHT": 0.3346590980116213,
+      "CLASS_DEF_WEIGHT": 0.2866743432540275,
+      "PRUNE_W_RETRIEVAL": 0.8982367019185571,
+      "PRUNE_W_QUERY_MATCH": 0.6351253786369683,
+      "PRUNE_W_FUNCTION": 0.1556393215356677,
+      "PRUNE_W_STRUCTURE": 0.621221559757215
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.3333333333333333,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.64,
+          "retrieval_precision": 1.0,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.8,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.625,
+          "retrieval_precision": 0.8,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.9,
+          "relevancy": 0.21518987341772153,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.55,
+      "retrieval_recall": 1.0
+    }
+  },
+  {
+    "trial": 31,
+    "values": {
+      "precision_at_k": 0.6875,
+      "recall_at_k": 1.0,
+      "faithfulness": 0.7846153846153846,
+      "relevancy": 0.45861111111111114
+    },
+    "params": {
+      "FINAL_W_HYBRID": 0.7473901526512859,
+      "FINAL_W_PROXIMITY": 0.2725134312463603,
+      "FINAL_W_FUNCTION": 0.148263873233751,
+      "FINAL_W_SYMBOL": 0.06639394520763853,
+      "DENSE_WEIGHT": 0.23870546734973166,
+      "BM25_WEIGHT": 0.23964232239497896,
+      "EXACT_WEIGHT": 0.09464551836324037,
+      "KEYWORD_WEIGHT": 0.10272743706456222,
+      "SOURCE_WEIGHT": 0.14538093817544662,
+      "PATH_MATCH_WEIGHT": 0.34224389017156204,
+      "CLASS_DEF_WEIGHT": 0.3910871680104816,
+      "PRUNE_W_RETRIEVAL": 0.8974141101378393,
+      "PRUNE_W_QUERY_MATCH": 0.68949649161074,
+      "PRUNE_W_FUNCTION": 0.14428882768220935,
+      "PRUNE_W_STRUCTURE": 0.8471028927002733
+    },
+    "user_attrs": {
+      "n_queries_ok": 4,
+      "per_query": [
+        {
+          "query": "How does create_app work in this Superset codebase? Name files and functions you",
+          "precision_at_k": 0.2,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.3333333333333333,
+          "retrieval_precision": 0.2,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: ",
+          "precision_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.6,
+          "relevancy": 0.64,
+          "retrieval_precision": 1.0,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: What is the difference between Query and SavedQuery models i",
+          "precision_at_k": 0.75,
+          "recall_at_k": 1.0,
+          "faithfulness": 0.5384615384615384,
+          "relevancy": 0.6111111111111112,
+          "retrieval_precision": 0.6,
+          "retrieval_recall": 1.0
+        },
+        {
+          "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app",
+          "precision_at_k": 0.8,
+          "recall_at_k": 1.0,
+          "faithfulness": 1.0,
+          "relevancy": 0.25,
+          "retrieval_precision": 0.8,
+          "retrieval_recall": 1.0
+        }
+      ],
+      "retrieval_precision": 0.65,
+      "retrieval_recall": 1.0
+    }
+  }
+]

@@ -192,12 +192,24 @@ def measure_contextual_relevancy_only(query: str, retrieve_ctx: list[str]) -> di
 
 
 def metric_result(metric: Any, stage: str) -> dict[str, Any]:
-    return {
+    row = {
         "score": getattr(metric, "score", None),
         "success": getattr(metric, "success", None),
         "reason": getattr(metric, "reason", None),
         "stage": stage,
     }
+    # Sanity counts: faithfulness exposes these, other metrics simply lack them.
+    for attr in ("truths", "claims", "verdicts"):
+        val = getattr(metric, attr, None)
+        if isinstance(val, list):
+            row[f"n_{attr}"] = len(val)
+    verdicts = getattr(metric, "verdicts", None)
+    if isinstance(verdicts, list):
+        row["verdict_counts"] = {
+            v: sum(1 for x in verdicts if str(getattr(x, "verdict", "")).strip().lower() == v)
+            for v in ("yes", "no", "idk")
+        }
+    return row
 
 
 def _default_judge_ollama_model() -> str:
@@ -233,8 +245,8 @@ def _ensure_deepeval_judge_timeouts() -> None:
     DeepEval defaults (~90s per Ollama call) are too tight for slow local judges (CPU Qwen).
     Only sets env if unset so production can override.
     """
-    os.environ.setdefault("DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE", "300")
-    os.environ.setdefault("DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE", "1800")
+    os.environ.setdefault("DEEPEVAL_PER_ATTEMPT_TIMEOUT_SECONDS_OVERRIDE", "900")
+    os.environ.setdefault("DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE", "3600")
     try:
         from deepeval.config.settings import reset_settings
 
@@ -363,7 +375,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     if metric_names:
         result["judge_model"] = judge().get_model_name()
 
-    if "contextual_relevancy" in metric_names:
+    if "contextual_relevancy" in metric_names and not getattr(
+        args, "skip_retrieval_relevancy", False
+    ):
         from deepeval.metrics import ContextualRelevancyMetric
         from deepeval.test_case import LLMTestCase
 
@@ -478,7 +492,8 @@ def main() -> None:
         help=(
             "Comma-separated: faithfulness, contextual_relevancy, answer_relevancy, hallucination. "
             "Use 'none' to skip all DeepEval judge metrics (e.g. only precision/recall with --relevant-file). "
-            "contextual_relevancy runs twice (on retrieved vs pruned bundles) when not --skip-generate."
+            "contextual_relevancy runs twice (on retrieved vs pruned bundles) when not --skip-generate "
+            "(use --skip-retrieval-relevancy to keep only the pruned-stage pass)."
         ),
     )
     parser.add_argument(
@@ -495,6 +510,11 @@ def main() -> None:
         "--skip-generate",
         action="store_true",
         help="Only score retrieval with contextual_relevancy (no Ollama answer or post-generate metrics).",
+    )
+    parser.add_argument(
+        "--skip-retrieval-relevancy",
+        action="store_true",
+        help="Skip the pre-generation contextual_relevancy pass on retrieved chunks.",
     )
     parser.add_argument(
         "--compact-json",
