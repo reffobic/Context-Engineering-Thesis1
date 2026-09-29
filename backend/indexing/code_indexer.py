@@ -866,11 +866,17 @@ class CodeIndexer:
     # ── stats ─────────────────────────────────────────────────────────────────
     def index_stats(self) -> dict:
         total   = self.collection.count()
-        results = self.collection.get(include=["metadatas"])
         langs, types = {}, {}
-        for m in results.get("metadatas", []):
-            l = m.get("language",   "?"); langs[l]  = langs.get(l,  0) + 1
-            t = m.get("chunk_type", "?"); types[t]  = types.get(t,  0) + 1
+        batch_size = 2000
+        for offset in range(0, total, batch_size):
+            try:
+                batch = self.collection.get(include=["metadatas"], limit=batch_size, offset=offset)
+                for m in batch.get("metadatas", []):
+                    l = m.get("language",   "?"); langs[l]  = langs.get(l,  0) + 1
+                    t = m.get("chunk_type", "?"); types[t]  = types.get(t,  0) + 1
+            except Exception as exc:
+                logger.warning("index_stats: batch get failed at offset %d: %s", offset, exc)
+                break
         return {
             "total_chunks":  total,
             "by_language":   langs,
