@@ -736,7 +736,7 @@ def _run_pipeline_streaming(
             yield _sse({"event": "done", "output": f"[Pruning error: {exc}]"})
             return
 
-        # ── Stage 3: Assess (SELF_ROUTE) ──────────────────────────────────
+        # ── Stage 3: Assess (SELF_ROUTE / GASR) ───────────────────────────
         def _build_lc_chunks_sse(raw_retrieved: list) -> list:
             lc_chunks = []
             for item in raw_retrieved:
@@ -763,6 +763,74 @@ def _run_pipeline_streaming(
                 context_for_injection = (
                     _build_lc_chunks_sse(context) if decision["route"] == "LC" else pruned_context
                 )
+            elif mode == "GASR":
+                from diamond.gasr_ladder import run_gasr_ladder
+                from retrieval.graph_expand import graph_expand
+
+                _gasr_state: dict = {"pruned": pruned_context, "re_prune_ms": 0, "re_prune_kept": 0}
+
+                def _gasr_assess_rag():
+                    d, ms = _time_stage(lambda: assess_sufficiency(user_prompt, pruned_context, model=assessor_model))
+                    return {**d, "duration_ms": ms}
+
+                def _gasr_assess_structure():
+                    d, ms = _time_stage(lambda: assess_structure_vs_context(user_prompt, _gasr_state["pruned"], model=assessor_model))
+                    return {**d, "duration_ms": ms}
+
+                def _gasr_expand(seeds, hops):
+                    r, ms = _time_stage(lambda: graph_expand(seeds, hops=hops))
+                    r = dict(r)
+                    r["duration_ms"] = ms
+                    return r
+
+                def _gasr_re_prune(seeds, neighbors):
+                    (p, stats), ms = _time_stage(
+                        lambda: prune_context_graph_aware(user_prompt, seeds, neighbors, token_budget=token_budget)
+                    )
+                    _gasr_state["pruned"] = p
+                    _gasr_state["re_prune_ms"] = ms
+                    _gasr_state["re_prune_kept"] = stats.kept_chunks
+                    return p
+
+                def _gasr_assess_after():
+                    d, ms = _time_stage(lambda: assess_sufficiency(user_prompt, _gasr_state["pruned"], phase="graph", model=assessor_model))
+                    return {**d, "duration_ms": ms}
+
+                ladder = run_gasr_ladder(
+                    seed_pool=list(context),
+                    initial_pruned=pruned_context,
+                    assess_rag=_gasr_assess_rag,
+                    assess_structure=_gasr_assess_structure,
+                    expand_hop=_gasr_expand,
+                    re_prune=_gasr_re_prune,
+                    assess_after_expand=_gasr_assess_after,
+                    build_lc=lambda: _build_lc_chunks_sse(context),
+                    hard_cap=3,
+                )
+                total_assess_ms = sum(t.get("duration_ms", 0) for t in ladder.assess_trace)
+                assess_summary = {
+                    "route": ladder.route,
+                    "hops_used": ladder.hops_used,
+                    "sufficient": ladder.route in ("RAG", "GASR"),
+                    "confidence": "high",
+                    "reason": f"GASR ladder → {ladder.route} ({ladder.hops_used} hop(s))",
+                    "trace": ladder.assess_trace,
+                }
+                duration_ms = total_assess_ms
+                context_for_injection = ladder.context
+
+                # Emit graph_expand + re_prune stages only when hops were used
+                if ladder.expand_trace:
+                    total_exp_ms = sum(t.get("duration_ms", 0) for t in ladder.expand_trace)
+                    total_new = sum(t.get("new_chunks", 0) for t in ladder.expand_trace)
+                    yield _sse({"event": "stage", "stage": "graph_expand", "status": "complete",
+                                "label": "Graph expand", "duration_ms": total_exp_ms,
+                                "summary": {"hops_used": ladder.hops_used, "expansions": ladder.expand_trace,
+                                            "new_chunks": total_new}})
+                    yield _sse({"event": "stage", "stage": "re_prune", "status": "complete",
+                                "label": "Graph-aware re-prune", "duration_ms": _gasr_state["re_prune_ms"],
+                                "summary": {"kept": _gasr_state["re_prune_kept"], "token_budget": token_budget}})
+
             elif mode == "LC":
                 decision = {"route": "LC", "sufficient": False, "confidence": "high",
                             "reason": "LC mode forced — assessment skipped."}

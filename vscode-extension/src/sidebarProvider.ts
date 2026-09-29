@@ -96,6 +96,11 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                 case 'copyToClipboard':
                     await vscode.env.clipboard.writeText(message.text);
                     break;
+                case 'openExternal':
+                    if (message.url) {
+                        await vscode.env.openExternal(vscode.Uri.parse(message.url));
+                    }
+                    break;
             }
         });
 
