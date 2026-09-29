@@ -361,49 +361,84 @@ def vector_retrieve_merged(query: str, top_k: int) -> list[dict]:
 
 def exact_retrieve(query_plan: dict[str, Any], top_k: int = EXACT_TOP_N) -> list[dict]:
     """Force include chunks from exact path/symbol matches."""
-    try:
-        rows = collection.get(include=["documents", "metadatas"])
-    except Exception as exc:
-        print(f"[retrieval] Warning: exact retrieval failed: {exc}")
-        return []
-
     paths = [p.lower() for p in query_plan.get("paths", [])]
     symbols_raw = [str(s) for s in query_plan.get("symbols", [])]
     symbols = [s.lower() for s in symbols_raw]
-    docs = rows.get("documents", []) or []
-    metas = rows.get("metadatas", []) or []
+    if not paths and not symbols:
+        return []
+
     candidates = []
+    seen_ids = set()
 
-    for doc, meta in zip(docs, metas):
-        file_path = str(meta.get("file_path", "")).lower()
-        name = str(meta.get("name", "")).lower()
-        qualified = str(meta.get("qualified_name", "")).lower()
-        symbol_list_raw = _safe_json_list(meta.get("symbols"))
-        symbol_list = [s.lower() for s in symbol_list_raw]
-        text = f"{doc}\n{file_path}\n{name}\n{qualified}".lower()
+    # Step 1: Targeted path lookup if paths are specified in query plan
+    for p in paths:
+        for candidate_path in [p, p.replace("/", "\\"), p.replace("\\", "/")]:
+            try:
+                res = collection.get(where={"file_path": candidate_path}, include=["documents", "metadatas"])
+                for doc, meta in zip(res.get("documents", []) or [], res.get("metadatas", []) or []):
+                    cid = str(meta.get("chunk_id") or "")
+                    if cid and cid not in seen_ids:
+                        seen_ids.add(cid)
+                        item = _make_chunk(doc, meta, similarity=0.0, source="exact")
+                        item["exact_match_score"] = 1.0
+                        candidates.append(item)
+            except Exception:
+                pass
 
-        score = 0.0
-        if paths and any(file_path == p or file_path.endswith(p) or p.endswith(file_path) for p in paths):
-            score = max(score, 1.0)
-        if symbols:
-            exact_symbol_hits = 0
-            for raw, lower in zip(symbols_raw, symbols):
-                if raw[:1].isupper():
-                    exact_symbol_hits += int(raw == str(meta.get("name", "")) or raw in symbol_list_raw)
-                else:
-                    exact_symbol_hits += int(lower == name or lower in symbol_list)
-            contains_hits = sum(1 for s in symbols if s in text)
-            if exact_symbol_hits:
-                score = max(score, 0.92)
-            elif contains_hits:
-                class_like_query = any(raw[:1].isupper() for raw in symbols_raw)
-                score = max(score, 0.45 if class_like_query else 0.65)
+    if len(candidates) >= top_k:
+        candidates.sort(key=lambda item: item["exact_match_score"], reverse=True)
+        return candidates[:top_k]
 
-        if score > 0:
-            score = min(1.0, score + (0.18 * _source_score(str(meta.get("file_path", "")), query_plan)))
-            item = _make_chunk(doc, meta, similarity=0.0, source="exact")
-            item["exact_match_score"] = round(score, 4)
-            candidates.append(item)
+    # Step 2: Paginated scan in safe batches of 2000
+    try:
+        total = collection.count()
+        batch_size = 2000
+        for offset in range(0, total, batch_size):
+            rows = collection.get(include=["documents", "metadatas"], limit=batch_size, offset=offset)
+            docs = rows.get("documents", []) or []
+            metas = rows.get("metadatas", []) or []
+
+            for doc, meta in zip(docs, metas):
+                cid = str(meta.get("chunk_id") or "")
+                if cid and cid in seen_ids:
+                    continue
+
+                file_path = str(meta.get("file_path", "")).lower()
+                name = str(meta.get("name", "")).lower()
+                qualified = str(meta.get("qualified_name", "")).lower()
+                symbol_list_raw = _safe_json_list(meta.get("symbols"))
+                symbol_list = [s.lower() for s in symbol_list_raw]
+                text = f"{doc}\n{file_path}\n{name}\n{qualified}".lower()
+
+                score = 0.0
+                if paths and any(file_path == p or file_path.endswith(p) or p.endswith(file_path) for p in paths):
+                    score = max(score, 1.0)
+                if symbols:
+                    exact_symbol_hits = 0
+                    for raw, lower in zip(symbols_raw, symbols):
+                        if raw[:1].isupper():
+                            exact_symbol_hits += int(raw == str(meta.get("name", "")) or raw in symbol_list_raw)
+                        else:
+                            exact_symbol_hits += int(lower == name or lower in symbol_list)
+                    contains_hits = sum(1 for s in symbols if s in text)
+                    if exact_symbol_hits:
+                        score = max(score, 0.92)
+                    elif contains_hits:
+                        class_like_query = any(raw[:1].isupper() for raw in symbols_raw)
+                        score = max(score, 0.45 if class_like_query else 0.65)
+
+                if score > 0:
+                    if cid:
+                        seen_ids.add(cid)
+                    score = min(1.0, score + (0.18 * _source_score(str(meta.get("file_path", "")), query_plan)))
+                    item = _make_chunk(doc, meta, similarity=0.0, source="exact")
+                    item["exact_match_score"] = round(score, 4)
+                    candidates.append(item)
+
+            if len(candidates) >= top_k * 2:
+                break
+    except Exception as exc:
+        print(f"[retrieval] Warning: exact retrieval failed: {exc}")
 
     candidates.sort(key=lambda item: item["exact_match_score"], reverse=True)
     return candidates[:top_k]

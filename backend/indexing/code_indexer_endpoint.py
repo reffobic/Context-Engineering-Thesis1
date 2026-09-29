@@ -61,8 +61,17 @@ def get_index_summary(file_limit: int = 500) -> dict:
             "end_line": None,
         }
 
-    rows = indexer.collection.get(include=["metadatas"])
-    for meta in rows.get("metadatas", []) or []:
+    total_chunks = stats.get("total_chunks", 0)
+    batch_size = 2000
+    all_metadatas = []
+    for offset in range(0, total_chunks, batch_size):
+        try:
+            batch = indexer.collection.get(include=["metadatas"], limit=batch_size, offset=offset)
+            all_metadatas.extend(batch.get("metadatas", []) or [])
+        except Exception as exc:
+            break
+
+    for meta in all_metadatas:
         path = meta.get("file_path", "") or "(unknown path)"
         entry = files.setdefault(
             path,

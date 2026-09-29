@@ -4,9 +4,14 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(name)s] %(message)s",
 )
-indexer = CodeIndexer(db_path='./superset_chroma_db')
+from pathlib import Path
+
+repo_root = Path(__file__).resolve().parent.parent / "superset"
+indexer = CodeIndexer(db_path=str(Path(__file__).resolve().parent / "chroma_db"))
 stats = indexer.index_repository(
-    repo_path=r'C:\Users\hodam\Downloads\Context-Engineering-Thesis1\superset',
+    repo_path=str(repo_root),
+    languages=["python"],
+    max_files=3000,
     incremental=True
 )
 print(stats)
