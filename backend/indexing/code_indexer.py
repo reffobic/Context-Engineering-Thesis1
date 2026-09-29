@@ -45,6 +45,8 @@ except ImportError:
     logging.warning("sentence-transformers not installed. Run: pip install sentence-transformers")
 
 from .sentence_model import get_sentence_transformer
+from .graph_builder import CallGraphBuilder, CallGraph
+from .graph_embeddings import HybridEmbeddingManager
 
 # ─── logging ─────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -62,7 +64,12 @@ CONTEXT_SEPARATOR  = "\n\n--- RAW CODE ---\n"
 DEFAULT_INDEX_MAX_FILES = int(os.getenv("INDEX_MAX_FILES", "600"))
 DEFAULT_EMBED_BATCH_SIZE = int(os.getenv("INDEX_EMBED_BATCH_SIZE", "16"))
 DEFAULT_CACHE_SAVE_INTERVAL = int(os.getenv("INDEX_CACHE_SAVE_INTERVAL", "50"))
-INDEX_SCHEMA_VERSION = "contextual-v2"
+# Bump when embedding recipe changes (invalidates incremental file cache).
+INDEX_SCHEMA_VERSION = "contextual-hybrid-v1"
+EMBEDDING_CACHE_FILE = ".embedding_cache.json"
+USE_HYBRID_EMBEDDINGS = os.getenv("USE_HYBRID_EMBEDDINGS", "1").strip().lower() not in {
+    "0", "false", "no", "off",
+}
 
 LANGUAGE_MAP: dict[str, list[str]] = {
     "python":     [".py"],
@@ -491,6 +498,8 @@ class CodeIndexer:
         db_path:         str = DEFAULT_DB_PATH,
         collection_name: str = DEFAULT_COLLECTION,
         model_name:      str = DEFAULT_MODEL,
+        use_graphcodebert: bool = False,
+        use_hybrid_embeddings: Optional[bool] = None,
     ):
         if not CHROMADB_AVAILABLE:
             raise RuntimeError("chromadb is required. Install: pip install chromadb")
@@ -506,6 +515,9 @@ class CodeIndexer:
 
         self.model = get_sentence_transformer(model_name)
         self.model_name = model_name
+        self.use_hybrid_embeddings = (
+            USE_HYBRID_EMBEDDINGS if use_hybrid_embeddings is None else bool(use_hybrid_embeddings)
+        )
 
         # FIX 4: store db_path on self so _cache_path() can use it instead of
         # the hardcoded DEFAULT_DB_PATH constant.
@@ -520,6 +532,14 @@ class CodeIndexer:
         logger.info("Collection '%s' ready (%d docs)", collection_name, self.collection.count())
 
         self._hash_cache: dict[str, str] = self._load_hash_cache()
+        self._embedding_cache: dict = self._load_embedding_cache()
+        self.hybrid_manager: Optional[HybridEmbeddingManager] = None
+        if self.use_hybrid_embeddings:
+            self.hybrid_manager = HybridEmbeddingManager(
+                semantic_model=self.model,
+                use_graphcodebert=use_graphcodebert,
+            )
+            logger.info("Hybrid embeddings enabled (semantic + call-graph structural)")
 
     # ── index repository ──────────────────────────────────────────────────────
     def index_repository(
@@ -544,9 +564,15 @@ class CodeIndexer:
             "limited_run": bool(max_files and max_files > 0),
             "include_dirs": include_dirs or [],
             "index_schema_version": INDEX_SCHEMA_VERSION,
+            "hybrid_embeddings": bool(self.hybrid_manager),
+            "graph_nodes": 0,
+            "graph_edges": 0,
+            "embeddings_cached": 0,
         }
         bm25_chunks: list[CodeChunk] = []
-        
+        pending_chunks: list[CodeChunk] = []
+
+        # Phase 1: chunk (and optionally defer embed until call graph exists)
         for idx, fpath in enumerate(files, 1):
             if max_files and max_files > 0 and stats["files_indexed"] >= max_files:
                 break
@@ -564,13 +590,33 @@ class CodeIndexer:
             if not chunks:
                 continue
 
-            self._upsert_chunks(chunks)
+            if self.hybrid_manager is None:
+                self._upsert_chunks(chunks)
+            else:
+                pending_chunks.extend(chunks)
             bm25_chunks.extend(chunks)
             self._hash_cache[rel] = cache_value
             stats["files_indexed"] += 1
             stats["chunks_added"]  += len(chunks)
             if idx % DEFAULT_CACHE_SAVE_INTERVAL == 0:
                 self._save_hash_cache()
+                self._save_embedding_cache()
+
+        # Phase 2: call graph + hybrid embed (when enabled)
+        if self.hybrid_manager is not None:
+            graph = self._build_call_graph(repo_path, languages=languages, include_dirs=include_dirs)
+            self.hybrid_manager.set_call_graph(graph)
+            stats["graph_nodes"] = len(graph.nodes)
+            stats["graph_edges"] = sum(
+                len(n.calls) + len(n.imports) + len(n.inherits_from)
+                for n in graph.nodes.values()
+            )
+            self._save_call_graph(graph)
+            if pending_chunks:
+                self._upsert_chunks(pending_chunks)
+                stats["embeddings_cached"] = sum(
+                    1 for c in pending_chunks if c.chunk_id in self._embedding_cache
+                )
 
         stats["bm25_chunks"] = (
             self._rebuild_bm25_index()
@@ -578,6 +624,7 @@ class CodeIndexer:
             else self._update_bm25_index(bm25_chunks)
         )
         self._save_hash_cache()
+        self._save_embedding_cache()
         logger.info("Indexing complete: %s", stats)
         return stats
 
@@ -591,12 +638,31 @@ class CodeIndexer:
         batch_size = max(1, DEFAULT_EMBED_BATCH_SIZE)
         for start in range(0, len(chunks), batch_size):
             end = start + batch_size
+            batch_chunks = chunks[start:end]
             batch_docs = documents[start:end]
-            embeddings = self.model.encode(
-                batch_docs,
-                batch_size=batch_size,
-                show_progress_bar=False,
-            ).tolist()
+            if self.hybrid_manager is not None:
+                embeddings = []
+                for chunk, doc in zip(batch_chunks, batch_docs):
+                    if chunk.chunk_id in self._embedding_cache:
+                        embeddings.append(self._embedding_cache[chunk.chunk_id])
+                        continue
+                    result = self.hybrid_manager.embed_code(
+                        code=doc,  # contextual document for semantic channel
+                        file_path=chunk.file_path,
+                        func_name=chunk.name,
+                    )
+                    vec_obj = result.get("combined")
+                    if vec_obj is None:
+                        vec_obj = self.model.encode([doc])[0]
+                    vec = vec_obj.tolist() if hasattr(vec_obj, "tolist") else list(vec_obj)
+                    self._embedding_cache[chunk.chunk_id] = vec
+                    embeddings.append(vec)
+            else:
+                embeddings = self.model.encode(
+                    batch_docs,
+                    batch_size=batch_size,
+                    show_progress_bar=False,
+                ).tolist()
             self.collection.upsert(
                 ids        = ids[start:end],
                 documents  = batch_docs,
@@ -663,6 +729,42 @@ class CodeIndexer:
         p = self._cache_path()
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(json.dumps(self._hash_cache, indent=2))
+
+    def _embedding_cache_path(self) -> Path:
+        return Path(self.db_path) / EMBEDDING_CACHE_FILE
+
+    def _load_embedding_cache(self) -> dict:
+        p = self._embedding_cache_path()
+        if p.exists():
+            try:
+                return json.loads(p.read_text(encoding="utf-8"))
+            except Exception as exc:
+                logger.warning("Could not read embedding cache at %s: %s", p, exc)
+        return {}
+
+    def _save_embedding_cache(self) -> None:
+        if not getattr(self, "_embedding_cache", None):
+            return
+        p = self._embedding_cache_path()
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps(self._embedding_cache), encoding="utf-8")
+
+    def _build_call_graph(
+        self,
+        repo_path: str | Path,
+        languages: Optional[list[str]] = None,
+        include_dirs: Optional[list[str]] = None,
+    ) -> CallGraph:
+        files = scan_repository(repo_path, languages=languages, include_dirs=include_dirs)
+        builder = CallGraphBuilder()
+        logger.info("Building call graph over %d file(s)...", len(files))
+        return builder.build_from_files([str(p) for p in files], str(repo_path))
+
+    def _save_call_graph(self, graph: CallGraph) -> None:
+        out = Path(self.db_path) / "call_graph.json"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        graph.save(str(out))
+        logger.info("Call graph saved -> %s (%d nodes)", out, len(graph.nodes))
 
     def _bm25_record(self, chunk: CodeChunk) -> dict:
         doc = chunk.contextual_document()

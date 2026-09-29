@@ -26,7 +26,7 @@ _lock = threading.Lock()
 
 
 def get_sentence_transformer(model_name: str = DEFAULT_MODEL) -> "SentenceTransformer":
-    """Return a process-wide cached model (thread-safe, lazy)."""
+    """Return a process-wide cached model (thread-safe, lazy). Prefer CUDA when available."""
     global _model, _model_name
 
     if SentenceTransformer is None:
@@ -38,7 +38,24 @@ def get_sentence_transformer(model_name: str = DEFAULT_MODEL) -> "SentenceTransf
     with _lock:
         if _model is not None and _model_name == model_name:
             return _model
-        logger.info("Loading embedding model: %s", model_name)
-        _model = SentenceTransformer(model_name)
+        import os
+
+        force = os.environ.get("EMBEDDING_DEVICE", "").strip().lower()
+        try:
+            import torch
+
+            if force in ("cuda", "gpu") and torch.cuda.is_available():
+                device = "cuda"
+            elif force in ("cpu",):
+                device = "cpu"
+            elif torch.cuda.is_available():
+                device = "cuda"
+            else:
+                device = "cpu"
+        except Exception:
+            device = "cpu"
+
+        logger.info("Loading embedding model: %s on device=%s", model_name, device)
+        _model = SentenceTransformer(model_name, device=device)
         _model_name = model_name
         return _model

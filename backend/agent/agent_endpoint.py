@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import os
 from typing import Any, Union
 
 from .ollama_agent import OllamaAgent
 
-agent = OllamaAgent(model="qwen3.5:9b")  # must match a model you have: ollama list
+agent = OllamaAgent(model=os.environ.get("OLLAMA_MODEL", "llama3.2:3b"))
 
 
 def ollama_generate(payload: Union[str, dict[str, Any]]) -> str:

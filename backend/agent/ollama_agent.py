@@ -36,13 +36,14 @@ class OllamaAgent:
 
     def __init__(
         self,
-        model: str = "qwen3.5:9b",
+        model: str | None = None,
         base_url: str = "http://localhost:11434",
         timeout: int = 600,
         *,
         think: Optional[bool] = None,
     ):
-        self.model = model
+        # Prefer OLLAMA_MODEL env (e.g. llama3.2:3b on 4GB GPUs); default kept for back-compat.
+        self.model = model or os.environ.get("OLLAMA_MODEL", "llama3.2:3b")
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         # Default: no thinking (faster). Enable with OLLAMA_THINK=1 if you want reasoning traces.
@@ -56,10 +57,21 @@ class OllamaAgent:
             self.num_predict = int(raw)
         except ValueError:
             self.num_predict = 8192
+        # Encourage GPU layers in Ollama when supported by the runner
+        self.num_gpu = int(os.environ.get("OLLAMA_NUM_GPU", "99") or "99")
+        try:
+            self.num_ctx = int(os.environ.get("OLLAMA_NUM_CTX", "0") or "0")
+        except ValueError:
+            self.num_ctx = 0
 
     def _ollama_options(self) -> dict[str, Any]:
         """Caps generation length; raise OLLAMA_NUM_PREDICT if answers truncate early."""
-        return {"num_predict": self.num_predict}
+        opts: dict[str, Any] = {"num_predict": self.num_predict}
+        if self.num_gpu:
+            opts["num_gpu"] = self.num_gpu
+        if self.num_ctx and self.num_ctx > 0:
+            opts["num_ctx"] = self.num_ctx
+        return opts
 
     def generate_response(self, prompt: str, system: Optional[str] = None) -> str:
         """
@@ -112,7 +124,19 @@ class OllamaAgent:
             with urlopen(req, timeout=self.timeout) as resp:
                 return json.loads(resp.read().decode())
         except URLError as e:
-            return {"error": str(e), "response": "", "message": {"content": f"[Ollama error: {e}]"}}
+            detail = str(e)
+            # Prefer HTTP body when Ollama returns 4xx/5xx
+            fp = getattr(e, "fp", None)
+            if fp is not None:
+                try:
+                    detail = f"{e} | body={fp.read().decode('utf-8', errors='replace')[:800]}"
+                except Exception:
+                    pass
+            return {
+                "error": detail,
+                "response": "",
+                "message": {"content": f"[Ollama error: {detail}]"},
+            }
 
     def generate_with_context(
         self,
@@ -141,7 +165,7 @@ class OllamaAgent:
         return self.generate_response(user, system=system)
 
 
-def generate_response(prompt: str, *, model: str = "qwen3.5:9b", system: Optional[str] = None) -> str:
+def generate_response(prompt: str, *, model: str = "llama3.2:3b", system: Optional[str] = None) -> str:
     """Functional shortcut."""
     return OllamaAgent(model=model).generate_response(prompt, system=system)
 
@@ -158,7 +182,7 @@ if __name__ == "__main__":
             "text": "def hello():\n    return 'world'\n",
         }
     ]
-    agent = OllamaAgent(model=sys.argv[1] if len(sys.argv) > 1 else "qwen3.5:9b")
+    agent = OllamaAgent(model=sys.argv[1] if len(sys.argv) > 1 else "llama3.2:3b")
     print("--- Built user message (preview) ---")
     sys_p, user = build_coding_prompt("Add type hints to hello().", demo_chunks)
     print("SYSTEM (first 200 chars):", sys_p[:200], "...")
