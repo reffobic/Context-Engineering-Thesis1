@@ -642,6 +642,11 @@ def prune_context_graph_aware(
     token_budget: int = DEFAULT_TOKEN_BUDGET,
     neighbor_budget_fraction: float = NEIGHBOR_BUDGET_FRACTION,
     weights: Optional[HeuristicWeights] = None,
+    method: str = "heuristic",
+    model_name: str = "Salesforce/codegen-350M-multi",
+    selective_mode: str = "code",
+    target_ratio: Optional[float] = None,
+    code_weights: Optional[Any] = None,
 ) -> tuple[list[ContextChunk], PruningStats]:
     """Graph-aware two-pass pruning for the post-expand re-prune step.
 
@@ -652,8 +657,14 @@ def prune_context_graph_aware(
     2. **Scores neighbours** by structural relationship type
        (callee > inherits > caller > import) — not by lexical query overlap,
        which they naturally lack.
-    3. **Fills** the remaining budget with seeds via the standard heuristic
-       scorer; unused neighbour budget rolls over to seeds.
+    3. **Fills** the remaining budget with seeds via ``method``:
+       - ``"heuristic"`` (default): weighted scoring, same signals as
+         ``prune_context(method="heuristic")``.
+       - ``"selective"``: loads the same causal LM used by the normal Prune
+         stage (Salesforce/codegen-350M-multi) and blends self-information
+         informativeness (40 %) with the heuristic score (60 %) for *ranking*,
+         then uses ``_selective_chunk`` for per-chunk token compression.
+         Falls back to heuristic if the model is unavailable.
     4. Returns neighbours **first** in the output list so the LLM reads the
        called/inherited symbols before the broader seed context.
 
@@ -664,6 +675,11 @@ def prune_context_graph_aware(
         token_budget:             Total token budget (default 1800).
         neighbor_budget_fraction: Fraction reserved for neighbours (default 0.55).
         weights:                  Heuristic weights for seed scoring.
+        method:                   ``"heuristic"`` or ``"selective"``.
+        model_name:               HuggingFace causal LM for selective pruning.
+        selective_mode:           ``"code"`` (default) or ``"paper"``.
+        target_ratio:             Token-keep ratio per chunk (selective only).
+        code_weights:             CodeUnitWeights override for ``"code"`` mode.
 
     Returns:
         ``(pruned_chunks, stats)`` — chunks are directly consumable by
@@ -675,10 +691,17 @@ def prune_context_graph_aware(
 
         def _re_prune(seeds, neighbors):
             pruned, stats = prune_context_graph_aware(
-                user_prompt, seeds, neighbors, token_budget=token_budget
+                user_prompt, seeds, neighbors,
+                token_budget=token_budget,
+                method=pruning_method,
             )
             ...
     """
+    if selective_mode not in SELECTIVE_MODES:
+        raise ValueError(f"selective_mode must be one of {SELECTIVE_MODES}, got {selective_mode!r}")
+    if target_ratio is None:
+        target_ratio = DEFAULT_TARGET_RATIO[selective_mode]
+
     w = weights or DEFAULT_WEIGHTS
     neighbor_budget = int(token_budget * neighbor_budget_fraction)
     seed_budget = token_budget - neighbor_budget
@@ -686,7 +709,17 @@ def prune_context_graph_aware(
     all_items = list(seeds) + list(neighbors)
     original_est_tokens = sum(estimate_tokens(x.get("code") or "") for x in all_items)
 
-    # ── Pass 1: pack neighbours (structural scoring) ───────────
+    # ── Load selective pruner once (shared for seeds and neighbours) ───
+    pruner = None
+    fallback_reason: Optional[str] = None
+    if method == "selective":
+        pruner, fallback_reason = _load_selective_pruner(model_name)
+    method_used = "selective" if pruner is not None else "heuristic"
+
+    # ── Pass 1: pack neighbours (structural scoring + selective content prune) ─
+    # Neighbours are scored by graph edge type (they lack lexical query match),
+    # but when method="selective" we apply the causal LM for *content* pruning
+    # within each kept chunk — matching what the normal Prune stage does.
     scored_neighbors = sorted(
         [dict(item, pruning_score=_neighbor_structural_score(item)) for item in neighbors],
         key=lambda x: x["pruning_score"],
@@ -695,8 +728,18 @@ def prune_context_graph_aware(
 
     neighbor_chunks: list[ContextChunk] = []
     neighbor_tokens = 0
+    neighbor_fallback_chunks = 0
     for item in scored_neighbors:
-        chunk = prune_single_item_heuristic(query, item)
+        if pruner is not None:
+            try:
+                chunk = _selective_chunk(item, pruner, target_ratio, query, selective_mode, code_weights)
+            except Exception as e:
+                logger.exception("Selective Context failed on neighbour chunk, using heuristic pruning")
+                neighbor_fallback_chunks += 1
+                fallback_reason = f"selective pruning failed on {neighbor_fallback_chunks} neighbour chunk(s): {e}"
+                chunk = prune_single_item_heuristic(query, item)
+        else:
+            chunk = prune_single_item_heuristic(query, item)
         if chunk is None:
             continue
         t = estimate_tokens(chunk["text"])
@@ -705,20 +748,46 @@ def prune_context_graph_aware(
         neighbor_chunks.append(chunk)
         neighbor_tokens += t
 
-    # ── Pass 2: fill with seeds (heuristic scoring) ────────────
+    # ── Pass 2: fill with seeds (heuristic rank + optional selective content) ──
     # Any unused neighbour budget rolls over so seeds are not penalised when
     # there are few neighbours.
     effective_seed_budget = seed_budget + (neighbor_budget - neighbor_tokens)
-    scored_seeds = sorted(
-        [dict(item, pruning_score=score_candidate(query, item, weights=w)) for item in seeds],
-        key=lambda x: x["pruning_score"],
-        reverse=True,
-    )
+
+    # Seed ranking: heuristic score as base; blend with LM informativeness when
+    # method="selective" — exactly as prune_context() does for the normal path.
+    scored_seeds = [dict(item, pruning_score=score_candidate(query, item, weights=w)) for item in seeds]
+    if pruner is not None:
+        for item in scored_seeds:
+            code = item.get("code", "") or ""
+            if code.strip():
+                try:
+                    text = remove_noise_lines(code)
+                    if selective_mode == "code":
+                        path = (item.get("metadata") or {}).get("file", "") or ""
+                        text = pruner.prepare_code(text, infer_language_from_path(path), query)
+                    info_score = pruner.chunk_informativeness(text)
+                    normalized = min(info_score / 10.0, 1.0)
+                    # 60 % heuristic rank + 40 % LM informativeness (same blend as normal Prune)
+                    item["pruning_score"] = round(0.6 * item["pruning_score"] + 0.4 * normalized, 4)
+                except Exception as e:
+                    logger.exception("Selective Context ranking failed for seed chunk, using heuristic ranking")
+                    fallback_reason = f"informativeness ranking failed: {e}"
+    scored_seeds.sort(key=lambda x: x["pruning_score"], reverse=True)
 
     seed_chunks: list[ContextChunk] = []
     seed_tokens = 0
+    seed_fallback_chunks = 0
     for item in scored_seeds:
-        chunk = prune_single_item_heuristic(query, item)
+        if pruner is not None:
+            try:
+                chunk = _selective_chunk(item, pruner, target_ratio, query, selective_mode, code_weights)
+            except Exception as e:
+                logger.exception("Selective Context failed on seed chunk, using heuristic pruning")
+                seed_fallback_chunks += 1
+                fallback_reason = f"selective pruning failed on {seed_fallback_chunks} seed chunk(s): {e}"
+                chunk = prune_single_item_heuristic(query, item)
+        else:
+            chunk = prune_single_item_heuristic(query, item)
         if chunk is None:
             continue
         t = estimate_tokens(chunk["text"])
@@ -730,6 +799,7 @@ def prune_context_graph_aware(
     # Neighbours first so the LLM sees called/inherited symbols before seeds.
     kept_chunks = neighbor_chunks + seed_chunks
     kept_tokens = neighbor_tokens + seed_tokens
+    total_fallback = neighbor_fallback_chunks + seed_fallback_chunks
 
     stats = PruningStats(
         original_chunks=len(all_items),
@@ -737,9 +807,12 @@ def prune_context_graph_aware(
         dropped_chunks=max(0, len(all_items) - len(kept_chunks)),
         original_est_tokens=original_est_tokens,
         kept_est_tokens=kept_tokens,
-        method="heuristic",
+        method=method_used,
         compression_ratio=round(kept_tokens / max(1, original_est_tokens), 4),
-        requested_method="heuristic",
+        requested_method=method,
+        selective_mode=selective_mode if method_used == "selective" else None,
+        fallback_chunks=total_fallback,
+        fallback_reason=fallback_reason,
     )
 
     return kept_chunks, stats

@@ -441,7 +441,9 @@ def run_pipeline(
         def _re_prune(seeds, neighbors):
             (pruned, stats), p_ms = _time_stage(
                 lambda: prune_context_graph_aware(
-                    user_prompt, seeds, neighbors, token_budget=token_budget
+                    user_prompt, seeds, neighbors,
+                    token_budget=token_budget,
+                    method=pruning_method,
                 )
             )
             state["pruned"] = pruned
@@ -785,7 +787,11 @@ def _run_pipeline_streaming(
 
                 def _gasr_re_prune(seeds, neighbors):
                     (p, stats), ms = _time_stage(
-                        lambda: prune_context_graph_aware(user_prompt, seeds, neighbors, token_budget=token_budget)
+                        lambda: prune_context_graph_aware(
+                            user_prompt, seeds, neighbors,
+                            token_budget=token_budget,
+                            method=req.pruning_method,
+                        )
                     )
                     _gasr_state["pruned"] = p
                     _gasr_state["re_prune_ms"] = ms
