@@ -267,6 +267,7 @@ def assess_sufficiency(
         {"role": "user",   "content": user_msg},
     ],
     "stream": False,
+    "keep_alive": "10m",
     "options": {"temperature": 0.0, "num_ctx": 4096},
     }
 
@@ -277,7 +278,12 @@ def assess_sufficiency(
             timeout=REQUEST_TIMEOUT,
         )
         resp.raise_for_status()
-        raw = resp.json().get("message", {}).get("content", "")
+        resp_json = resp.json()
+        raw = resp_json.get("message", {}).get("content", "")
+        token_usage = {
+            "prompt_tokens": resp_json.get("prompt_eval_count"),
+            "completion_tokens": resp_json.get("eval_count"),
+        }
     except requests.RequestException as exc:
         logger.warning("assess_sufficiency: Ollama call failed (%s) → defaulting to LC", exc)
         # Ollama call failed
@@ -309,6 +315,7 @@ def assess_sufficiency(
         "assess_sufficiency: route=%s confidence=%s reason=%s",
         result["route"], result["confidence"], result["reason"],
     )
+    result["token_usage"] = token_usage
     return result
 
 
@@ -367,17 +374,23 @@ def assess_structure_vs_context(
             {"role": "user", "content": user_msg},
         ],
         "stream": False,
+        "keep_alive": "10m",
         "options": {"temperature": 0.0, "num_ctx": 4096},
     }
 
     try:
         resp = requests.post(
-            f"{OLLAMA_BASE_URL}/api/chat",
+            f"{OLLAMA_BASE_URL}/api/chat",    # ← changed
             json=payload,
             timeout=REQUEST_TIMEOUT,
         )
         resp.raise_for_status()
-        raw = resp.json().get("message", {}).get("content", "")
+        resp_json = resp.json()
+        raw = resp_json.get("message", {}).get("content", "")
+        token_usage = {
+            "prompt_tokens": resp_json.get("prompt_eval_count"),
+            "completion_tokens": resp_json.get("eval_count"),
+        }
     except requests.RequestException as exc:
         logger.warning(
             "assess_structure_vs_context: Ollama failed (%s) → UNCLEAR/CONTEXT", exc
@@ -408,4 +421,5 @@ def assess_structure_vs_context(
         result["confidence"],
         result["reason"],
     )
+    result["token_usage"] = token_usage
     return result

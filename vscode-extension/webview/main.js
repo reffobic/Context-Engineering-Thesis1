@@ -105,6 +105,7 @@
             </button>
           </div>
           <select class="select-pill" id="modeSelect" title="Pipeline mode">
+            <option value="PREROUTE">PREROUTE (Fast Gate)</option>
             <option value="GASR">GASR (Adaptive)</option>
             <option value="SELF_ROUTE">Auto-Route</option>
             <option value="RAG">RAG</option>
@@ -505,9 +506,10 @@
   }
 
   // ── GASR stage order ─────────────────────────────────────────────────
-  // Standard stages; graph_expand + re_prune are injected dynamically for GASR
+  // Standard stages; graph_expand + re_prune are injected dynamically for GASR/PREROUTE
   const BASE_STAGE_ORDER   = ['retrieve', 'prune', 'assess', 'inject', 'generate'];
   const GASR_STAGE_ORDER   = ['retrieve', 'prune', 'assess', 'graph_expand', 're_prune', 'inject', 'generate'];
+  const PREROUTE_STAGE_ORDER = ['retrieve', 'assess', 'prune', 'graph_expand', 're_prune', 'inject', 'generate'];
 
   // ── Streaming ─────────────────────────────────────────────────────────
   async function streamGenerate(prompt, fileContext = null) {
@@ -542,14 +544,17 @@
     const answerEl = msgEl.querySelector('.answer-text');
 
     const isGasr = state.selectedMode === 'GASR';
-    const stageOrder = isGasr ? GASR_STAGE_ORDER : BASE_STAGE_ORDER;
+    const isPreroute = state.selectedMode === 'PREROUTE';
+    let stageOrder = BASE_STAGE_ORDER;
+    if (isGasr) stageOrder = GASR_STAGE_ORDER;
+    else if (isPreroute) stageOrder = PREROUTE_STAGE_ORDER;
     const stageRowEls = {};
 
     pipelineEl.querySelector('.pipeline-body').innerHTML = '';
     stageOrder.forEach(s => {
       // graph_expand and re_prune start hidden for GASR — shown when events arrive
       const row = createStageRow(s, 'pending');
-      if (isGasr && (s === 'graph_expand' || s === 're_prune')) {
+      if ((isGasr || isPreroute) && (s === 'graph_expand' || s === 're_prune')) {
         row.classList.add('stage-row-hidden');
       }
       pipelineEl.querySelector('.pipeline-body').appendChild(row);
@@ -762,7 +767,7 @@
       if (summary.route) {
         let cls = 'badge-rag';
         if (summary.route === 'LC') { cls = 'badge-lc'; }
-        else if (summary.route === 'GASR' || summary.hops_used > 0) { cls = 'badge-gasr'; }
+        else if (summary.route === 'GASR' || summary.route === 'PREROUTE' || summary.hops_used > 0) { cls = 'badge-gasr'; }
         badges.push(makeBadge(summary.route, cls));
         if (summary.hops_used !== undefined && summary.hops_used > 0) {
           badges.push(makeBadge(`${summary.hops_used} hop${summary.hops_used > 1 ? 's' : ''}`, 'badge-gasr'));

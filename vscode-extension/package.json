@@ -2,7 +2,7 @@
   "name": "context-engine",
   "displayName": "Context Engine",
   "description": "AI-powered context engineering assistant with GASR multi-hop graph retrieval, RAG pipeline, pruning, and local Ollama models",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "ref",
   "icon": "icon.jpg",
   "repository": {
