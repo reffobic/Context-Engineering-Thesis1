@@ -88,7 +88,7 @@ def _persist_eval_metrics(
 
 class GenerateRequest(BaseModel):
     prompt: str
-    mode: Literal["RAG", "LC", "SELF_ROUTE", "GASR"] = "SELF_ROUTE"
+    mode: Literal["RAG", "LC", "SELF_ROUTE", "GASR", "PREROUTE"] = "SELF_ROUTE"
     pruning_method: Literal["heuristic", "selective"] = "heuristic"
     assessor_model: Optional[str] = None  # Ollama model for sufficiency judge; None = use default
     model: Optional[str] = None           # Ollama model for generation; None = use default
@@ -107,7 +107,7 @@ class EvaluateRequest(BaseModel):
     judge_retrieval_relevancy: bool = False
     faithfulness: bool = False
     #: Ablation answer path: if set, also run full ``run_pipeline`` with this mode.
-    generate_mode: Optional[Literal["RAG", "LC", "SELF_ROUTE", "GASR"]] = None
+    generate_mode: Optional[Literal["RAG", "LC", "SELF_ROUTE", "GASR", "PREROUTE"]] = None
     #: Where to store metrics JSON (``results/{mode}/json/``). Retrieval path in code may still be hybrid until vector/graph backends exist.
     retrieval_mode: Literal["hybrid", "vector", "graph"] = "hybrid"
     #: If true (default), persist full evaluate response under ``results/{retrieval_mode}/json/``.
@@ -519,6 +519,144 @@ def run_pipeline(
         pipeline["hops_used"] = hops_used
         logging.info("GASR finished route=%s hops=%s", route, hops_used)
 
+    elif mode == "PREROUTE":
+        # Single-stage entry gate: six-step structured prompt over RAW
+        # retrieval metadata (context, not pruned_context — no chunk text
+        # ever enters this prompt), one LLM call. GASR's ladder reused
+        # unchanged downstream — the ONLY thing that differs from the GASR
+        # branch above is how the entry decision gets made; assess_structure,
+        # expand_hop, re_prune, assess_after_expand, build_lc are identical.
+        #
+        # NOTE: prune_context_with_stats above still runs unconditionally
+        # for every mode (it's shared code, not inside this branch) — this
+        # does NOT skip that cost, only skips READING pruned text in the
+        # gate's own prompt and skips a SECOND LLM call the old design
+        # could trigger. Don't claim pruning itself is avoided.
+        logging.info("PREROUTE mode — structured gate, single LLM call (hop cap=%s)", gasr_hard_cap)
+        pipeline["stage_order"] = [
+            "retrieve", "assess", "prune", "graph_expand", "re_prune", "inject", "generate"
+        ]
+        from diamond.gasr_ladder import run_gasr_ladder
+        from diamond.preroute_gate import preroute_structured_gate
+        from retrieval.graph_expand import graph_expand
+
+        # --- once the memory branch is merged: an initial sufficiency
+        # check against conversation memory belongs BEFORE ANY of this —
+        # before retrieve_context at the top of this function, not just
+        # before this gate. That's a change to shared code (every mode
+        # calls retrieve_context unconditionally above), out of scope for
+        # a PREROUTE-only edit. Until then this mode has the same gap
+        # every other mode here has — no mode resolves follow-ups yet, so
+        # the comparison stays fair. See preroute_gate.py's own docstring
+        # for the narrower, PREROUTE-scoped version of this hook.
+        #
+        #     user_prompt = _memory_agent.resolve_referential_prompt(user_prompt)
+
+        entry_decision, entry_ms = _time_stage(
+            lambda: preroute_structured_gate(user_prompt, context)
+        )
+        entry_decision = {**entry_decision, "duration_ms": entry_ms}
+
+        seed_pool = list(context)
+
+        def _assess_structure():
+            judge, ms = _time_stage(
+                lambda: assess_structure_vs_context(user_prompt, state["pruned"])
+            )
+            return {**judge, "duration_ms": ms}
+
+        def _expand(seeds, hops):
+            result, ms = _time_stage(lambda: graph_expand(seeds, hops=hops))
+            result = dict(result)
+            result["duration_ms"] = ms
+            return result
+
+        def _re_prune(seeds, neighbors):
+            (pruned, stats), p_ms = _time_stage(
+                lambda: prune_context_graph_aware(
+                    user_prompt, seeds, neighbors, token_budget=token_budget
+                )
+            )
+            state["pruned"] = pruned
+            state["last_re_prune_ms"] = p_ms
+            state["last_re_prune_kept"] = stats.kept_chunks
+            return pruned
+
+        def _assess_graph():
+            decision, ms = _time_stage(
+                lambda: assess_sufficiency(
+                    user_prompt, state["pruned"], phase="graph"
+                )
+            )
+            return {**decision, "duration_ms": ms}
+
+        state = {
+            "pruned": pruned_context,
+            "last_re_prune_ms": 0,
+            "last_re_prune_kept": 0,
+        }
+
+        ladder = run_gasr_ladder(
+            seed_pool=seed_pool,
+            initial_pruned=pruned_context,
+            # Already decided above — this is a stub, NOT a second LLM
+            # call. run_gasr_ladder only needs a zero-arg callable that
+            # returns the decision dict; the entry gate already ran once.
+            assess_rag=lambda: entry_decision,
+            assess_structure=_assess_structure,
+            expand_hop=_expand,
+            re_prune=_re_prune,
+            assess_after_expand=_assess_graph,
+            build_lc=lambda: _build_lc_chunks(context),
+            hard_cap=gasr_hard_cap,
+        )
+        route = ladder.route
+        hops_used = ladder.hops_used
+        context_for_injection = ladder.context
+
+        for i, exp in enumerate(ladder.expand_trace):
+            if i == len(ladder.expand_trace) - 1 and state["last_re_prune_ms"]:
+                exp["re_prune_ms"] = state["last_re_prune_ms"]
+                exp["re_prune_kept"] = state["last_re_prune_kept"]
+                exp["re_prune_kind"] = "graph_aware"
+
+        pipeline["stages"]["assess"] = _stage(
+            "PREROUTE assessment",
+            sum(t.get("duration_ms", 0) for t in ladder.assess_trace),
+            {
+                "route": route,
+                "hops_used": hops_used,
+                "gasr_hard_cap": gasr_hard_cap,
+                "entry_gate_stage": entry_decision.get("stage"),
+                "entry_gate_token_usage": entry_decision.get("token_usage"),
+                "re_prune_kind": "graph_aware",
+                "assessor_model": os.environ.get("ASSESSOR_MODEL")
+                or os.environ.get("OLLAMA_ASSESSOR_MODEL")
+                or "",
+                "trace": ladder.assess_trace,
+            },
+        )
+        if ladder.expand_trace:
+            pipeline["stages"]["graph_expand"] = _stage(
+                "Graph expand",
+                sum(t.get("duration_ms", 0) for t in ladder.expand_trace),
+                {"hops_used": hops_used, "expansions": ladder.expand_trace},
+                ladder.expand_trace,
+            )
+            pipeline["stages"]["re_prune"] = _stage(
+                "Flat-merge re-prune",
+                sum(t.get("re_prune_ms", 0) for t in ladder.expand_trace),
+                {
+                    "token_budget": token_budget,
+                    "re_prune_kind": "graph_aware",
+                    "kept": len(context_for_injection)
+                    if hasattr(context_for_injection, "__len__")
+                    else None,
+                },
+            )
+        pipeline["hops_used"] = hops_used
+        logging.info("PREROUTE finished route=%s hops=%s entry_gate_stage=%s", route, hops_used, entry_decision.get("stage"))
+                                                        
     elif mode == "LC":
         logging.info("LC mode forced — using parent_context, skipping assessment")
         pipeline["stages"]["assess"] = _stage(
