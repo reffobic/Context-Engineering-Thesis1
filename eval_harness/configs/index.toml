@@ -9,3 +9,25 @@ fingerprint_decimals = 4
 # Pipeline env that changes what is indexed. Values are passed to the index worker as-is.
 INDEX_CONTEXT_OLLAMA = "0"          # no LLM file summaries at index time
 USE_HYBRID_EMBEDDINGS = "1"         # pipeline default
+
+[chunking]
+# Must equal the pipeline constants at pipeline_commit; the index worker asserts this.
+max_chunk_tokens = 512
+index_schema_version = "contextual-dual-v1"
+excluded_dirs = [".git", "__pycache__", "node_modules", ".venv", "venv", "env", "dist", "build", ".idea", ".vscode", "coverage"]
+
+[build]
+# INDEX_MAX_FILES in the pipeline defaults to 600 and silently drops the rest.
+# Explicit value large enough for whole repos; the overshoot over 600 is logged per index.
+max_files = 1000000
+pipeline_default_max_files = 600
+index_device = "cuda"               # indexes are built once and shipped; query embedding is CPU
+graphify_command = "graphify"
+
+[verify]
+# Chroma's HNSW graph is rebuilt on import and is not bit-identical between rebuilds, so the
+# check is statistical: self-retrieval, stored vectors, and overlap with the original's answers.
+golden_queries = 100
+min_self_recall = 0.97
+min_golden_overlap_mean = 0.98
+max_embedding_abs_diff = 1e-6

@@ -24,6 +24,9 @@ ROOTS = ["chromadb", "sentence-transformers", "rank-bm25", "requests", "fastapi"
 LINUX_ONLY_PREFIX = ("nvidia-", "triton", "cuda-")
 # Dependencies that only Windows needs; not installed here, so the version cannot be read.
 WINDOWS_ONLY = {"colorama": "0.4.6"}
+WIN = {"sys_platform": "win32", "platform_system": "Windows", "os_name": "nt", "platform_machine": "AMD64",
+       "platform_python_implementation": "CPython"}
+NOT_ON_WINDOWS: set[str] = set()      # filled by closure(): no requirement chain reaches them on Windows
 
 HEADER = """\
 # Pinned environment for the evaluation harness. Python 3.12 only.
@@ -44,12 +47,16 @@ def norm(n: str) -> str:
 
 
 def closure() -> dict[str, str]:
+    """Installed distributions reachable from ROOTS, following requested extras (e.g. uvicorn[standard])."""
     seen: dict[str, str] = {}
+    done: set[tuple[str, frozenset]] = set()
+    needed_on_windows: dict[str, bool] = {}
 
-    def walk(n: str) -> None:
+    def walk(n: str, extras: frozenset = frozenset()) -> None:
         n = norm(n)
-        if n in seen:
+        if (n, extras) in done:
             return
+        done.add((n, extras))
         try:
             d = distribution(n)
         except PackageNotFoundError:
@@ -57,12 +64,17 @@ def closure() -> dict[str, str]:
         seen[n] = d.version
         for r in d.requires or []:
             q = Requirement(r)
-            if q.marker is not None and not q.marker.evaluate({"extra": ""}):
+            if q.marker is not None and not any(q.marker.evaluate({"extra": e}) for e in (extras or {""})):
                 continue
-            walk(q.name)
+            if q.marker is None or any(q.marker.evaluate({**WIN, "extra": e}) for e in (extras or {""})):
+                needed_on_windows[norm(q.name)] = True
+            walk(q.name, frozenset(q.extras))
 
     for r in ROOTS:
+        needed_on_windows[norm(r)] = True
         walk(r)
+    NOT_ON_WINDOWS.clear()
+    NOT_ON_WINDOWS.update(n for n in seen if not needed_on_windows.get(n))
     for d in distributions():          # CUDA runtime wheels torch pulls in under other markers
         n = norm(d.metadata["Name"])
         if n.startswith(LINUX_ONLY_PREFIX):
@@ -73,7 +85,12 @@ def closure() -> dict[str, str]:
 def render(pins: dict[str, str]) -> str:
     lines = [HEADER]
     for n, v in sorted(pins.items()):
-        mark = '; sys_platform == "linux"' if n.startswith(LINUX_ONLY_PREFIX) else ""
+        if n.startswith(LINUX_ONLY_PREFIX):
+            mark = '; sys_platform == "linux"'
+        elif n in NOT_ON_WINDOWS:
+            mark = '; sys_platform != "win32"'
+        else:
+            mark = ""
         lines.append(f"{n}=={v}{mark}")
     for n, v in WINDOWS_ONLY.items():
         lines.append(f'{n}=={v}; sys_platform == "win32"')
