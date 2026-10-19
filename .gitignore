@@ -23,3 +23,8 @@ graphify-out/
 
 # Mem0 local persistence
 .mem0/
+
+# Eval harness: datasets, caches, indexes, logs, run outputs
+eval_harness/data/
+eval_harness/**/*.log
+eval_harness/**/__pycache__/

@@ -1,0 +1,24 @@
+# Versioned preflight settings (experiment-independent thresholds).
+ollama_base_url = "http://127.0.0.1:11434"
+request_timeout_s = 1200
+
+models = [
+  "qwen3.5:9b",
+  "qwen2.5-coder:7b-instruct",
+  "llama3.1:8b-instruct-q4_K_M",
+]
+
+min_free_disk_gb = 100
+# Non-Ollama processes (desktop etc.) may hold some VRAM; above this the GPU is not "free".
+max_idle_vram_used_mib = 3072
+
+# Ascending num_ctx candidates for the long-context fit test (uniform value for all roles).
+num_ctx_candidates = [8192, 16384, 24576, 32768, 40960, 49152, 65536]
+# Fraction of num_ctx the probe prompt fills; must be < 1 so truncation is detectable.
+fill_fraction = 0.85
+# prompt_eval_count must land within this relative tolerance of the intended size.
+fill_tolerance = 0.10
+
+seed = 0
+temperature = 0.0
+probe_num_predict = 16

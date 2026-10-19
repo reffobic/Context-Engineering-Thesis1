@@ -1,0 +1,26 @@
+# Versioned experiment settings (hashed into every log line). Decisions recorded 2026-10-18.
+
+[pipeline]
+# DEVELOPMENT TARGET ONLY until the integration SHA is frozen and confirmed by the owner.
+pipeline_commit = "origin/GASR"
+record_results = false          # harness refuses to write result logs while false
+
+[seed]
+value = 42                       # the one seed: sampling, Ollama options, any tie-breaks
+
+[sampling]
+fraction = 0.10
+datasets = ["swe-bench-lite", "loc-bench"]
+
+[ollama]
+num_ctx = 32768                  # uniform for every call (preflight: largest value fitting all 3 models on the 4080)
+think = false                    # judges AND answer call
+judge_temperature = 0.0
+answer_temperature = 0.0
+keep_alive = "10m"
+# num_gpu is NOT forced; instead every job must be fully VRAM-resident and the
+# `ollama ps` split (size / size_vram) is logged.
+require_full_vram = true
+
+[embedding]
+query_device = "cpu"             # query embedding on CPU on both machines; indexes built once and shared

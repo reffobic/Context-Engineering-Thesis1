@@ -1,0 +1,11 @@
+# Index-building settings (step 4). Everything here goes into the index cache key.
+
+[embedding]
+model = "all-MiniLM-L6-v2"          # same constant as backend retrieval_tool.EMBEDDING_MODEL
+fingerprint_text = "def load_config(path):\n    with open(path) as f:\n        return json.load(f)"
+fingerprint_decimals = 4
+
+[index]
+# Pipeline env that changes what is indexed. Values are passed to the index worker as-is.
+INDEX_CONTEXT_OLLAMA = "0"          # no LLM file summaries at index time
+USE_HYBRID_EMBEDDINGS = "1"         # pipeline default

@@ -1,0 +1,24 @@
+# Versioned dataset settings. IDs verified against the LocAgent README
+# (https://github.com/gersteinlab/LocAgent): czlll/Loc-Bench_V1 and czlll/SWE-bench_Lite, split "test".
+locagent_readme_url = "https://raw.githubusercontent.com/gersteinlab/LocAgent/master/README.md"
+hf_api_url = "https://huggingface.co/api/datasets"
+rows_api_url = "https://datasets-server.huggingface.co"
+page_size = 100
+
+[[dataset]]
+name = "swe-bench-lite"
+hf_id = "czlll/SWE-bench_Lite"
+split = "test"
+expected_count = 274
+
+[[dataset]]
+name = "loc-bench"
+hf_id = "czlll/Loc-Bench_V1"
+split = "test"
+expected_count = 560
+
+[git]
+repo_url_template = "https://github.com/{repo}.git"
+fetch_depth = 1
+timeout_s = 3600
+workers = 4

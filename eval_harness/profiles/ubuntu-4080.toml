@@ -1,0 +1,5 @@
+# Per-machine profile: paths, queue file, machine ID, notification env-var NAME only.
+machine_id = "ubuntu-4080"
+data_dir = "eval_harness/data"
+queue_file = "eval_harness/queues/ubuntu-4080.toml"
+ntfy_topic_env = "EVAL_NTFY_TOPIC"
