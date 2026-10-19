@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { checkOllama } from './extension';
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
     private _view?: vscode.WebviewView;
@@ -30,6 +31,9 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         // ── Handle messages from the webview ──────────────────────────────
         webviewView.webview.onDidReceiveMessage(async (message) => {
             switch (message.type) {
+                case 'checkOllama':
+                    void checkOllama();
+                    break;
                 case 'getActiveFile':
                     await this._sendActiveFile();
                     break;

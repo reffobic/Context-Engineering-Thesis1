@@ -564,6 +564,9 @@
 
     let fullAnswer = '';
 
+    // Non-blocking: extension host warns if Ollama is unreachable.
+    try { vscode.postMessage({ type: 'checkOllama' }); } catch (_) { /* ignore */ }
+
     try {
       const resp = await fetch(`http://127.0.0.1:${state.port}/generate/stream`, {
         method: 'POST',

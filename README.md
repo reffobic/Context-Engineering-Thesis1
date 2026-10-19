@@ -159,6 +159,9 @@ There is **no** top-level `src/` package in this layout; runnable code lives und
 
 ### MCP server (`backend/mcp_server/server.py`)
 
+> **Note:** despite the name, this is a plain **FastAPI REST API** with a Python-dict tool registry — **not** an Anthropic Model Context Protocol (JSON-RPC) server. See [docs/ARCHITECTURE_AND_FAILURE_MODES.md](docs/ARCHITECTURE_AND_FAILURE_MODES.md) for the GASR/GAPA pipeline, VS Code extension, and failure behaviour.
+
+
 - **`run_pipeline`** (used by `POST /generate`): `retrieve_context` → `prune_context_with_stats` → `inject_context` → `ollama_generate`, with default **`token_budget=1800`** for pruning.
 
 ---

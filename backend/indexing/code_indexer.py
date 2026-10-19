@@ -326,8 +326,10 @@ def _chunk_python(source: str, rel_path: str, language: str, f_hash: str) -> lis
     try:
         tree = ast.parse(source)
     except SyntaxError as exc:
-        logger.warning("Python parse error in %s: %s", rel_path, exc)
-        return []
+        logger.warning(
+            "Python parse error in %s: %s — falling back to generic chunking", rel_path, exc
+        )
+        return _chunk_generic(source, rel_path, language, f_hash)
 
     for node in ast.walk(tree):
         if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):

@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as cp from 'child_process';
+import * as net from 'net';
+import * as http from 'http';
 import { SidebarProvider } from './sidebarProvider';
 
 let serverProcess: cp.ChildProcess | null = null;
@@ -44,6 +46,47 @@ export function activate(context: vscode.ExtensionContext) {
     if (config.get<boolean>('autoStartServer')) {
         startServer(context, sidebarProvider);
     }
+
+    // ── Ollama preflight ────────────────────────────────────────────────────
+    void checkOllama();
+}
+
+// ── Preflight helpers ────────────────────────────────────────────────────────
+
+const OLLAMA_URL = 'http://localhost:11434';
+let ollamaWarnedAt = 0;
+
+/** Resolves true if something already accepts TCP connections on host:port. */
+function isPortInUse(port: number, host = '127.0.0.1'): Promise<boolean> {
+    return new Promise((resolve) => {
+        const socket = new net.Socket();
+        const done = (inUse: boolean) => { socket.destroy(); resolve(inUse); };
+        socket.setTimeout(500);
+        socket.once('connect', () => done(true));
+        socket.once('timeout', () => done(false));
+        socket.once('error', () => done(false));
+        socket.connect(port, host);
+    });
+}
+
+/** Non-blocking check; shows a notification (at most once per 60s) if Ollama is unreachable. */
+export async function checkOllama(): Promise<boolean> {
+    const reachable = await new Promise<boolean>((resolve) => {
+        const req = http.get(`${OLLAMA_URL}/api/tags`, (res) => {
+            res.resume();
+            resolve(!!res.statusCode && res.statusCode < 500);
+        });
+        req.on('error', () => resolve(false));
+        req.setTimeout(1500, () => { req.destroy(); resolve(false); });
+    });
+    if (!reachable && Date.now() - ollamaWarnedAt > 60_000) {
+        ollamaWarnedAt = Date.now();
+        // Intentionally not awaited so it never blocks startup or queries.
+        void vscode.window.showWarningMessage(
+            "Context Engine: Ollama appears offline. Ensure 'ollama serve' is running."
+        );
+    }
+    return reachable;
 }
 
 export function deactivate() {
@@ -70,6 +113,26 @@ async function startServer(context: vscode.ExtensionContext, provider: SidebarPr
     const pythonPath = config.get<string>('pythonPath') || 'python';
     const port = config.get<number>('backendPort') || 8000;
     const backendDir = getBackendDir();
+
+    // ── Port-in-use preflight ──
+    if (await isPortInUse(port)) {
+        const connect = 'Connect to existing server';
+        const change = 'Change port in settings';
+        const choice = await vscode.window.showWarningMessage(
+            `Context Engine: port ${port} is already in use by another process.`,
+            connect,
+            change
+        );
+        if (choice === connect) {
+            setStatusBarConnected(port);
+            provider.postMessage({ type: 'serverStatus', status: 'running', port });
+        } else if (choice === change) {
+            await vscode.commands.executeCommand(
+                'workbench.action.openSettings', 'contextEngine.backendPort'
+            );
+        }
+        return;
+    }
 
     setStatusBarStarting();
     provider.postMessage({ type: 'serverStatus', status: 'starting' });

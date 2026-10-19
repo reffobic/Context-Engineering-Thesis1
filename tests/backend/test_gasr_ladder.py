@@ -205,3 +205,41 @@ def test_context_need_without_neighbors_goes_lc():
     assert result.hops_used == 0
     assert result.context == [{"text": "parent"}]
     assert result.expand_trace == []
+
+
+def test_missing_graph_falls_through_to_lc_with_diagnostics():
+    """Missing graph.json: empty expand is recorded, then ladder falls to LC."""
+    pruned = [{"text": "seed", "path": "a.py", "symbol": "f"}]
+
+    result = run_gasr_ladder(
+        seed_pool=pruned,
+        initial_pruned=pruned,
+        assess_rag=lambda: {
+            "sufficient": False,
+            "confidence": "low",
+            "reason": "miss",
+            "route": "LC",
+        },
+        assess_structure=lambda: {
+            "need": "STRUCTURE",
+            "confidence": "high",
+            "reason": "need callees",
+        },
+        expand_hop=lambda seeds, hops: {
+            "chunks": [],
+            "new_chunk_count": 0,
+            "neighbor_ids": [],
+            "seed_keys": [],
+            "graph_backend": "empty",
+            "edge_counts": {},
+            "duration_ms": 0,
+        },
+        re_prune=lambda s, n: pruned,
+        assess_after_expand=lambda: pytest.fail("no post-expand assess on empty expand"),
+        build_lc=lambda: [{"text": "lc"}],
+        hard_cap=2,
+    )
+
+    assert result.route == "LC"
+    assert result.expand_trace[0]["new_chunk_count"] == 0
+    assert result.expand_trace[0]["graph_backend"] == "empty"
