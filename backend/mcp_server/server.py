@@ -88,7 +88,7 @@ def _persist_eval_metrics(
 
 class GenerateRequest(BaseModel):
     prompt: str
-    mode: Literal["RAG", "LC", "SELF_ROUTE", "GASR", "PREROUTE"] = "SELF_ROUTE"
+    mode: Literal["RAG", "LC", "SELF_ROUTE", "GASR", "GAPA"] = "SELF_ROUTE"
     pruning_method: Literal["heuristic", "selective"] = "heuristic"
     assessor_model: Optional[str] = None  # Ollama model for sufficiency judge; None = use default
     model: Optional[str] = None           # Ollama model for generation; None = use default
@@ -107,7 +107,7 @@ class EvaluateRequest(BaseModel):
     judge_retrieval_relevancy: bool = False
     faithfulness: bool = False
     #: Ablation answer path: if set, also run full ``run_pipeline`` with this mode.
-    generate_mode: Optional[Literal["RAG", "LC", "SELF_ROUTE", "GASR", "PREROUTE"]] = None
+    generate_mode: Optional[Literal["RAG", "LC", "SELF_ROUTE", "GASR", "GAPA"]] = None
     #: Where to store metrics JSON (``results/{mode}/json/``). Retrieval path in code may still be hybrid until vector/graph backends exist.
     retrieval_mode: Literal["hybrid", "vector", "graph"] = "hybrid"
     #: If true (default), persist full evaluate response under ``results/{retrieval_mode}/json/``.
@@ -519,7 +519,7 @@ def run_pipeline(
         pipeline["hops_used"] = hops_used
         logging.info("GASR finished route=%s hops=%s", route, hops_used)
 
-    elif mode == "PREROUTE":
+    elif mode == "GAPA":
         # Single-stage entry gate: six-step structured prompt over RAW
         # retrieval metadata (context, not pruned_context — no chunk text
         # ever enters this prompt), one LLM call. GASR's ladder reused
@@ -532,7 +532,7 @@ def run_pipeline(
         # does NOT skip that cost, only skips READING pruned text in the
         # gate's own prompt and skips a SECOND LLM call the old design
         # could trigger. Don't claim pruning itself is avoided.
-        logging.info("PREROUTE mode — structured gate, single LLM call (hop cap=%s)", gasr_hard_cap)
+        logging.info("GAPA mode — structured gate, single LLM call (hop cap=%s)", gasr_hard_cap)
         pipeline["stage_order"] = [
             "retrieve", "assess", "prune", "graph_expand", "re_prune", "inject", "generate"
         ]
@@ -545,10 +545,10 @@ def run_pipeline(
         # before retrieve_context at the top of this function, not just
         # before this gate. That's a change to shared code (every mode
         # calls retrieve_context unconditionally above), out of scope for
-        # a PREROUTE-only edit. Until then this mode has the same gap
+        # a GAPA-only edit. Until then this mode has the same gap
         # every other mode here has — no mode resolves follow-ups yet, so
         # the comparison stays fair. See preroute_gate.py's own docstring
-        # for the narrower, PREROUTE-scoped version of this hook.
+        # for the narrower, GAPA-scoped version of this hook.
         #
         #     user_prompt = _memory_agent.resolve_referential_prompt(user_prompt)
 
@@ -621,7 +621,7 @@ def run_pipeline(
                 exp["re_prune_kind"] = "graph_aware"
 
         pipeline["stages"]["assess"] = _stage(
-            "PREROUTE assessment",
+            "GAPA assessment",
             sum(t.get("duration_ms", 0) for t in ladder.assess_trace),
             {
                 "route": route,
@@ -655,7 +655,7 @@ def run_pipeline(
                 },
             )
         pipeline["hops_used"] = hops_used
-        logging.info("PREROUTE finished route=%s hops=%s entry_gate_stage=%s", route, hops_used, entry_decision.get("stage"))
+        logging.info("GAPA finished route=%s hops=%s entry_gate_stage=%s", route, hops_used, entry_decision.get("stage"))
                                                         
     elif mode == "LC":
         logging.info("LC mode forced — using parent_context, skipping assessment")

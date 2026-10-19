@@ -39,7 +39,7 @@ from live_gasr_ollama_tests import (  # noqa: E402
     list_ollama_models,
 )
 
-MODES: list[str] = ["RAG", "LC", "GASR", "SELF_ROUTE", "PREROUTE"]
+MODES: list[str] = ["RAG", "LC", "GASR", "SELF_ROUTE", "GAPA"]
 
 # Larger prompt bank — each group × 4 modes.
 COMPARE_GROUPS: list[dict[str, Any]] = [
@@ -224,7 +224,7 @@ def _expand_cases() -> list[dict[str, Any]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="RAG/LC/GASR/SELF_ROUTE/PREROUTE live compare → results/live_modes_compare/"
+        description="RAG/LC/GASR/SELF_ROUTE/GAPA live compare → results/live_modes_compare/"
     )
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
     parser.add_argument("--timeout", type=float, default=1200.0)
@@ -381,7 +381,7 @@ def main() -> int:
     md_report = _markdown_report(run_meta, results, aggregates)
     # Prefix header so thesis readers see model split
     header = (
-        f"# Modes compare (RAG / LC / GASR / SELF_ROUTE / PREROUTE)\n\n"
+        f"# Modes compare (RAG / LC / GASR / SELF_ROUTE / GAPA)\n\n"
         f"- **Generation model (expected):** `{gen_label or 'see API OLLAMA_MODEL'}`\n"
         f"- **Assessor model (expected):** `{assessor_label or 'see API ASSESSOR_MODEL'}`\n"
         f"- **Out dir:** `{out_dir}`\n\n"
