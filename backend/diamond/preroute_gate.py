@@ -1,7 +1,7 @@
 """
 preroute_gate.py
 
-Alternative entry gate for the GASR ladder, wired in as mode="PREROUTE" in
+Alternative entry gate for the GASR ladder, wired in as mode="GAPA" in
 mcp_server/server.py. Replaces ONLY the assess_rag callback that
 run_gasr_ladder takes — assess_structure, expand_hop, re_prune,
 assess_after_expand and build_lc are reused UNCHANGED from the existing
@@ -429,7 +429,7 @@ def preroute_gate_generative(
 # ── Single-stage structured gate: metadata + six-step prompt, one LLM call ──
 #
 # This REPLACES preroute_gate() and preroute_gate_generative() as the
-# intended PREROUTE mechanism going forward — those two stay in this file
+# intended GAPA mechanism going forward — those two stay in this file
 # (already tested, zero risk to remove them) but server.py's PREROUTE
 # branch should call THIS instead. See the accompanying server.py edit.
 #
@@ -509,7 +509,7 @@ def preroute_structured_gate(
     """
     The single-stage replacement for assess_rag. Call this on RAW
     retrieval output, BEFORE prune_context_with_stats — see server.py's
-    updated PREROUTE branch. Same return contract as assess_sufficiency:
+    updated GAPA branch. Same return contract as assess_sufficiency:
     sufficient, confidence, reason, route.
 
     # --- once the memory branch is merged, this is also where an initial

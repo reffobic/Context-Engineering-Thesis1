@@ -18,7 +18,7 @@ print(f"Source: {path}\n")
 
 
 def get_tokens(row):
-    # PREROUTE stores it at entry_gate_token_usage (top-level in the summary).
+    # GAPA stores it at entry_gate_token_usage (top-level in the summary).
     # GASR doesn't hoist it to the top level, but it's nested in trace[0]
     # (the same decision dict assess_sufficiency returns, carried through
     # by run_gasr_ladder's bookkeeping) -- check both.
@@ -45,7 +45,7 @@ for row in data['results']:
         missing[mode] = missing.get(mode, 0) + 1
 
 print("--- Token usage by mode (assess/gate call only) ---")
-for mode in ('GASR', 'SELF_ROUTE', 'PREROUTE'):
+for mode in ('GASR', 'SELF_ROUTE', 'GAPA'):
     rows = by_mode.get(mode, [])
     if not rows:
         print(f"{mode:<12} NO TOKEN DATA CAPTURED ({missing.get(mode, 0)} rows) "

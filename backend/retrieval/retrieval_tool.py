@@ -33,9 +33,12 @@ except ImportError:  # pragma: no cover - sentence-transformers is optional at r
 # ══════════════════════════════════════════════════════════════════
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 CHROMA_PATH     = str(Path(__file__).resolve().parent.parent / "chroma_db")
-COLLECTION_NAME = "code_embeddings"
+COLLECTION_NAME = os.getenv("CHROMA_COLLECTION", "code_embeddings")
+META_COLLECTION_NAME = os.getenv("CHROMA_META_COLLECTION", "code_meta_embeddings")
 BM25_PATH       = str(Path(CHROMA_PATH) / "bm25_index.json")
 CONTEXT_SEPARATOR = "\n\n--- RAW CODE ---\n"
+# Dense blend: (1-α)·sim_code + α·sim_meta  (preroute-ready channels)
+DENSE_ALPHA = float(os.getenv("DENSE_ALPHA", "0.40"))
 
 # Ranking weights
 W_HYBRID    = 0.46
@@ -81,9 +84,35 @@ SYMBOL_STOPWORDS = {
 # ══════════════════════════════════════════════════════════════════
 
 client     = chromadb.PersistentClient(path=CHROMA_PATH)
-collection = client.get_collection(COLLECTION_NAME)
+collection = client.get_or_create_collection(
+    name=COLLECTION_NAME,
+    metadata={"hnsw:space": "cosine"},
+)
+try:
+    meta_collection = client.get_collection(META_COLLECTION_NAME)
+except Exception:
+    meta_collection = None
 _bm25_cache: dict[str, Any] | None = None
 _reranker: Any | None = None
+
+
+def _get_meta_collection():
+    """Lazy bind to code_meta_embeddings after reindex creates it."""
+    global meta_collection
+    if meta_collection is not None:
+        return meta_collection
+    try:
+        meta_collection = client.get_collection(META_COLLECTION_NAME)
+    except Exception:
+        return None
+    return meta_collection
+
+
+def blend_dense_scores(sim_code: float, sim_meta: float, alpha: float | None = None) -> float:
+    """score = (1-α)·sim_code + α·sim_meta — shared by retrieval and future preroute."""
+    a = DENSE_ALPHA if alpha is None else float(alpha)
+    a = max(0.0, min(1.0, a))
+    return (1.0 - a) * float(sim_code) + a * float(sim_meta)
 
 
 # ══════════════════════════════════════════════════
@@ -127,6 +156,10 @@ def _chunk_id(meta: dict[str, Any]) -> str:
 
 
 def _make_chunk(doc: str, meta: dict[str, Any], *, similarity: float = 0.0, source: str = "unknown") -> dict:
+    """
+    Build a retrieval hit. Metadata fields mirror the indexer ContextMeta contract
+    so a future mode prerouter (RAG/GRAPH/LC) can read the same signals.
+    """
     code = _raw_code(doc)
     return {
         "code": code,
@@ -143,9 +176,21 @@ def _make_chunk(doc: str, meta: dict[str, Any], *, similarity: float = 0.0, sour
             "qualified_name": meta.get("qualified_name", ""),
             "symbols":      meta.get("symbols", "[]"),
             "file_summary": meta.get("file_summary", ""),
+            "situating_text": meta.get("situating_text", ""),
+            "chunk_role": meta.get("chunk_role", "other"),
+            "context_header": meta.get("context_header", ""),
         },
+        # Top-level aliases for preroute-ready consumers
+        "file_summary": meta.get("file_summary", ""),
+        "situating_text": meta.get("situating_text", ""),
+        "chunk_role": meta.get("chunk_role", "other"),
+        "symbols": _safe_json_list(meta.get("symbols", "[]")),
+        "dependencies": _safe_json_list(meta.get("dependencies", "[]")),
         "similarity": round(similarity, 4),
         "dense_score": round(similarity, 4) if source == "vector" else 0.0,
+        "sim_code": 0.0,
+        "sim_meta": 0.0,
+        "sim_gap": 0.0,  # sim_meta - sim_code (preroute signal)
         "bm25_score": 0.0,
         "exact_match_score": 0.0,
         "candidate_sources": [source],
@@ -289,13 +334,27 @@ def _c_style_symbols(query: str) -> list[str]:
     return out
 
 
-def _rows_to_chunks(rows: dict[str, Any]) -> list[dict]:
+def _rows_to_chunks(
+    rows: dict[str, Any],
+    *,
+    source: str = "vector",
+    sim_field: str | None = None,
+) -> list[dict]:
     chunks: list[dict] = []
     docs = rows["documents"][0] if rows["documents"] else []
     metas = rows["metadatas"][0] if rows["metadatas"] else []
     dists = rows["distances"][0] if rows["distances"] else []
     for doc, meta, dist in zip(docs, metas, dists):
-        chunks.append(_make_chunk(doc, meta, similarity=1 - dist, source="vector"))
+        sim = 1.0 - float(dist)
+        item = _make_chunk(doc, meta, similarity=sim, source=source)
+        if sim_field == "sim_code":
+            item["sim_code"] = round(sim, 4)
+        elif sim_field == "sim_meta":
+            item["sim_meta"] = round(sim, 4)
+            # Meta collection stores NL-only docs; keep placeholders until merged with code hit.
+            item["code"] = ""
+            item["contextual_document"] = ""
+        chunks.append(item)
     return chunks
 
 
@@ -305,35 +364,111 @@ def vector_retrieve(
     *,
     where_document: Optional[dict] = None,
     query_embedding: Optional[list[float]] = None,
+    coll=None,
+    source: str = "vector",
+    sim_field: str | None = "sim_code",
 ) -> list[dict]:
+    target = coll if coll is not None else collection
     model = get_sentence_transformer(EMBEDDING_MODEL)
     qvec = query_embedding if query_embedding is not None else model.encode([query])[0].tolist()
 
-    n_docs = max(collection.count(), 1)
+    n_docs = max(target.count(), 1)
     n_results = min(top_k, n_docs)
+    if n_docs <= 0 or target.count() == 0:
+        return []
 
-    results = collection.query(
+    results = target.query(
         query_embeddings=[qvec],
         n_results=n_results,
         where_document=where_document,
         include=["documents", "metadatas", "distances"],
     )
-    return _rows_to_chunks(results)
+    return _rows_to_chunks(results, source=source, sim_field=sim_field)
+
+
+def _merge_dual_dense(code_hits: list[dict], meta_hits: list[dict], alpha: float | None = None) -> list[dict]:
+    """
+    Join code_embeddings and code_meta_embeddings on chunk_id.
+    Prefer code-channel document (contextual) for answer text.
+    """
+    a = DENSE_ALPHA if alpha is None else float(alpha)
+    by_id: dict[str, dict] = {}
+
+    for item in code_hits:
+        cid = _chunk_id(item.get("metadata", {}))
+        if not cid:
+            continue
+        row = dict(item)
+        row["sim_code"] = float(item.get("sim_code") or item.get("dense_score") or 0.0)
+        row["sim_meta"] = float(item.get("sim_meta") or 0.0)
+        by_id[cid] = row
+
+    for item in meta_hits:
+        cid = _chunk_id(item.get("metadata", {}))
+        if not cid:
+            continue
+        sim_m = float(item.get("sim_meta") or item.get("dense_score") or 0.0)
+        if cid not in by_id:
+            # Meta-only hit: fetch is incomplete; keep metadata and empty code until filled.
+            row = dict(item)
+            row["sim_code"] = 0.0
+            row["sim_meta"] = sim_m
+            # Prefer contextual if somehow present; else leave empty (rare).
+            by_id[cid] = row
+        else:
+            by_id[cid]["sim_meta"] = max(float(by_id[cid].get("sim_meta") or 0.0), sim_m)
+            # Fill missing ContextMeta from meta hit if code hit lacked them (legacy index).
+            for key in ("situating_text", "chunk_role", "file_summary"):
+                if not by_id[cid].get(key) and item.get(key):
+                    by_id[cid][key] = item[key]
+                    by_id[cid]["metadata"][key] = item["metadata"].get(key, item.get(key))
+
+    merged = []
+    for row in by_id.values():
+        sim_c = float(row.get("sim_code") or 0.0)
+        sim_m = float(row.get("sim_meta") or 0.0)
+        blended = blend_dense_scores(sim_c, sim_m, a)
+        row["sim_code"] = round(sim_c, 4)
+        row["sim_meta"] = round(sim_m, 4)
+        row["sim_gap"] = round(sim_m - sim_c, 4)
+        row["dense_score"] = round(blended, 4)
+        row["similarity"] = round(blended, 4)
+        sources = list(row.get("candidate_sources") or [])
+        if "vector_code" not in sources and sim_c > 0:
+            sources.append("vector_code")
+        if "vector_meta" not in sources and sim_m > 0:
+            sources.append("vector_meta")
+        row["candidate_sources"] = sources
+        merged.append(row)
+    return merged
 
 
 def vector_retrieve_merged(query: str, top_k: int) -> list[dict]:
     """
-    Wide dense retrieval + optional Chroma ``$contains`` passes for underscore
-    identifiers (Subversion C APIs, etc.) so symbol-heavy questions are not
-    drowned out by unrelated vector neighbors (e.g. tiny Flask samples).
+    Dual-channel dense retrieval: query code_embeddings and code_meta_embeddings,
+    blend with α, then optional symbol $contains passes on the code collection.
     """
     model = get_sentence_transformer(EMBEDDING_MODEL)
     qvec = model.encode([query])[0].tolist()
 
-    n_docs = max(collection.count(), 1)
-    n_vec = min(max(top_k, MIN_VECTOR_CANDIDATES), n_docs)
+    n_code = max(collection.count(), 1)
+    n_vec = min(max(top_k, MIN_VECTOR_CANDIDATES), n_code)
 
-    candidates = vector_retrieve(query, top_k=n_vec, query_embedding=qvec)
+    code_hits = vector_retrieve(
+        query, top_k=n_vec, query_embedding=qvec, coll=collection,
+        source="vector", sim_field="sim_code",
+    )
+
+    meta_coll = _get_meta_collection()
+    meta_hits: list[dict] = []
+    if meta_coll is not None and meta_coll.count() > 0:
+        n_meta = min(max(top_k, MIN_VECTOR_CANDIDATES), meta_coll.count())
+        meta_hits = vector_retrieve(
+            query, top_k=n_meta, query_embedding=qvec, coll=meta_coll,
+            source="vector_meta", sim_field="sim_meta",
+        )
+
+    candidates = _merge_dual_dense(code_hits, meta_hits)
     seen: set[str] = {
         str(c["metadata"].get("chunk_id") or "")
         for c in candidates
@@ -341,20 +476,50 @@ def vector_retrieve_merged(query: str, top_k: int) -> list[dict]:
     }
 
     for sym in _c_style_symbols(query)[:MAX_SYMBOL_QUERIES]:
-        n_sym = min(SYMBOL_QUERY_TOP_K, n_docs)
+        n_sym = min(SYMBOL_QUERY_TOP_K, n_code)
         extra = vector_retrieve(
             query,
             top_k=n_sym,
             where_document={"$contains": sym},
             query_embedding=qvec,
+            coll=collection,
+            source="vector",
+            sim_field="sim_code",
         )
         for c in extra:
             cid = str(c["metadata"].get("chunk_id") or "")
             if cid and cid in seen:
+                # Boost sim_code if this pass scored higher
+                for existing in candidates:
+                    if _chunk_id(existing.get("metadata", {})) == cid:
+                        existing["sim_code"] = max(
+                            float(existing.get("sim_code") or 0.0),
+                            float(c.get("sim_code") or 0.0),
+                        )
+                        existing["dense_score"] = round(
+                            blend_dense_scores(
+                                existing["sim_code"],
+                                float(existing.get("sim_meta") or 0.0),
+                            ),
+                            4,
+                        )
+                        existing["similarity"] = existing["dense_score"]
+                        existing["sim_gap"] = round(
+                            float(existing.get("sim_meta") or 0.0) - float(existing["sim_code"]),
+                            4,
+                        )
+                        break
                 continue
             if cid:
                 seen.add(cid)
             candidates.append(c)
+            # Re-blend single append
+            c["dense_score"] = round(
+                blend_dense_scores(float(c.get("sim_code") or 0.0), float(c.get("sim_meta") or 0.0)),
+                4,
+            )
+            c["similarity"] = c["dense_score"]
+            c["sim_gap"] = round(float(c.get("sim_meta") or 0.0) - float(c.get("sim_code") or 0.0), 4)
 
     return candidates
 
@@ -515,8 +680,18 @@ def _merge_candidates(streams: dict[str, list[dict]]) -> list[dict]:
             target = merged[cid]
             if source not in target["candidate_sources"]:
                 target["candidate_sources"].append(source)
-            for score_key in ("dense_score", "bm25_score", "exact_match_score", "similarity"):
-                target[score_key] = max(float(target.get(score_key, 0.0) or 0.0), float(item.get(score_key, 0.0) or 0.0))
+            for score_key in (
+                "dense_score", "bm25_score", "exact_match_score", "similarity",
+                "sim_code", "sim_meta",
+            ):
+                target[score_key] = max(
+                    float(target.get(score_key, 0.0) or 0.0),
+                    float(item.get(score_key, 0.0) or 0.0),
+                )
+            target["sim_gap"] = round(
+                float(target.get("sim_meta") or 0.0) - float(target.get("sim_code") or 0.0),
+                4,
+            )
     return list(merged.values())
 
 
@@ -545,6 +720,9 @@ def _retrieval_diagnostics(query_plan: dict[str, Any], streams: dict[str, list[d
         },
         "bm25_available": bool(_load_bm25()),
         "reranker_enabled": RERANKER_ENABLED,
+        "dual_dense": bool(_get_meta_collection() is not None),
+        "dense_alpha": DENSE_ALPHA,
+        "meta_collection": META_COLLECTION_NAME,
     }
 
 
