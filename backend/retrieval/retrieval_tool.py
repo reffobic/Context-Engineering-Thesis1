@@ -469,6 +469,27 @@ def vector_retrieve_merged(query: str, top_k: int) -> list[dict]:
         )
 
     candidates = _merge_dual_dense(code_hits, meta_hits)
+    # Meta-only hits come back with empty code; fetch their text from the code collection.
+    missing = [
+        _chunk_id(c.get("metadata", {}))
+        for c in candidates
+        if not c.get("code") and _chunk_id(c.get("metadata", {}))
+    ]
+    if missing:
+        got = collection.get(
+            where={"chunk_id": {"$in": missing}},
+            include=["documents", "metadatas"],
+        )
+        filled = {
+            _chunk_id(m): _make_chunk(d, m)
+            for d, m in zip(got["documents"], got["metadatas"])
+        }
+        for c in candidates:
+            f = filled.get(_chunk_id(c.get("metadata", {})))
+            if f:
+                c["code"] = f.get("code", "")
+                c["contextual_document"] = f.get("contextual_document", "")
+                c["metadata"] = {**c.get("metadata", {}), **f.get("metadata", {})}
     seen: set[str] = {
         str(c["metadata"].get("chunk_id") or "")
         for c in candidates
