@@ -55,6 +55,8 @@ def _finish(
         expand_trace=expand_trace,
     )
 
+def _tk(d: dict[str, Any], key: str) -> int:
+    return int(((d.get("token_usage") or {}).get(key)) or 0)
 
 def _compose_legacy_gate(assess_rag: AssessFn, assess_structure: AssessFn) -> AssessFn:
     """Two callbacks → one gate dict (for older tests only)."""
@@ -70,6 +72,10 @@ def _compose_legacy_gate(assess_rag: AssessFn, assess_structure: AssessFn) -> As
             "confidence": d2.get("confidence", d1.get("confidence", "low")),
             "reason": d2.get("reason") or d1.get("reason", ""),
             "route": "LC",
+            "token_usage": {
+                "prompt_tokens": _tk(d1, "prompt_tokens") + _tk(d2, "prompt_tokens"),
+                "completion_tokens": _tk(d1, "completion_tokens") + _tk(d2, "completion_tokens"),
+            },
             "duration_ms": (d1.get("duration_ms") or 0) + (d2.get("duration_ms") or 0),
         }
 

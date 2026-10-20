@@ -486,7 +486,12 @@ def assess_rag_gate(
             timeout=REQUEST_TIMEOUT,
         )
         resp.raise_for_status()
-        raw = resp.json().get("message", {}).get("content", "")
+        resp_json = resp.json()
+        raw = resp_json.get("message", {}).get("content", "")
+        token_usage = {
+            "prompt_tokens": resp_json.get("prompt_eval_count"),
+            "completion_tokens": resp_json.get("eval_count"),
+        }
     except requests.RequestException as exc:
         logger.warning("assess_rag_gate: Ollama failed (%s) → CONTEXT/LC", exc)
         return {
@@ -513,6 +518,7 @@ def assess_rag_gate(
             "route": "LC",
         }
 
+    result["token_usage"] = token_usage
     logger.info(
         "assess_rag_gate: sufficient=%s need=%s confidence=%s reason=%s",
         result["sufficient"],
