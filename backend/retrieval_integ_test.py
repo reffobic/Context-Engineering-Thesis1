@@ -20,4 +20,4 @@ for i, r in enumerate(results, 1):
     print(f"\n[{i}] {r['metadata']['file']} :: {r['metadata']['function']}")
     print(f"    final_score={r['final_score']}  similarity={r['similarity']}")
     print(f"    code preview: {r['code'][:100]}")
-    print(f"    parent_context available: {r['parent_context'] is not None}")
+    print(f"    parent_context available: {r.get('parent_context') is not None}")
