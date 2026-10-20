@@ -583,7 +583,7 @@ def run_pipeline(
         def _re_prune(seeds, neighbors):
             (pruned, stats), p_ms = _time_stage(
                 lambda: prune_context_graph_aware(
-                    user_prompt, seeds, neighbors, token_budget=token_budget
+                    user_prompt, seeds, neighbors, token_budget=token_budget, method=pruning_method
                 )
             )
             state["pruned"] = pruned
