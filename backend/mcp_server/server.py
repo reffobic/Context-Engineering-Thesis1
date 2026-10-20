@@ -18,6 +18,7 @@ from pydantic import BaseModel
 try:
     from tool_registry import call_tool
     from indexing.code_indexer_endpoint import get_index_summary
+    from retrieval.retrieval_tool import reconstruct_file_context
     from pruning.file import (
         prune_context as prune_context_with_stats,
         prune_context_graph_aware,
@@ -27,6 +28,7 @@ try:
 except ModuleNotFoundError:  # when running as package: python -m uvicorn mcp_server.server:app
     from mcp_server.tool_registry import call_tool
     from indexing.code_indexer_endpoint import get_index_summary
+    from retrieval.retrieval_tool import reconstruct_file_context
     from pruning.file import (
         prune_context as prune_context_with_stats,
         prune_context_graph_aware,
@@ -324,8 +326,11 @@ def run_pipeline(
         {"chunks": pruned_context, "stats": asdict(pruning_stats)},
     )
 
+    
     def _build_lc_chunks(raw_retrieved: list[dict]) -> list[dict]:
         """Convert retrieved chunks to ContextChunk format using parent_context."""
+        if any("parent_context" not in i for i in raw_retrieved):
+            raw_retrieved = reconstruct_file_context(raw_retrieved)
         lc_chunks = []
         for item in raw_retrieved:
             pc = item.get("parent_context") or item.get("code") or ""
@@ -878,6 +883,8 @@ def _run_pipeline_streaming(
 
         # ── Stage 3: Assess (SELF_ROUTE / GASR) ───────────────────────────
         def _build_lc_chunks_sse(raw_retrieved: list) -> list:
+            if any("parent_context" not in i for i in raw_retrieved):
+                raw_retrieved = reconstruct_file_context(raw_retrieved)
             lc_chunks = []
             for item in raw_retrieved:
                 pc = item.get("parent_context") or item.get("code") or ""

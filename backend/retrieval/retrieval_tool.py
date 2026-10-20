@@ -774,7 +774,7 @@ def reconstruct_file_context(ranked_chunks: list[dict]) -> list[dict]:
 # PUBLIC API
 # ══════════════════════════════════════════════════════════════════
 
-def retrieve_context(query: str, top_k: int = 5) -> list[dict]:
+def retrieve_context(query: str, top_k: int = 5, include_parent: bool = False) -> list[dict]:
     """
     Full retrieval pipeline:
       vector search → hybrid scoring → ranking → late chunking context
@@ -791,5 +791,5 @@ def retrieve_context(query: str, top_k: int = 5) -> list[dict]:
     candidates = hybrid_retrieve(query, top_k=top_k * CHILD_FETCH_MULTIPLIER)
     ranked     = rank_chunks(query, candidates)
     top        = ranked[:top_k]
-    results    = reconstruct_file_context(top)
+    results    = reconstruct_file_context(top) if include_parent else top
     return results
