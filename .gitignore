@@ -1,4 +1,5 @@
 flask_test/
+superset/
 backend/chroma_db/
 .deps/
 

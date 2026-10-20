@@ -11,15 +11,16 @@
   let state = {
     port: 8000,
     serverRunning: false,
+    serverStarting: false,
     ollamaModels: [],       // models from Ollama /api/tags
     customModels: [],       // user-added models (persisted via globalState)
     generatorModel: '',
     assessorModel: '',
     activeModelPicker: null, // 'generator' or 'assessor'
-    selectedMode: 'SELF_ROUTE',
+    selectedMode: 'GASR',
     selectedScope: 'repo',  // 'repo' | 'file'
-    activeFileForScope: null, // {relativePath, content, language} — populated on demand
-    contextChips: [],       // [{type:'file'|'selection', label, content, path, startLine, endLine}]
+    activeFileForScope: null,
+    contextChips: [],
     generating: false,
     messages: [],
     workspacePath: '',
@@ -42,8 +43,9 @@
           <div class="server-dot" id="serverDot"></div>
         </div>
         <div class="header-actions">
+          <button class="icon-btn" id="graphBtn" data-tooltip="View Call Graph" title="View Call Graph (opens in browser)"><i class="codicon codicon-type-hierarchy"></i></button>
           <button class="icon-btn" id="indexBtn" data-tooltip="Index Workspace" title="Index Workspace"><i class="codicon codicon-database"></i></button>
-          <button class="icon-btn" id="serverToggleBtn" data-tooltip="Start Server" title="Start Server"><i class="codicon codicon-play"></i></button>
+          <button class="icon-btn" id="serverToggleBtn" data-tooltip="Start Server" title="Start Server"><i class="codicon codicon-play" id="serverToggleIcon"></i></button>
           <button class="icon-btn" id="clearBtn" data-tooltip="Clear Chat" title="Clear Chat"><i class="codicon codicon-clear-all"></i></button>
         </div>
       </div>
@@ -65,11 +67,11 @@
         <!-- Empty state -->
         <div class="empty-state" id="emptyState">
           <div class="empty-state-icon"><i class="codicon codicon-circuit-board"></i></div>
-          <h3>Context Engine</h3>
-          <p>Ask anything about your codebase. The pipeline retrieves, prunes, and injects context automatically.</p>
+          <h3>Context Engine (GASR)</h3>
+          <p>Ask anything about your codebase. The GASR pipeline retrieves, assesses, graph-expands, and injects context automatically.</p>
           <div class="suggestion-chips">
-            <span class="chip" data-prompt="How does the retrieval pipeline work?">How does retrieval work?</span>
-            <span class="chip" data-prompt="Explain the pruning module">Explain pruning</span>
+            <span class="chip" data-prompt="How does the GASR retrieval pipeline work?">How does GASR work?</span>
+            <span class="chip" data-prompt="Explain the graph expansion in the pipeline">Graph expansion?</span>
             <span class="chip" data-prompt="What models are available in this project?">Available models?</span>
             <span class="chip" data-prompt="How is the context injected into the prompt?">How is context injected?</span>
           </div>
@@ -103,6 +105,8 @@
             </button>
           </div>
           <select class="select-pill" id="modeSelect" title="Pipeline mode">
+            <option value="PREROUTE">PREROUTE (Fast Gate)</option>
+            <option value="GASR">GASR (Adaptive)</option>
             <option value="SELF_ROUTE">Auto-Route</option>
             <option value="RAG">RAG</option>
             <option value="LC">Long Context</option>
@@ -171,6 +175,7 @@
     document.getElementById('bannerStartBtn').addEventListener('click', () => {
       vscode.postMessage({ type: 'startServer' });
     });
+    document.getElementById('graphBtn').addEventListener('click', openGraphView);
     document.getElementById('addFileBtn').addEventListener('click', () => {
       vscode.postMessage({ type: 'getActiveFile' });
     });
@@ -239,6 +244,13 @@
     fetchOllamaModels();
   }
 
+  // ── Graph View ─────────────────────────────────────────────────────────
+  function openGraphView() {
+    const url = `http://127.0.0.1:${state.port}/graphify-view`;
+    // Open in the system browser via the extension host
+    vscode.postMessage({ type: 'openExternal', url });
+  }
+
   // ── Scope toggle ──────────────────────────────────────────────────────
   function setScope(scope) {
     state.selectedScope = scope;
@@ -248,7 +260,6 @@
     const bar = document.getElementById('fileScopeBar');
     if (scope === 'file') {
       bar.classList.remove('hidden');
-      // Ask host for the active editor info to show the file name
       vscode.postMessage({ type: 'getActiveFileInfo' });
     } else {
       bar.classList.add('hidden');
@@ -269,27 +280,31 @@
   // ── Server UI ─────────────────────────────────────────────────────────
   function setServerUI(running, starting = false) {
     state.serverRunning = running;
+    state.serverStarting = starting;
     const dot = serverDot;
     const toggleBtn = document.getElementById('serverToggleBtn');
+    const toggleIcon = document.getElementById('serverToggleIcon');
     if (starting) {
       dot.className = 'server-dot starting';
-      toggleBtn.textContent = '⏸';
-      toggleBtn.title = 'Stop Server';
+      if (toggleIcon) { toggleIcon.className = 'codicon codicon-loading codicon-modifier-spin'; }
+      if (toggleBtn) { toggleBtn.title = 'Stop Server'; }
+      if (serverBanner) { serverBanner.classList.add('hidden'); }
     } else if (running) {
       dot.className = 'server-dot running';
-      toggleBtn.textContent = '⏹';
-      toggleBtn.title = 'Stop Server';
-      serverBanner.classList.add('hidden');
+      if (toggleIcon) { toggleIcon.className = 'codicon codicon-debug-stop'; }
+      if (toggleBtn) { toggleBtn.title = 'Stop Server'; }
+      if (serverBanner) { serverBanner.classList.add('hidden'); }
     } else {
       dot.className = 'server-dot';
-      toggleBtn.textContent = '▶';
-      toggleBtn.title = 'Start Server';
-      serverBanner.classList.remove('hidden');
+      if (toggleIcon) { toggleIcon.className = 'codicon codicon-play'; }
+      if (toggleBtn) { toggleBtn.title = 'Start Server'; }
+      if (serverBanner) { serverBanner.classList.remove('hidden'); }
     }
+    // Index & graph buttons are always visible — only warn when clicked if server is down
   }
 
   function toggleServer() {
-    if (state.serverRunning) {
+    if (state.serverRunning || state.serverStarting) {
       vscode.postMessage({ type: 'stopServer' });
     } else {
       vscode.postMessage({ type: 'startServer' });
@@ -314,7 +329,7 @@
     }
   }
 
-  // Keep old name as alias so serverStatus handler can call it
+  // Keep old name as alias
   function fetchModels() { fetchOllamaModels(); }
 
   // ── Model Panel ───────────────────────────────────────────────────────
@@ -330,7 +345,6 @@
   }
 
   function allModels() {
-    // Merge: ollama first, then custom ones not already in ollama list
     const seen = new Set(state.ollamaModels);
     const extras = state.customModels.filter(m => !seen.has(m));
     return [...state.ollamaModels, ...extras];
@@ -354,15 +368,15 @@
     const customList = document.getElementById('customModelList');
     if (!ollamaList || !customList) { return; }
 
-    // Ensure models are valid
     const all = allModels();
     if (!state.generatorModel && all.length > 0) {
       state.generatorModel = all[0];
     }
     if (!state.assessorModel && all.length > 0) {
-      state.assessorModel = all[0];
+      // Prefer a small model for assessor
+      const small = all.find(m => m.includes('3b') || m.includes('3.2') || m.includes('llama3')) || all[0];
+      state.assessorModel = small;
     }
-    // Update pill labels
     const genPill = document.getElementById('generatorModelPillLabel');
     if (genPill) { genPill.textContent = state.generatorModel || (all.length ? all[0] : 'No model'); }
     const assPill = document.getElementById('assessorModelPillLabel');
@@ -370,14 +384,12 @@
 
     const activeModel = state.activeModelPicker === 'assessor' ? state.assessorModel : state.generatorModel;
 
-    // Render Ollama models
     if (state.ollamaModels.length === 0) {
       ollamaList.innerHTML = `<div class="model-empty">No Ollama models detected.<br><span style="font-size:10px">Run: <code>ollama pull qwen3.5:9b</code></span></div>`;
     } else {
       ollamaList.innerHTML = state.ollamaModels.map(m => modelRow(m, 'ollama', activeModel)).join('');
     }
 
-    // Render custom models (only those NOT already in Ollama list)
     const ollamaSet = new Set(state.ollamaModels);
     const customOnly = state.customModels.filter(m => !ollamaSet.has(m));
     if (customOnly.length === 0) {
@@ -386,7 +398,6 @@
       customList.innerHTML = customOnly.map(m => modelRow(m, 'custom', activeModel)).join('');
     }
 
-    // Bind row clicks
     document.querySelectorAll('.model-row').forEach(row => {
       row.querySelector('.model-row-name').addEventListener('click', () => {
         setSelectedModel(row.dataset.model);
@@ -416,7 +427,6 @@
   // ── Custom model management ────────────────────────────────────────────
   function addCustomModel(name) {
     if (!name) { return; }
-    // Normalise: strip whitespace
     name = name.trim();
     if (!state.customModels.includes(name)) {
       state.customModels = [...state.customModels, name];
@@ -429,14 +439,9 @@
   function removeCustomModel(name) {
     state.customModels = state.customModels.filter(m => m !== name);
     persistCustomModels();
-    // If removed model was selected, pick first available
     const all = allModels();
-    if (state.generatorModel === name) {
-      state.generatorModel = all[0] || '';
-    }
-    if (state.assessorModel === name) {
-      state.assessorModel = all[0] || '';
-    }
+    if (state.generatorModel === name) { state.generatorModel = all[0] || ''; }
+    if (state.assessorModel === name) { state.assessorModel = all[0] || ''; }
     renderModelManager();
   }
 
@@ -446,7 +451,6 @@
 
   // ── Context Chips ─────────────────────────────────────────────────────
   function addContextChip(chip) {
-    // Avoid duplicate paths
     state.contextChips = state.contextChips.filter(c => c.label !== chip.label);
     state.contextChips.push(chip);
     renderContextChips();
@@ -477,11 +481,9 @@
       return;
     }
 
-    // Clear empty state
     const emptyState = document.getElementById('emptyState');
     if (emptyState) { emptyState.remove(); }
 
-    // Build context prefix
     let contextPrefix = '';
     if (state.contextChips.length > 0) {
       contextPrefix = state.contextChips.map(c => {
@@ -503,9 +505,14 @@
     await streamGenerate(fullPrompt, state.selectedScope === 'file' ? state.activeFileForScope?.content : null);
   }
 
-  // ── Streaming ─────────────────────────────────────────────────────
+  // ── GASR stage order ─────────────────────────────────────────────────
+  // Standard stages; graph_expand + re_prune are injected dynamically for GASR/PREROUTE
+  const BASE_STAGE_ORDER   = ['retrieve', 'prune', 'assess', 'inject', 'generate'];
+  const GASR_STAGE_ORDER   = ['retrieve', 'prune', 'assess', 'graph_expand', 're_prune', 'inject', 'generate'];
+  const PREROUTE_STAGE_ORDER = ['retrieve', 'assess', 'prune', 'graph_expand', 're_prune', 'inject', 'generate'];
+
+  // ── Streaming ─────────────────────────────────────────────────────────
   async function streamGenerate(prompt, fileContext = null) {
-    // If file scope is active but we don’t have the content yet, fetch it first
     if (state.selectedScope === 'file' && !fileContext) {
       appendSystemMessage('⚠ Fetching current file content…');
       await new Promise(resolve => {
@@ -523,7 +530,6 @@
         };
         window.addEventListener('message', handler);
         vscode.postMessage({ type: 'getActiveFileInfo' });
-        // Timeout after 3s
         setTimeout(() => { window.removeEventListener('message', handler); resolve(); }, 3000);
       });
     }
@@ -532,27 +538,31 @@
     sendBtn.classList.add('loading');
     sendBtn.innerHTML = '<i class="codicon codicon-sync codicon-modifier-spin"></i>';
 
-    // Create agent message shell
     const msgId = 'msg-' + Date.now();
     const msgEl = appendAgentMessageShell(msgId);
     const pipelineEl = msgEl.querySelector('.pipeline-accordion');
     const answerEl = msgEl.querySelector('.answer-text');
 
-    const stageOrder = ['retrieve', 'prune', 'assess', 'inject', 'generate'];
+    const isGasr = state.selectedMode === 'GASR';
+    const isPreroute = state.selectedMode === 'PREROUTE';
+    let stageOrder = BASE_STAGE_ORDER;
+    if (isGasr) stageOrder = GASR_STAGE_ORDER;
+    else if (isPreroute) stageOrder = PREROUTE_STAGE_ORDER;
     const stageRowEls = {};
 
-    // Pre-render "pending" stages
     pipelineEl.querySelector('.pipeline-body').innerHTML = '';
     stageOrder.forEach(s => {
+      // graph_expand and re_prune start hidden for GASR — shown when events arrive
       const row = createStageRow(s, 'pending');
+      if ((isGasr || isPreroute) && (s === 'graph_expand' || s === 're_prune')) {
+        row.classList.add('stage-row-hidden');
+      }
       pipelineEl.querySelector('.pipeline-body').appendChild(row);
       stageRowEls[s] = row;
     });
-    // Open accordion
     pipelineEl.classList.add('open');
 
     let fullAnswer = '';
-    let streamDone = false;
 
     try {
       const resp = await fetch(`http://127.0.0.1:${state.port}/generate/stream`, {
@@ -567,9 +577,7 @@
         })
       });
 
-      if (!resp.ok) {
-        throw new Error(`HTTP ${resp.status}`);
-      }
+      if (!resp.ok) { throw new Error(`HTTP ${resp.status}`); }
 
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
@@ -592,16 +600,23 @@
           try { ev = JSON.parse(raw); } catch { continue; }
 
           if (ev.event === 'stage_start') {
-            updateStageRow(stageRowEls[ev.stage], 'running', ev.label, {});
+            const row = stageRowEls[ev.stage];
+            if (row) {
+              row.classList.remove('stage-row-hidden');
+              updateStageRow(row, 'running', ev.label, {});
+            }
           } else if (ev.event === 'stage') {
-            updateStageRow(stageRowEls[ev.stage], ev.status, ev.label, ev.summary || {}, ev.duration_ms);
+            const row = stageRowEls[ev.stage];
+            if (row) {
+              row.classList.remove('stage-row-hidden');
+              updateStageRow(row, ev.status, ev.label, ev.summary || {}, ev.duration_ms);
+            }
           } else if (ev.event === 'token') {
             fullAnswer += ev.content;
             renderAnswer(answerEl, fullAnswer, true);
             scrollToBottom();
           } else if (ev.event === 'done') {
             fullAnswer = ev.output || fullAnswer;
-            streamDone = true;
           }
         }
       }
@@ -609,18 +624,14 @@
       renderAnswer(answerEl, `⚠ Error: ${err.message}`, false);
     }
 
-    // Finalize answer
     renderAnswer(answerEl, fullAnswer || '(No response)', false);
-    // Keep accordion open so user can review pipeline stats.
-    // The header is already clickable to toggle it closed.
-    // Update pipeline meta with a summary count of completed stages.
     const metaEl = document.getElementById(`${msgId}-pipeline-meta`);
     if (metaEl) {
       const doneCount = Object.values(stageRowEls).filter(r => {
         const icon = r && r.querySelector('.stage-icon');
         return icon && (icon.classList.contains('complete') || icon.classList.contains('skipped'));
       }).length;
-      metaEl.textContent = `${doneCount}/5 stages done`;
+      metaEl.textContent = `${doneCount}/${stageOrder.length} stages done`;
     }
 
     state.generating = false;
@@ -687,8 +698,24 @@
 
   // ── Stage rows ─────────────────────────────────────────────────────────
 
-  const STAGE_ICONS = { retrieve: '<i class="codicon codicon-search"></i>', prune: '<i class="codicon codicon-filter"></i>', assess: '<i class="codicon codicon-law"></i>', inject: '<i class="codicon codicon-insert"></i>', generate: '<i class="codicon codicon-sparkle"></i>' };
-  const STAGE_LABELS = { retrieve: 'Retrieve', prune: 'Prune', assess: 'Assess', inject: 'Inject', generate: 'Generate' };
+  const STAGE_ICONS = {
+    retrieve:     '<i class="codicon codicon-search"></i>',
+    prune:        '<i class="codicon codicon-filter"></i>',
+    assess:       '<i class="codicon codicon-law"></i>',
+    graph_expand: '<i class="codicon codicon-type-hierarchy"></i>',
+    re_prune:     '<i class="codicon codicon-filter"></i>',
+    inject:       '<i class="codicon codicon-insert"></i>',
+    generate:     '<i class="codicon codicon-sparkle"></i>'
+  };
+  const STAGE_LABELS = {
+    retrieve:     'Retrieve',
+    prune:        'Prune',
+    assess:       'Assess',
+    graph_expand: 'Graph Expand',
+    re_prune:     'Re-Prune',
+    inject:       'Inject',
+    generate:     'Generate'
+  };
 
   function createStageRow(stage, status) {
     const row = document.createElement('div');
@@ -712,13 +739,11 @@
     else if (status === 'error')    { icon.innerHTML = '<i class="codicon codicon-error"></i>'; }
     else if (status === 'skipped')  { icon.innerHTML = '<i class="codicon codicon-dash"></i>'; }
 
-    // Build meta badges
     const badges = [];
     if (durationMs !== undefined && durationMs > 0) {
       badges.push(`<span style="color:var(--muted)">${durationMs}ms</span>`);
     }
     if (summary) {
-      // Skipped note
       if (summary.note) {
         badges.push(`<span style="color:var(--muted);font-style:italic;font-size:10px">${escHtml(summary.note)}</span>`);
       }
@@ -738,15 +763,32 @@
           badges.push(makeBadge(`-${summary.stats.dropped_chunks} dropped`, 'badge-prune'));
         }
       }
+      // GASR-specific: route badge with hop info
       if (summary.route) {
-        const cls = summary.route === 'RAG' ? 'badge-rag' : 'badge-lc';
+        let cls = 'badge-rag';
+        if (summary.route === 'LC') { cls = 'badge-lc'; }
+        else if (summary.route === 'GASR' || summary.route === 'PREROUTE' || summary.hops_used > 0) { cls = 'badge-gasr'; }
         badges.push(makeBadge(summary.route, cls));
+        if (summary.hops_used !== undefined && summary.hops_used > 0) {
+          badges.push(makeBadge(`${summary.hops_used} hop${summary.hops_used > 1 ? 's' : ''}`, 'badge-gasr'));
+        }
         if (summary.confidence) {
           badges.push(`<span style="color:var(--muted)">${summary.confidence}</span>`);
         }
         if (summary.reason) {
           badges.push(`<span style="color:var(--muted);font-size:10px;font-style:italic">${escHtml(summary.reason)}</span>`);
         }
+      }
+      // Graph expand: show neighbours count
+      if (summary.hops_used !== undefined && summary.route === undefined) {
+        badges.push(makeBadge(`${summary.hops_used} hop${summary.hops_used !== 1 ? 's' : ''}`, 'badge-gasr'));
+      }
+      if (summary.expansions !== undefined) {
+        const total = Array.isArray(summary.expansions) ? summary.expansions.reduce((a, e) => a + (e.new_chunks || 0), 0) : 0;
+        if (total > 0) { badges.push(makeBadge(`+${total} neighbours`, 'badge-gasr')); }
+      }
+      if (summary.kept !== undefined) {
+        badges.push(makeBadge(`${summary.kept} kept`, 'badge-prune'));
       }
       if (summary.estimated_tokens !== undefined) {
         badges.push(makeBadge(`~${summary.estimated_tokens} tok`, 'badge-inject'));
@@ -767,7 +809,6 @@
   function renderAnswer(el, text, streaming) {
     el.classList.toggle('cursor-blink', streaming);
     el.innerHTML = markdownToHtml(text);
-    // Re-bind copy buttons
     el.querySelectorAll('.code-copy-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const code = btn.closest('.code-block-wrapper').querySelector('code');
@@ -779,7 +820,6 @@
   }
 
   function markdownToHtml(text) {
-    // Code blocks
     text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
       const l = lang || 'code';
       return `<div class="code-block-wrapper">
@@ -790,15 +830,11 @@
         <pre class="code-block"><code>${escHtml(code.trimEnd())}</code></pre>
       </div>`;
     });
-    // Inline code
     text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
-    // Bold
     text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    // Headers
     text = text.replace(/^### (.+)$/gm, '<strong style="font-size:13px;display:block;margin-top:8px">$1</strong>');
     text = text.replace(/^## (.+)$/gm, '<strong style="font-size:14px;display:block;margin-top:10px">$1</strong>');
     text = text.replace(/^# (.+)$/gm, '<strong style="font-size:15px;display:block;margin-top:12px">$1</strong>');
-    // List items
     text = text.replace(/^[*-] (.+)$/gm, '• $1');
     return text;
   }
@@ -818,7 +854,6 @@
     try {
       const url = new URL(`http://127.0.0.1:${state.port}/index`);
       if (repoPath) { url.searchParams.set('repo_path', repoPath); }
-      // 10-minute timeout — large repos need time
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 10 * 60 * 1000);
       const resp = await fetch(url.toString(), { method: 'POST', signal: controller.signal });
@@ -872,11 +907,11 @@
     chatArea.innerHTML = `
       <div class="empty-state" id="emptyState">
         <div class="empty-state-icon"><i class="codicon codicon-circuit-board"></i></div>
-        <h3>Context Engine</h3>
-        <p>Ask anything about your codebase. The pipeline retrieves, prunes, and injects context automatically.</p>
+        <h3>Context Engine (GASR)</h3>
+        <p>Ask anything about your codebase. The GASR pipeline retrieves, assesses, graph-expands, and injects context automatically.</p>
         <div class="suggestion-chips">
-          <span class="chip" data-prompt="How does the retrieval pipeline work?">How does retrieval work?</span>
-          <span class="chip" data-prompt="Explain the pruning module">Explain pruning</span>
+          <span class="chip" data-prompt="How does the GASR retrieval pipeline work?">How does GASR work?</span>
+          <span class="chip" data-prompt="Explain the graph expansion in the pipeline">Graph expansion?</span>
           <span class="chip" data-prompt="What models are available in this project?">Available models?</span>
           <span class="chip" data-prompt="How is the context injected into the prompt?">How is context injected?</span>
         </div>
@@ -905,7 +940,7 @@
           state.port = msg.port || state.port;
           setServerUI(true);
           fetchModels();
-          checkIndexStatus();  // warn if workspace index is empty
+          checkIndexStatus();
         } else if (msg.status === 'starting') {
           setServerUI(false, true);
         } else {
@@ -918,7 +953,6 @@
         break;
 
       case 'customModels':
-        // Received persisted custom models from globalState
         state.customModels = Array.isArray(msg.models) ? msg.models : [];
         renderModelManager();
         break;
@@ -948,15 +982,13 @@
         break;
 
       case 'editorChanged':
-        // Update file scope bar if we're in file mode
         if (state.selectedScope === 'file' && msg.file) {
           updateFileScopeBar(msg.file.relativePath);
-          state.activeFileForScope = null; // stale, will re-fetch on next send
+          state.activeFileForScope = null;
         }
         break;
 
       case 'activeFileForScope':
-        // Response to getActiveFileInfo — update scope bar and cache content
         if (msg.file) {
           state.activeFileForScope = msg.file;
           updateFileScopeBar(msg.file.relativePath);
@@ -974,15 +1006,24 @@
   // ── Init ───────────────────────────────────────────────────────────────
   buildUI();
 
-  // Probe the server on load
-  fetch(`http://127.0.0.1:${state.port}/`)
-    .then(r => {
-      if (r.ok) {
-        setServerUI(true);
-        fetchModels();
-        checkIndexStatus();  // warn if workspace index is empty
-      } else { setServerUI(false); }
-    })
-    .catch(() => setServerUI(false));
+  // Probe server on load — retry up to 3 times with backoff to catch
+  // a server that was already running before the extension opened
+  (async function probeOnLoad() {
+    const delays = [0, 800, 2000];
+    for (const delay of delays) {
+      if (delay > 0) { await new Promise(r => setTimeout(r, delay)); }
+      if (state.serverRunning) { break; } // already detected
+      try {
+        const r = await fetch(`http://127.0.0.1:${state.port}/`, { signal: AbortSignal.timeout(2000) });
+        if (r.ok) {
+          setServerUI(true);
+          fetchModels();
+          checkIndexStatus();
+          break;
+        }
+      } catch { /* not up yet */ }
+    }
+    if (!state.serverRunning) { setServerUI(false); }
+  })();
 
 })();

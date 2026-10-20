@@ -342,7 +342,14 @@ html, body {
 .badge-generate { color: var(--stage-generate); border-color: color-mix(in srgb, var(--stage-generate) 40%, transparent); background: color-mix(in srgb, var(--stage-generate) 12%, transparent); }
 .badge-rag { color: var(--stage-prune); border-color: color-mix(in srgb, var(--stage-prune) 40%, transparent); background: color-mix(in srgb, var(--stage-prune) 12%, transparent); }
 .badge-lc { color: var(--stage-inject); border-color: color-mix(in srgb, var(--stage-inject) 40%, transparent); background: color-mix(in srgb, var(--stage-inject) 12%, transparent); }
+.badge-gasr { color: #67e8f9; border-color: rgba(103,232,249,0.4); background: rgba(103,232,249,0.1); }
 .badge-error { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); background: color-mix(in srgb, var(--danger) 12%, transparent); }
+
+/* Stage row that starts hidden (GASR graph_expand / re_prune) */
+.stage-row-hidden { display: none; }
+
+/* Stage row slide-in when it becomes visible */
+.stage-row:not(.stage-row-hidden) { animation: stageIn 0.25s ease; }
 
 /* ─── Answer Text ─────────────────────────────────────────────────────────── */
 .answer-text {

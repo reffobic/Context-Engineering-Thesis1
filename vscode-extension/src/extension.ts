@@ -135,22 +135,32 @@ function stopServer(provider?: SidebarProvider) {
 async function probeServer(provider: SidebarProvider) {
     const config = vscode.workspace.getConfiguration('contextEngine');
     const port = config.get<number>('backendPort') || 8000;
-    try {
-        const http = await import('http');
-        await new Promise<void>((resolve, reject) => {
-            const req = http.get(`http://127.0.0.1:${port}/`, (res) => {
-                if (res.statusCode && res.statusCode < 500) {
-                    resolve();
-                } else {
-                    reject(new Error(`HTTP ${res.statusCode}`));
-                }
+
+    // Retry with back-off: 0ms → 1s → 3s
+    // This ensures we detect a server that started before VS Code loaded the extension.
+    const delays = [0, 1000, 3000];
+    for (const delay of delays) {
+        if (delay > 0) { await new Promise(r => setTimeout(r, delay)); }
+        if (serverProcess) { break; } // our own process just started
+        try {
+            const http = await import('http');
+            await new Promise<void>((resolve, reject) => {
+                const req = http.get(`http://127.0.0.1:${port}/`, (res) => {
+                    if (res.statusCode && res.statusCode < 500) { resolve(); }
+                    else { reject(new Error(`HTTP ${res.statusCode}`)); }
+                });
+                req.on('error', reject);
+                req.setTimeout(2000, () => { req.destroy(); reject(new Error('timeout')); });
             });
-            req.on('error', reject);
-            req.setTimeout(2000, () => { req.destroy(); reject(new Error('timeout')); });
-        });
-        setStatusBarConnected(port);
-        provider.postMessage({ type: 'serverStatus', status: 'running', port });
-    } catch {
+            setStatusBarConnected(port);
+            provider.postMessage({ type: 'serverStatus', status: 'running', port });
+            return; // found the server — stop probing
+        } catch {
+            // Not up yet — continue to next retry
+        }
+    }
+    // All retries exhausted and no owned process started
+    if (!serverProcess) {
         setStatusBarDisconnected();
         provider.postMessage({ type: 'serverStatus', status: 'stopped' });
     }

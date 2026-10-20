@@ -5,6 +5,10 @@ from .chunk_normalize import strip_redundant_line_number_column
 from .prompt_builder import build_coding_prompt, ContextChunk
 
 
+import os
+
+DEFAULT_MAX_CONTEXT_TOKENS = int(os.environ.get("MAX_CONTEXT_TOKENS", "24000"))
+
 def inject_context(user_prompt: str, chunks: list[dict]) -> dict[str, str]:
     """
     Build structured prompts for the LLM.
@@ -32,5 +36,9 @@ def inject_context(user_prompt: str, chunks: list[dict]) -> dict[str, str]:
                 start_line=meta.get("start_line", 0),
             )
         )
-    system_prompt, user_message = build_coding_prompt(user_prompt, context_chunks)
+    system_prompt, user_message = build_coding_prompt(
+        user_prompt,
+        context_chunks,
+        max_context_tokens=DEFAULT_MAX_CONTEXT_TOKENS,
+    )
     return {"system": system_prompt, "user": user_message}
