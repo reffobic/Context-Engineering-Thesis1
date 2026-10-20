@@ -1,4 +1,4 @@
-"""Unit tests for the PREROUTE gate. No live Ollama — mirrors the fake-
+"""Unit tests for the GAPA gate. No live Ollama — mirrors the fake-
 callback pattern in test_gasr_ladder.py so this runs the same way theirs
 does, and can sit in the same CI job."""
 

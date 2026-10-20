@@ -165,7 +165,8 @@ def graph_expand(
     """
     hops = max(0, int(hops))
     if max_neighbors is None:
-        max_neighbors = int(os.environ.get("GASR_MAX_NEIGHBORS", "20"))
+        # Cap keeps GRAPH inject smaller (precision) and Chroma lookups cheaper (time).
+        max_neighbors = int(os.environ.get("GASR_MAX_NEIGHBORS", "8"))
 
     adapter = adapter or get_adapter()
     seed_keys: list[str] = []
