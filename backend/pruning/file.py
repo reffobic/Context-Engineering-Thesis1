@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -152,8 +153,11 @@ def structure_score(code: str, path: str) -> float:
     if any(k in lower for k in ["return ", "if ", "for ", "while ", "try:", "except", "throw ", "raise "]):
         score += 0.2
 
-    if any(k in path_lower for k in ["test", "spec"]):
-        score -= 0.1
+    # Demote test/spec paths so gold production files keep inject slots (P@k).
+    if "/tests/" in f"/{path_lower}/" or path_lower.startswith("tests/"):
+        score -= 0.35
+    elif any(k in path_lower for k in ["test", "spec"]):
+        score -= 0.2
 
     if any(k in lower for k in ["auto-generated", "generated automatically", "do not edit"]):
         score -= 0.25
@@ -598,17 +602,26 @@ def prune_context(
 #             via the standard heuristic scorer.
 
 # Fraction of the total token budget reserved for graph neighbours.
-NEIGHBOR_BUDGET_FRACTION: float = 0.55
+# Lower default (0.30) limits off-gold neighbor mass in GRAPH inject (P@k).
+# Override with env GASR_NEIGHBOR_BUDGET_FRACTION.
+NEIGHBOR_BUDGET_FRACTION: float = float(
+    os.environ.get("GASR_NEIGHBOR_BUDGET_FRACTION", "0.30")
+)
 
 # Priority weights by graph edge / relation type.
 # Keys should match whatever the graph branch stores in item["relation_type"]
-# or item["edge_type"].  "default" is used when neither key is present.
+# or item["edge_type"].  Graphify labels (calls, imports, …) are aliases.
+# "default" is used when neither key is present.
 _RELATION_PRIORITY: dict[str, float] = {
-    "callee":   1.00,   # functions the seed calls — most likely the answer
-    "inherits": 0.95,   # base-class relationships
-    "caller":   0.85,   # functions that call the seed
-    "import":   0.75,   # imported symbols
-    "default":  0.65,   # unknown graph relationship
+    "callee":        1.00,   # functions the seed calls — most likely the answer
+    "calls":         1.00,   # Graphify
+    "inherits":      0.95,   # base-class relationships
+    "inherits_from": 0.95,   # Graphify
+    "caller":        0.85,   # functions that call the seed
+    "import":        0.75,   # imported symbols
+    "imports":       0.75,   # Graphify
+    "contains":      0.70,   # Graphify containment
+    "default":       0.65,   # unknown graph relationship
 }
 
 
@@ -737,9 +750,9 @@ def prune_context_graph_aware(
         dropped_chunks=max(0, len(all_items) - len(kept_chunks)),
         original_est_tokens=original_est_tokens,
         kept_est_tokens=kept_tokens,
-        method="heuristic",
+        method="graph_aware",
         compression_ratio=round(kept_tokens / max(1, original_est_tokens), 4),
-        requested_method="heuristic",
+        requested_method="graph_aware",
     )
 
     return kept_chunks, stats

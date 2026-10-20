@@ -3,7 +3,11 @@ from retrieval.retrieval_tool_endpoint import retrieve_context
 from pruning.pruning_tool_endpoint import prune_context
 from injection.prompt_builder_endpoint import inject_context
 from agent.agent_endpoint import ollama_generate
-from diamond.sufficiency_assessor import assess_sufficiency, assess_structure_vs_context
+from diamond.sufficiency_assessor import (
+    assess_sufficiency,
+    assess_rag_gate,
+    assess_structure_vs_context,
+)
 
 tools = {}  # Populated dynamically
 
@@ -46,6 +50,7 @@ register_tool("graph_expand", graph_expand_wrapper)
 
 # Sufficiency Assessment ---------------------------------------------------
 register_tool("assess_sufficiency", assess_sufficiency)
+register_tool("assess_rag_gate", assess_rag_gate)
 register_tool("assess_structure_vs_context", assess_structure_vs_context)
 # --------------------------------------------------------------------------
 

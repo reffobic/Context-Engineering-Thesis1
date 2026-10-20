@@ -23,7 +23,7 @@ try:
         prune_context_graph_aware,
         estimate_tokens,
     )
-    from diamond.sufficiency_assessor import assess_sufficiency, assess_structure_vs_context
+    from diamond.sufficiency_assessor import assess_sufficiency, assess_rag_gate, assess_structure_vs_context
 except ModuleNotFoundError:  # when running as package: python -m uvicorn mcp_server.server:app
     from mcp_server.tool_registry import call_tool
     from indexing.code_indexer_endpoint import get_index_summary
@@ -32,7 +32,7 @@ except ModuleNotFoundError:  # when running as package: python -m uvicorn mcp_se
         prune_context_graph_aware,
         estimate_tokens,
     )
-    from diamond.sufficiency_assessor import assess_sufficiency, assess_structure_vs_context
+    from diamond.sufficiency_assessor import assess_sufficiency, assess_rag_gate, assess_structure_vs_context
 
 app = FastAPI()
 # Lets the UI work from file:// or another port during local demos (not for public deployment).
@@ -403,45 +403,51 @@ def run_pipeline(
             route = "RAG"
 
     elif mode == "GASR":
-        logging.info("GASR mode — sufficiency then structure-vs-context (hop cap=%s)", gasr_hard_cap)
+        logging.info("GASR mode — merged rag_gate then expand (hop cap=%s)", gasr_hard_cap)
         pipeline["stage_order"] = [
             "retrieve", "prune", "assess", "graph_expand", "re_prune", "inject", "generate"
         ]
         from diamond.gasr_ladder import run_gasr_ladder
+        from diamond.gasr_seeds import build_gasr_seed_pool
         from retrieval.graph_expand import graph_expand
 
-        seed_pool = list(context)
+        # Expand from pruned, non-test seeds (not raw retrieve) to cut off-gold BFS.
+        seed_pool = _to_retrieve_shaped(
+            build_gasr_seed_pool(pruned_context, context),
+            source="gasr_seed",
+        )
+        max_neighbors = int(os.environ.get("GASR_MAX_NEIGHBORS", "8"))
+        neighbor_budget_fraction = float(
+            os.environ.get("GASR_NEIGHBOR_BUDGET_FRACTION", "0.30")
+        )
         hops_box = {"n": 0}
 
-        def _assess_rag():
+        def _assess_rag_gate():
             decision, ms = _time_stage(
-                lambda: assess_sufficiency(user_prompt, pruned_context)
+                lambda: assess_rag_gate(user_prompt, pruned_context)
             )
-            decision = {**decision, "duration_ms": ms}
-            return decision
-
-        def _assess_structure():
-            # Use latest pruned context from closure via nonlocal list
-            judge, ms = _time_stage(
-                lambda: assess_structure_vs_context(user_prompt, state["pruned"])
-            )
-            return {**judge, "duration_ms": ms}
+            return {**decision, "duration_ms": ms}
 
         def _expand(seeds, hops):
-            result, ms = _time_stage(lambda: graph_expand(seeds, hops=hops))
+            result, ms = _time_stage(
+                lambda: graph_expand(
+                    seeds, hops=hops, max_neighbors=max_neighbors
+                )
+            )
             result = dict(result)
             result["duration_ms"] = ms
             hops_box["n"] += 1
             return result
 
-        # Graph-aware re-prune: reserves 55% of the token budget exclusively for
-        # graph neighbours so they can't be crowded out by high-scoring seeds.
-        # Neighbours are scored by structural edge type (callee > inherits > caller
-        # > import); seeds use the standard heuristic scorer.
+        # Graph-aware re-prune after expand: reserve budget for neighbors, then seeds.
         def _re_prune(seeds, neighbors):
             (pruned, stats), p_ms = _time_stage(
                 lambda: prune_context_graph_aware(
-                    user_prompt, seeds, neighbors, token_budget=token_budget
+                    user_prompt,
+                    list(seeds),
+                    list(neighbors),
+                    token_budget=token_budget,
+                    neighbor_budget_fraction=neighbor_budget_fraction,
                 )
             )
             state["pruned"] = pruned
@@ -466,8 +472,7 @@ def run_pipeline(
         ladder = run_gasr_ladder(
             seed_pool=seed_pool,
             initial_pruned=pruned_context,
-            assess_rag=_assess_rag,
-            assess_structure=_assess_structure,
+            assess_rag_gate=_assess_rag_gate,
             expand_hop=_expand,
             re_prune=_re_prune,
             assess_after_expand=_assess_graph,
@@ -492,6 +497,9 @@ def run_pipeline(
                 "hops_used": hops_used,
                 "gasr_hard_cap": gasr_hard_cap,
                 "re_prune_kind": "graph_aware",
+                "seed_pool_size": len(seed_pool),
+                "max_neighbors": max_neighbors,
+                "neighbor_budget_fraction": neighbor_budget_fraction,
                 "assessor_model": os.environ.get("ASSESSOR_MODEL")
                 or os.environ.get("OLLAMA_ASSESSOR_MODEL")
                 or "",
@@ -506,7 +514,7 @@ def run_pipeline(
                 ladder.expand_trace,
             )
             pipeline["stages"]["re_prune"] = _stage(
-                "Flat-merge re-prune",
+                "Graph-aware re-prune",
                 sum(t.get("re_prune_ms", 0) for t in ladder.expand_trace),
                 {
                     "token_budget": token_budget,
@@ -693,11 +701,21 @@ def run_pipeline(
     final_prompt, duration_ms = _time_stage(
         lambda: call_tool("inject_context", user_prompt, context_for_injection)
     )
+    inject_chunks = (
+        list(context_for_injection)
+        if isinstance(context_for_injection, list)
+        else []
+    )
     pipeline["stages"]["inject"] = _stage(
         "Build final prompt",
         duration_ms,
-        {**_prompt_summary(final_prompt), "route": route, "tokens_injected_est": pipeline["tokens_injected_est"]},
-        final_prompt,
+        {
+            **_prompt_summary(final_prompt),
+            "route": route,
+            "tokens_injected_est": pipeline["tokens_injected_est"],
+            "chunk_count": len(inject_chunks),
+        },
+        {"prompt": final_prompt, "chunks": inject_chunks},
     )
 
     logging.info("Generating response")

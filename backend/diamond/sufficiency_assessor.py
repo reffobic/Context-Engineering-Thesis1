@@ -50,6 +50,7 @@ SCORE_SHORTCUT_THRESHOLD = 0.30
 
 # ── prompt ────────────────────────────────────────────────────────────────────
 
+# Binary Self-Route judge (mode=SELF_ROUTE) — sufficiency only.
 _SYSTEM = """\
 You are a routing judge for a code-search RAG system.
 You will be given a user query and a set of retrieved code chunks.
@@ -69,6 +70,39 @@ Rules:
 - sufficient=false → key information is missing; a broader search is needed.
 - Do NOT require a perfect essay — if the answerable facts are in the chunks, mark sufficient=true.
 - confidence reflects how certain you are of your judgment.
+"""
+
+# GASR post-RAG gate: sufficiency + STRUCTURE|CONTEXT in one call.
+_SYSTEM_RAG_GATE = """\
+You are a routing judge for a repository code-search RAG system.
+You will be given a user query and a set of retrieved code chunks.
+
+Decide in one step:
+(1) whether the chunks are sufficient to answer the query;
+(2) if not, whether what is missing is STRUCTURE (graph neighbors) or CONTEXT (same-file long context).
+
+Reply ONLY with a JSON object — no markdown, no explanation outside the JSON.
+Schema:
+{
+  "sufficient": true | false,
+  "need": "STRUCTURE" | "CONTEXT" | "UNCLEAR" | null,
+  "confidence": "high" | "medium" | "low",
+  "reason": "<one sentence>"
+}
+
+Rules:
+- sufficient=true → chunks contain enough to answer directly (return value, quoted lines,
+  named callees, or asked symbols present). Set need=null.
+- Do NOT require a perfect essay — if the answerable facts are in the chunks, mark sufficient=true.
+- sufficient=false → key information is missing. Then set need:
+  - STRUCTURE → need callees, callers, imports, or cross-file dependency neighbors
+    (e.g. "what does X call", "list neighbor symbols", "trace across files").
+  - CONTEXT → need more of the same file(s): surrounding lines, file-top imports,
+    full function/class body, "quote nearby lines".
+  - UNCLEAR → cannot tell; prefer CONTEXT (safer than a wrong graph hop).
+- Prefer CONTEXT when the miss is local to one function/file body.
+- Prefer STRUCTURE when the query asks for cross-file calls/deps/neighbors.
+- confidence reflects how certain you are of the whole judgment.
 """
 
 _SYSTEM_AFTER_EXPAND = """\
@@ -102,6 +136,17 @@ RETRIEVED CHUNKS ({n} chunks):
 Is the context sufficient to answer the query? Reply with JSON only.
 """
 
+_USER_RAG_GATE = """\
+QUERY:
+{query}
+
+RETRIEVED CHUNKS ({n} chunks):
+{chunks}
+
+Are the chunks sufficient? If not, is the miss STRUCTURE or CONTEXT? Reply with JSON only.
+"""
+
+# Kept for tool registry / ablations; GASR ladder uses assess_rag_gate instead.
 _STRUCTURE_SYSTEM = """\
 You are a routing judge for a repository code Q&A system.
 The current snippets are NOT sufficient. Decide what is missing.
@@ -319,7 +364,7 @@ def assess_sufficiency(
     return result
 
 
-def _parse_structure_response(raw: str) -> dict[str, Any]:
+def _strip_judge_raw(raw: str) -> str:
     s = raw.strip()
     for marker in ("</think>", "</Think>"):
         if marker in s:
@@ -330,7 +375,11 @@ def _parse_structure_response(raw: str) -> dict[str, Any]:
     m = re.search(r"\{[\s\S]*?\}", s)
     if m:
         s = m.group(0)
-    data = json.loads(s)
+    return s
+
+
+def _parse_structure_response(raw: str) -> dict[str, Any]:
+    data = json.loads(_strip_judge_raw(raw))
     need = str(data.get("need", "UNCLEAR")).upper()
     if need not in ("STRUCTURE", "CONTEXT", "UNCLEAR"):
         need = "UNCLEAR"
@@ -342,6 +391,136 @@ def _parse_structure_response(raw: str) -> dict[str, Any]:
         "confidence": confidence,
         "reason": str(data.get("reason", "")),
     }
+
+
+def _parse_rag_gate_response(raw: str) -> dict[str, Any]:
+    data = json.loads(_strip_judge_raw(raw))
+    sufficient = bool(data.get("sufficient", False))
+    confidence = str(data.get("confidence", "low")).lower()
+    if confidence not in ("high", "medium", "low"):
+        confidence = "low"
+    reason = str(data.get("reason", ""))
+    if sufficient:
+        return {
+            "sufficient": True,
+            "need": None,
+            "confidence": confidence,
+            "reason": reason,
+            "route": "RAG",
+        }
+    need_raw = data.get("need")
+    if need_raw is None or str(need_raw).strip().lower() in ("", "null", "none"):
+        need = "CONTEXT"
+    else:
+        need = str(need_raw).upper()
+    if need not in ("STRUCTURE", "CONTEXT", "UNCLEAR"):
+        need = "UNCLEAR"
+    return {
+        "sufficient": False,
+        "need": need,
+        "confidence": confidence,
+        "reason": reason,
+        "route": "LC" if need != "STRUCTURE" else "GRAPH",
+    }
+
+
+def assess_rag_gate(
+    query: str,
+    chunks: list[dict[str, Any]],
+    model: str | None = None,
+) -> dict[str, Any]:
+    """
+    GASR post-RAG gate: one LLM call for sufficiency + STRUCTURE|CONTEXT.
+
+    Returns: sufficient, need, confidence, reason, route.
+    """
+    model = (model or "").strip() or _default_assessor_model()
+
+    if not chunks:
+        logger.info("assess_rag_gate: no chunks → CONTEXT/LC")
+        return {
+            "sufficient": False,
+            "need": "CONTEXT",
+            "confidence": "high",
+            "reason": "No chunks were retrieved.",
+            "route": "LC",
+        }
+
+    top = _top_score(chunks)
+    if top is not None and top < SCORE_SHORTCUT_THRESHOLD:
+        logger.info(
+            "assess_rag_gate: top score %.3f < %.3f → CONTEXT/LC (no LLM call)",
+            top,
+            SCORE_SHORTCUT_THRESHOLD,
+        )
+        return {
+            "sufficient": False,
+            "need": "CONTEXT",
+            "confidence": "high",
+            "reason": (
+                f"Top retrieval score {top:.3f} is below threshold "
+                f"{SCORE_SHORTCUT_THRESHOLD}."
+            ),
+            "route": "LC",
+        }
+
+    user_msg = _USER_RAG_GATE.format(
+        query=query,
+        n=len(chunks),
+        chunks=_format_chunks(chunks),
+    )
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": _SYSTEM_RAG_GATE},
+            {"role": "user", "content": user_msg},
+        ],
+        "stream": False,
+        "options": {"temperature": 0.0, "num_ctx": 4096},
+    }
+
+    try:
+        resp = requests.post(
+            f"{OLLAMA_BASE_URL}/api/chat",
+            json=payload,
+            timeout=REQUEST_TIMEOUT,
+        )
+        resp.raise_for_status()
+        raw = resp.json().get("message", {}).get("content", "")
+    except requests.RequestException as exc:
+        logger.warning("assess_rag_gate: Ollama failed (%s) → CONTEXT/LC", exc)
+        return {
+            "sufficient": False,
+            "need": "CONTEXT",
+            "confidence": "low",
+            "reason": f"Judge unavailable ({exc}); defaulting to CONTEXT/LC.",
+            "route": "LC",
+        }
+
+    try:
+        result = _parse_rag_gate_response(raw)
+    except (json.JSONDecodeError, KeyError, ValueError) as exc:
+        logger.warning(
+            "assess_rag_gate: parse failed (%s) → CONTEXT/LC\nRaw: %s",
+            exc,
+            raw[:300],
+        )
+        return {
+            "sufficient": False,
+            "need": "CONTEXT",
+            "confidence": "low",
+            "reason": "Could not parse judge response; defaulting to CONTEXT/LC.",
+            "route": "LC",
+        }
+
+    logger.info(
+        "assess_rag_gate: sufficient=%s need=%s confidence=%s reason=%s",
+        result["sufficient"],
+        result.get("need"),
+        result["confidence"],
+        result["reason"],
+    )
+    return result
 
 
 def assess_structure_vs_context(
