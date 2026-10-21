@@ -40,6 +40,7 @@ from live_gasr_ollama_tests import (  # noqa: E402
 )
 
 MODES: list[str] = ["RAG", "LC", "GASR", "SELF_ROUTE", "GAPA"]
+VARIANT_MODES: list[str] = ["GAPA_NEED", "GAPA_GRAPHMETA", "GAPA_META"]
 
 # Larger prompt bank — each group × 4 modes.
 COMPARE_GROUPS: list[dict[str, Any]] = [
@@ -206,7 +207,7 @@ COMPARE_GROUPS: list[dict[str, Any]] = [
 def _expand_cases() -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     for g in COMPARE_GROUPS:
-        for mode in MODES:
+        for mode in MODES + VARIANT_MODES:
             out.append(
                 {
                     "id": f"{g['group']}_{mode}",
@@ -273,7 +274,7 @@ def main() -> int:
 
     modes = [m.upper() for m in (args.modes or MODES)]
     for m in modes:
-        if m not in MODES:
+        if m not in MODES + VARIANT_MODES:
             print(f"Unknown mode {m}; allowed: {MODES}", file=sys.stderr)
             return 2
 

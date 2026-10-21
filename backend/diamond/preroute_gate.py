@@ -324,6 +324,8 @@ def _parse_generative_response(raw: str) -> dict[str, Any]:
         "confidence": str(parsed.get("confidence", "low")),
         "reason": str(parsed.get("reason", "")),
         "route": "RAG" if sufficient else "LC",
+        # Optional: only present when the prompt asked for it (emit_need).
+        "need": (str(parsed["need"]).upper() if parsed.get("need") else None),
     }
 
 
@@ -488,6 +490,22 @@ dependencies the answer would need to follow.
 State your reasoning in one sentence, then output the JSON verdict."""
 
 
+# Optional extension (emit_need=True): the same single call also labels WHY a
+# chunk is insufficient, so the ladder can skip its separate
+# structure-vs-context call. Same labels as sufficiency_assessor.assess_rag_gate.
+_NEED_SCHEMA_FROM = '"sufficient": true|false,'
+_NEED_SCHEMA_TO = '"sufficient": true|false, "need": "STRUCTURE"|"CONTEXT"|null,'
+_NEED_SUFFIX = """
+
+If sufficient is false, also set "need":
+"STRUCTURE" if the missing evidence is likely in other symbols or files that
+this chunk calls, is called by, or imports (step 3 shows several candidate
+files, or step 4 shows many dependencies).
+"CONTEXT" if the chunk itself looks like a fragment and the answer needs the
+rest of its file or the surrounding lines.
+If sufficient is true, set "need" to null."""
+
+
 def _guess_task_type(query: str) -> str:
     q = query.lower()
     if any(w in q for w in ("fail", "bug", "crash", "wrong", "unexpected", "broken")):
@@ -505,6 +523,8 @@ def preroute_structured_gate(
     query: str,
     raw_chunks: list[dict[str, Any]],
     model: str | None = None,
+    emit_need: bool = False,
+    compact: bool | None = None,
 ) -> dict[str, Any]:
     """
     The single-stage replacement for assess_rag. Call this on RAW
@@ -547,8 +567,16 @@ def preroute_structured_gate(
     candidate_files = len({(c.get("metadata") or {}).get("file", "") for c in raw_chunks})
     file_path = meta.get("file", "unknown")
     chunk_type = meta.get("chunk_type", "unknown")
-    context_header = meta.get("context_header")
-    context_line = f"description: {context_header}" if context_header else ""
+    # compact=None -> read GAPA_COMPACT_PROMPT (default off). Compact keeps the
+    # same six steps but replaces the long context header with the symbol name.
+    if compact is None:
+        compact = _os.environ.get("GAPA_COMPACT_PROMPT", "").strip().lower() in {"1", "true", "yes"}
+    if compact:
+        symbol = meta.get("function") or meta.get("name") or ""
+        context_line = f"symbol: {symbol}" if symbol else ""
+    else:
+        context_header = meta.get("context_header")
+        context_line = f"description: {context_header}" if context_header else ""
 
     # Optional dual-embedding fields — only included if present (see module
     # docstring). Absent today; will populate automatically if that branch merges.
@@ -573,10 +601,14 @@ def preroute_structured_gate(
         similarity_lines=similarity_lines,
         n_dependencies=len(dependencies),
     )
+    system_msg = _STRUCTURED_SYSTEM
+    if emit_need:
+        system_msg = system_msg.replace(_NEED_SCHEMA_FROM, _NEED_SCHEMA_TO)
+        user_msg += _NEED_SUFFIX
     payload = {
         "model": (model or "").strip() or _default_gate_model(),
         "messages": [
-            {"role": "system", "content": _STRUCTURED_SYSTEM},
+            {"role": "system", "content": system_msg},
             {"role": "user", "content": user_msg},
         ],
         "stream": False,
@@ -617,5 +649,103 @@ def preroute_structured_gate(
         }
 
     result["stage"] = "preroute_structured"
+    result["token_usage"] = token_usage
+    if emit_need:
+        if result["sufficient"]:
+            result["need"] = None
+        elif result.get("need") not in ("STRUCTURE", "CONTEXT"):
+            result["need"] = "UNCLEAR"
+    return result
+
+
+# ── Metadata-only check after graph expansion ───────────────────────────────
+# Replaces assess_sufficiency(phase="graph") in the GAPA_GRAPHMETA / GAPA_META
+# modes. Same contract (sufficient, confidence, reason, route, token_usage), but
+# the prompt holds facts about the expansion and never any chunk text.
+
+_GRAPH_META_SYSTEM = """\
+You are a routing judge for a code-search RAG system.
+A graph expansion step has just added neighbouring code units (callers,
+callees, imports) to the retrieved chunks. You are given facts about the
+expansion, NOT any code text. Decide whether the expanded set is likely
+enough to answer the query.
+
+Reply ONLY with a JSON object — no markdown, no explanation outside the JSON.
+Schema:
+{"sufficient": true|false, "confidence": "high"|"medium"|"low", "reason": "<one sentence>"}"""
+
+_GRAPH_META_USER = """\
+query: "{query}"
+hops_used: {hops}
+seed_chunks: {n_seeds}
+neighbours_added: {n_new}
+neighbours_kept_after_prune: {n_kept}
+neighbour_files: {n_files}
+edge_counts: {edge_counts}
+top_score: {top_score}
+
+Prefer sufficient=true when neighbours were added and survived pruning;
+prefer sufficient=false when none were found or none survived.
+State your reasoning in one sentence, then output the JSON verdict."""
+
+
+def graph_metadata_gate(
+    query: str,
+    facts: dict[str, Any],
+    model: str | None = None,
+) -> dict[str, Any]:
+    """Post-expansion sufficiency check from expansion metadata only.
+
+    facts keys (all optional, missing ones print as 0/unknown): hops,
+    n_seeds, n_new, n_kept, n_files, edge_counts, top_score.
+    """
+    user_msg = _GRAPH_META_USER.format(
+        query=query,
+        hops=facts.get("hops", 0),
+        n_seeds=facts.get("n_seeds", 0),
+        n_new=facts.get("n_new", 0),
+        n_kept=facts.get("n_kept", 0),
+        n_files=facts.get("n_files", 0),
+        edge_counts=facts.get("edge_counts") or {},
+        top_score=facts.get("top_score", "unknown"),
+    )
+    payload = {
+        "model": (model or "").strip() or _default_gate_model(),
+        "messages": [
+            {"role": "system", "content": _GRAPH_META_SYSTEM},
+            {"role": "user", "content": user_msg},
+        ],
+        "stream": False,
+        "keep_alive": "10m",
+        "options": {"temperature": 0.0, "num_ctx": 2048},
+    }
+    try:
+        resp = _requests.post(
+            f"{_OLLAMA_BASE_URL}/api/chat", json=payload, timeout=_GENERATIVE_REQUEST_TIMEOUT
+        )
+        resp.raise_for_status()
+        resp_json = resp.json()
+        raw = resp_json.get("message", {}).get("content", "")
+        token_usage = {
+            "prompt_tokens": resp_json.get("prompt_eval_count"),
+            "completion_tokens": resp_json.get("eval_count"),
+        }
+    except _requests.RequestException as exc:
+        logger.warning("graph_metadata_gate: Ollama call failed (%s) -> LC", exc)
+        return {
+            "sufficient": False, "confidence": "low",
+            "reason": f"Graph metadata judge unavailable ({exc}); defaulting to LC.",
+            "route": "LC", "stage": "graph_metadata_error",
+        }
+    try:
+        result = _parse_generative_response(raw)
+    except (json.JSONDecodeError, KeyError, ValueError) as exc:
+        logger.warning("graph_metadata_gate: unparseable response (%s) -> LC", exc)
+        return {
+            "sufficient": False, "confidence": "low",
+            "reason": "Could not parse graph metadata judge response; defaulting to LC.",
+            "route": "LC", "stage": "graph_metadata_error",
+        }
+    result["stage"] = "graph_metadata"
     result["token_usage"] = token_usage
     return result

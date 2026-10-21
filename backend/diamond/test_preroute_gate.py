@@ -309,3 +309,100 @@ def test_structured_gate_returns_route_from_llm_verdict():
         decision = preroute_structured_gate("q", [_chunk(0.5, dependencies=["a", "b", "c"])])
     assert decision["route"] == "LC"
     assert decision["stage"] == "preroute_structured"
+
+# ── Optional GAPA variants: compact prompt, emit_need, graph metadata gate ──
+
+from diamond.preroute_gate import graph_metadata_gate  # noqa: E402
+
+
+def _mock_need_response(sufficient: bool, need):
+    body = json.dumps({"sufficient": sufficient, "need": need,
+                       "confidence": "high", "reason": "r"})
+    mock_resp = MagicMock()
+    mock_resp.raise_for_status = MagicMock()
+    mock_resp.json.return_value = {"message": {"content": body}}
+    return mock_resp
+
+
+def test_compact_prompt_drops_description_and_keeps_six_steps():
+    chunks = [_chunk(0.8, dependencies=["a", "b"])]
+    chunks[0]["metadata"]["context_header"] = "LONG HEADER TEXT " * 20
+    chunks[0]["metadata"]["function"] = "create_app"
+    with patch("diamond.preroute_gate._requests.post") as mock_post:
+        mock_post.return_value = _mock_ollama_response(sufficient=True)
+        preroute_structured_gate("q", chunks, compact=True)
+    prompt = mock_post.call_args.kwargs["json"]["messages"][1]["content"]
+    assert "LONG HEADER TEXT" not in prompt
+    assert "symbol: create_app" in prompt
+    for step in ("Step 1", "Step 2", "Step 3", "Step 4", "Step 5", "Step 6"):
+        assert step in prompt
+
+
+def test_compact_prompt_is_read_from_env_when_not_passed(monkeypatch):
+    chunks = [_chunk(0.8)]
+    chunks[0]["metadata"]["context_header"] = "LONG HEADER TEXT"
+    monkeypatch.setenv("GAPA_COMPACT_PROMPT", "1")
+    with patch("diamond.preroute_gate._requests.post") as mock_post:
+        mock_post.return_value = _mock_ollama_response(sufficient=True)
+        preroute_structured_gate("q", chunks)
+    assert "LONG HEADER TEXT" not in mock_post.call_args.kwargs["json"]["messages"][1]["content"]
+    monkeypatch.delenv("GAPA_COMPACT_PROMPT")
+    with patch("diamond.preroute_gate._requests.post") as mock_post:
+        mock_post.return_value = _mock_ollama_response(sufficient=True)
+        preroute_structured_gate("q", chunks)
+    assert "LONG HEADER TEXT" in mock_post.call_args.kwargs["json"]["messages"][1]["content"]
+
+
+def test_default_prompt_does_not_ask_for_need():
+    with patch("diamond.preroute_gate._requests.post") as mock_post:
+        mock_post.return_value = _mock_ollama_response(sufficient=True)
+        decision = preroute_structured_gate("q", [_chunk(0.8)])
+    sent = mock_post.call_args.kwargs["json"]["messages"]
+    assert '"need"' not in sent[0]["content"]
+    assert "STRUCTURE" not in sent[1]["content"]
+    assert decision["need"] is None
+
+
+def test_emit_need_asks_for_label_and_returns_it():
+    with patch("diamond.preroute_gate._requests.post") as mock_post:
+        mock_post.return_value = _mock_need_response(False, "structure")
+        decision = preroute_structured_gate(
+            "q", [_chunk(0.5, dependencies=["a", "b", "c"])], emit_need=True)
+    sent = mock_post.call_args.kwargs["json"]["messages"]
+    assert '"need"' in sent[0]["content"]
+    assert "STRUCTURE" in sent[1]["content"]
+    assert decision["sufficient"] is False
+    assert decision["need"] == "STRUCTURE"
+
+
+def test_emit_need_is_none_when_sufficient_and_unclear_when_label_bad():
+    with patch("diamond.preroute_gate._requests.post") as mock_post:
+        mock_post.return_value = _mock_need_response(True, "STRUCTURE")
+        ok = preroute_structured_gate("q", [_chunk(0.9)], emit_need=True)
+        mock_post.return_value = _mock_need_response(False, "banana")
+        bad = preroute_structured_gate("q", [_chunk(0.4)], emit_need=True)
+    assert ok["need"] is None
+    assert bad["need"] == "UNCLEAR"
+
+
+def test_graph_metadata_gate_prompt_has_facts_and_no_chunk_text():
+    facts = {"hops": 1, "n_seeds": 5, "n_new": 10, "n_kept": 3,
+             "n_files": 2, "edge_counts": {"calls": 4}, "top_score": 0.66}
+    with patch("diamond.preroute_gate._requests.post") as mock_post:
+        mock_post.return_value = _mock_ollama_response(sufficient=True)
+        decision = graph_metadata_gate("q", facts)
+    prompt = mock_post.call_args.kwargs["json"]["messages"][1]["content"]
+    assert "neighbours_added: 10" in prompt
+    assert "neighbours_kept_after_prune: 3" in prompt
+    assert "def " not in prompt
+    assert decision["route"] == "RAG"
+    assert decision["stage"] == "graph_metadata"
+
+
+def test_graph_metadata_gate_error_defaults_to_not_sufficient():
+    import requests as real_requests
+    with patch("diamond.preroute_gate._requests.post") as mock_post:
+        mock_post.side_effect = real_requests.RequestException("down")
+        decision = graph_metadata_gate("q", {})
+    assert decision["sufficient"] is False
+    assert decision["stage"] == "graph_metadata_error"

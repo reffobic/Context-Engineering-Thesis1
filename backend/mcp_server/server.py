@@ -90,7 +90,7 @@ def _persist_eval_metrics(
 
 class GenerateRequest(BaseModel):
     prompt: str
-    mode: Literal["RAG", "LC", "SELF_ROUTE", "GASR", "GAPA"] = "SELF_ROUTE"
+    mode: Literal["RAG", "LC", "SELF_ROUTE", "GASR", "GAPA", "GAPA_NEED", "GAPA_GRAPHMETA", "GAPA_META"] = "SELF_ROUTE"
     pruning_method: Literal["heuristic", "selective"] = "heuristic"
     assessor_model: Optional[str] = None  # Ollama model for sufficiency judge; None = use default
     model: Optional[str] = None           # Ollama model for generation; None = use default
@@ -109,7 +109,7 @@ class EvaluateRequest(BaseModel):
     judge_retrieval_relevancy: bool = False
     faithfulness: bool = False
     #: Ablation answer path: if set, also run full ``run_pipeline`` with this mode.
-    generate_mode: Optional[Literal["RAG", "LC", "SELF_ROUTE", "GASR", "GAPA"]] = None
+    generate_mode: Optional[Literal["RAG", "LC", "SELF_ROUTE", "GASR", "GAPA", "GAPA_NEED", "GAPA_GRAPHMETA", "GAPA_META"]] = None
     #: Where to store metrics JSON (``results/{mode}/json/``). Retrieval path in code may still be hybrid until vector/graph backends exist.
     retrieval_mode: Literal["hybrid", "vector", "graph"] = "hybrid"
     #: If true (default), persist full evaluate response under ``results/{retrieval_mode}/json/``.
@@ -533,7 +533,7 @@ def run_pipeline(
         pipeline["hops_used"] = hops_used
         logging.info("GASR finished route=%s hops=%s", route, hops_used)
 
-    elif mode == "GAPA":
+    elif mode in ("GAPA", "GAPA_NEED", "GAPA_GRAPHMETA", "GAPA_META"):
         # Single-stage entry gate: six-step structured prompt over RAW
         # retrieval metadata (context, not pruned_context — no chunk text
         # ever enters this prompt), one LLM call. GASR's ladder reused
@@ -551,7 +551,7 @@ def run_pipeline(
             "retrieve", "assess", "prune", "graph_expand", "re_prune", "inject", "generate"
         ]
         from diamond.gasr_ladder import run_gasr_ladder
-        from diamond.preroute_gate import preroute_structured_gate
+        from diamond.preroute_gate import preroute_structured_gate, graph_metadata_gate
         from retrieval.graph_expand import graph_expand
 
         # --- once the memory branch is merged: an initial sufficiency
@@ -565,9 +565,11 @@ def run_pipeline(
         # for the narrower, GAPA-scoped version of this hook.
         #
         #     user_prompt = _memory_agent.resolve_referential_prompt(user_prompt)
+        emit_need = mode in ("GAPA_NEED", "GAPA_META")
+        graph_meta = mode in ("GAPA_GRAPHMETA", "GAPA_META")
 
         entry_decision, entry_ms = _time_stage(
-            lambda: preroute_structured_gate(user_prompt, context)
+            lambda: preroute_structured_gate(user_prompt, context, emit_need=emit_need)
         )
         entry_decision = {**entry_decision, "duration_ms": entry_ms}
 
@@ -583,6 +585,8 @@ def run_pipeline(
             result, ms = _time_stage(lambda: graph_expand(seeds, hops=hops))
             result = dict(result)
             result["duration_ms"] = ms
+            state["last_expand"] = result
+            state["hops"] = state.get("hops", 0) + 1
             return result
 
         def _re_prune(seeds, neighbors):
@@ -604,6 +608,24 @@ def run_pipeline(
             )
             return {**decision, "duration_ms": ms}
 
+        def _assess_graph_meta():
+            ex = state.get("last_expand") or {}
+            ids = ex.get("neighbor_ids") or []
+            facts = {
+                "hops": state.get("hops", 0),
+                "n_seeds": len(seed_pool),
+                "n_new": ex.get("new_chunk_count", 0),
+                "n_kept": state["last_re_prune_kept"],
+                "n_files": len({str(i).split(":")[0] for i in ids}),
+                "edge_counts": ex.get("edge_counts"),
+                "top_score": (context[0].get("final_score") if context else None),
+            }
+            decision, ms = _time_stage(lambda: graph_metadata_gate(user_prompt, facts))
+            return {**decision, "duration_ms": ms}
+
+        if graph_meta:
+            _assess_graph = _assess_graph_meta
+
         state = {
             "pruned": pruned_context,
             "last_re_prune_ms": 0,
@@ -616,8 +638,11 @@ def run_pipeline(
             # Already decided above — this is a stub, NOT a second LLM
             # call. run_gasr_ladder only needs a zero-arg callable that
             # returns the decision dict; the entry gate already ran once.
-            assess_rag=lambda: entry_decision,
-            assess_structure=_assess_structure,
+            **(
+                {"assess_rag_gate": lambda: entry_decision}
+                if emit_need
+                else {"assess_rag": lambda: entry_decision, "assess_structure": _assess_structure}
+            ),
             expand_hop=_expand,
             re_prune=_re_prune,
             assess_after_expand=_assess_graph,
@@ -642,6 +667,7 @@ def run_pipeline(
                 "hops_used": hops_used,
                 "gasr_hard_cap": gasr_hard_cap,
                 "entry_gate_stage": entry_decision.get("stage"),
+                "variant": mode,
                 "entry_gate_token_usage": entry_decision.get("token_usage"),
                 "re_prune_kind": "graph_aware",
                 "assessor_model": os.environ.get("ASSESSOR_MODEL")
