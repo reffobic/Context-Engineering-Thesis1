@@ -37,19 +37,19 @@ COLLECTION_NAME = "code_embeddings"
 BM25_PATH       = str(Path(CHROMA_PATH) / "bm25_index.json")
 CONTEXT_SEPARATOR = "\n\n--- RAW CODE ---\n"
 
-W_HYBRID    = float(os.getenv("FINAL_W_HYBRID", "0.46"))
-W_PROXIMITY = float(os.getenv("FINAL_W_PROXIMITY", "0.26"))
-W_FUNCTION  = float(os.getenv("FINAL_W_FUNCTION", "0.18"))
-W_SYMBOL    = float(os.getenv("FINAL_W_SYMBOL", "0.10"))  # boost when chunk body contains query’s C-style API symbol
+W_HYBRID    = float(os.getenv("FINAL_W_HYBRID", "1"))
+W_PROXIMITY = float(os.getenv("FINAL_W_PROXIMITY", "0"))
+W_FUNCTION  = float(os.getenv("FINAL_W_FUNCTION", "0"))
+W_SYMBOL    = float(os.getenv("FINAL_W_SYMBOL", "0"))  # boost when chunk body contains query’s C-style API symbol
 
 # New retrieval stream weights
-W_DENSE = float(os.getenv("DENSE_WEIGHT", "0.42"))
-W_BM25 = float(os.getenv("BM25_WEIGHT", "0.28"))
-W_EXACT = float(os.getenv("EXACT_WEIGHT", "0.22"))
-W_KEYWORD = float(os.getenv("KEYWORD_WEIGHT", "0.08"))
-W_SOURCE = float(os.getenv("SOURCE_WEIGHT", "0.14"))
-W_PATH_MATCH = float(os.getenv("PATH_MATCH_WEIGHT", "0.32"))
-W_CLASS_DEF = float(os.getenv("CLASS_DEF_WEIGHT", "0.28"))
+W_DENSE = float(os.getenv("DENSE_WEIGHT", "0.36116489734850177"))
+W_BM25 = float(os.getenv("BM25_WEIGHT", "0.30304975850615135"))
+W_EXACT = float(os.getenv("EXACT_WEIGHT", "0.12353950364432467"))
+W_KEYWORD = float(os.getenv("KEYWORD_WEIGHT", "0.09538879448754434"))
+W_SOURCE = float(os.getenv("SOURCE_WEIGHT", "0.10461575657334723"))
+W_PATH_MATCH = float(os.getenv("PATH_MATCH_WEIGHT", "0.20500050082771293"))
+W_CLASS_DEF = float(os.getenv("CLASS_DEF_WEIGHT", "0.14213806413377017"))
 
 # Long context config
 # How many candidates to fetch before re-ranking

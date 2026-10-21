@@ -1,0 +1,26 @@
+[
+ {
+  "query": "How does create_app work in this Superset codebase? Name files and functions you rely on.",
+  "gold_files": [
+   "superset/app.py"
+  ]
+ },
+ {
+  "query": "In superset/mcp_service/middleware.py, explain _extract_context_info precisely: input sources (message, metadata), fallback order, extracted fields (agent_id, user_id, dashboard_id, slice_id, dataset_id), and one likely failure mode. Use only CONTEXT and cite file/function names.",
+  "gold_files": [
+   "superset/mcp_service/middleware.py"
+  ]
+ },
+ {
+  "query": "Source-first check: What is the difference between Query and SavedQuery models in Superset? Prefer model definition files over tests/docs. The expected source file is superset-core/src/superset_core/queries/models.py. If that file is not in CONTEXT, start with NOT IN CONTEXT: superset-core/src/superset_core/queries/models.py, then summarize only what is visible.",
+  "gold_files": [
+   "superset-core/src/superset_core/queries/models.py"
+  ]
+ },
+ {
+  "query": "Source-first check: Compare SUPERSET_CONFIG vs SUPERSET_APP_ROOT in superset/app.py: precedence order, fallback behavior, and side effects. Expected path: superset/app.py. If superset/app.py is not in CONTEXT, start with NOT IN CONTEXT: superset/app.py.",
+  "gold_files": [
+   "superset/app.py"
+  ]
+ }
+]

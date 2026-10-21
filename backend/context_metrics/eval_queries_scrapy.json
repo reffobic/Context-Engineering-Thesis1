@@ -1,0 +1,65 @@
+[
+  {
+    "query": "How does Scrapy decide whether to retry a failed request, and how many times will it try before giving up?",
+    "gold_files": [
+      "scrapy/downloadermiddlewares/retry.py"
+    ]
+  },
+  {
+    "query": "What is the difference between CrawlerProcess and CrawlerRunner, and when would I use each one?",
+    "gold_files": [
+      "scrapy/crawler.py"
+    ]
+  },
+  {
+    "query": "How does the HTTP cache decide whether a stored response is still fresh, and where are cached responses stored?",
+    "gold_files": [
+      "scrapy/downloadermiddlewares/httpcache.py",
+      "scrapy/extensions/httpcache.py"
+    ]
+  },
+  {
+    "query": "How does AutoThrottle work out how long to wait between requests to a site?",
+    "gold_files": [
+      "scrapy/extensions/throttle.py"
+    ]
+  },
+  {
+    "query": "How does Scrapy extract links from a page, and which HTML tags and attributes does it look at by default?",
+    "gold_files": [
+      "scrapy/linkextractors/lxmlhtml.py"
+    ]
+  },
+  {
+    "query": "Why does my spider never see responses with a 404 status, and how do I allow them through?",
+    "gold_files": [
+      "scrapy/spidermiddlewares/httperror.py"
+    ]
+  },
+  {
+    "query": "How does DEPTH_LIMIT work, and how is the depth of each request tracked?",
+    "gold_files": [
+      "scrapy/spidermiddlewares/depth.py"
+    ]
+  },
+  {
+    "query": "How can a crawl be stopped automatically, for example with CLOSESPIDER_TIMEOUT or CLOSESPIDER_ITEMCOUNT?",
+    "gold_files": [
+      "scrapy/extensions/closespider.py"
+    ]
+  },
+  {
+    "query": "How does Scrapy download and store files for scraped items, and how does it avoid downloading the same file twice?",
+    "gold_files": [
+      "scrapy/pipelines/files.py",
+      "scrapy/pipelines/media.py"
+    ]
+  },
+  {
+    "query": "How does Scrapy detect duplicate requests so the same page is not crawled twice, and how is a request fingerprint computed?",
+    "gold_files": [
+      "scrapy/dupefilters.py",
+      "scrapy/utils/request.py"
+    ]
+  }
+]

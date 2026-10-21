@@ -418,6 +418,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         answer = str(answer)
 
     result["answer_preview"] = answer[:500] + ("..." if len(answer) > 500 else "")
+    result["answer_chars"] = len(answer)
 
     if "contextual_relevancy" in metric_names:
         if not prune_ctx:
