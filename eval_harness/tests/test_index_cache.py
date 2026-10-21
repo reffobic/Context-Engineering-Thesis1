@@ -42,7 +42,11 @@ def test_verdict_flags_each_failure():
     good = {"count": 5, "ids_equal": True, "max_embedding_abs_diff": 1e-8, "self_recall": 1.0, "golden_overlap_mean": 1.0}
     man = {"counts": {"code_embeddings": 5, "code_meta_embeddings": 5},
            "verify": {"max_embedding_abs_diff": 1e-6, "min_self_recall": 0.97, "min_golden_overlap_mean": 0.98}}
-    v = {"checks": {"code_embeddings": good, "code_meta_embeddings": dict(good)}}
+    v = {"checks": {"code_embeddings": good, "code_meta_embeddings": dict(good),
+                    "call_graph_json": True, "graphify_json": True}}
     assert verdict(v, man) == []
+    v["checks"]["call_graph_json"] = False
+    assert any("call_graph.json" in f for f in verdict(v, man))
+    v["checks"]["call_graph_json"] = True
     v["checks"]["code_meta_embeddings"] = {**good, "self_recall": 0.9, "golden_overlap_mean": 0.5, "count": 4}
     assert len(verdict(v, man)) == 3

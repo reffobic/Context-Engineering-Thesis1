@@ -51,7 +51,15 @@ def main() -> int:
             print(f"[FAIL] {bad} present in checkout {checkout}", file=sys.stderr)
             return 3
 
-    os.environ["EMBEDDING_DEVICE"] = cfg["build"]["index_device"]
+    if os.environ.get("PYTHONHASHSEED") != "0" or sys.flags.hash_randomization:
+        print("[FAIL] PYTHONHASHSEED=0 is required for reproducible index content", file=sys.stderr)
+        return 3
+    leaked = [v for v in ("INDEX_CONTEXT_OLLAMA", "GAPA_COMPACT_PROMPT", "GAPA_NEED", "GAPA_GRAPHMETA", "GAPA_META")
+              if v in os.environ]
+    if leaked:
+        print(f"[FAIL] variables must be unset: {leaked}", file=sys.stderr)
+        return 3
+    os.environ["EMBEDDING_DEVICE"] = os.environ.get("HARNESS_INDEX_DEVICE_OVERRIDE") or cfg["build"]["index_device"]
     os.environ["INDEX_MAX_FILES"] = str(cfg["build"]["max_files"])
     os.environ["ANONYMIZED_TELEMETRY"] = "False"
     for k, v in cfg["index"].items():
@@ -88,6 +96,9 @@ def main() -> int:
     stats = idx.index_repository(checkout, max_files=cfg["build"]["max_files"])
     n_code, n_meta = idx.collection.count(), idx.meta_collection.count()
     del idx.client  # release Chroma handles before the parent reads the folder
+    if not (chroma_dir / "call_graph.json").is_file():
+        print("[FAIL] call_graph.json was not written; structure re-rank would silently not apply", file=sys.stderr)
+        return 6
     (chroma_dir / ".embedding_cache.json").unlink(missing_ok=True)   # derived, large, unused at query time
     (chroma_dir / ".index_cache.json").unlink(missing_ok=True)
 
@@ -116,7 +127,7 @@ def main() -> int:
     report = {
         **meta,
         "built_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "index_device": device, "index_gpu": gpu,
+        "index_device": device, "index_gpu": gpu, "pythonhashseed": os.environ["PYTHONHASHSEED"],
         "env": environment_info(),
         "pipeline_constants": {"MAX_CHUNK_TOKENS": ci.MAX_CHUNK_TOKENS,
                                "INDEX_SCHEMA_VERSION": ci.INDEX_SCHEMA_VERSION,

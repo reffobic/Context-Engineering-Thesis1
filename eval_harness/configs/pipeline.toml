@@ -1,0 +1,96 @@
+# Which pipeline code is evaluated, and the environment it runs in. Hashed into every log line.
+
+[pipeline]
+# eval-harness merge commit of gapa-aligned-seeds: the frozen SHA for all arms.
+frozen_sha = "cd84fad1c13d8e7783bff39389cfb195e0cbac5b"
+base_commit = "166dbd01e126cdfe91524534a172498746a49cc2"          # origin/main as frozen by the team
+seed_alignment_commit = "50cf149efd6180b41098210b234efef81685ceaf"  # GAPA expands from GASR's seeds
+# Results are only recorded once the user confirms the frozen SHA for a run.
+record_results = false
+mode_names = ["SELF_ROUTE", "GASR", "GAPA", "RAG", "LC"]
+structure_rerank_expected = true     # retrieval_tool._STRUCTURE_RERANK (module flag, not an env var)
+require_call_graph_json = true       # every index must ship call_graph.json; the job fails otherwise
+
+# Harness commits whose bundles/builds must not be used for runs (predate the frozen merge).
+revoked_harness_commits = [
+  "2c22f5ddf2acf31675a112d96c3f73d548014901",
+  "311f9069f33f3c0807ba18cc97cd734e85496525",
+]
+
+[env_pinned]
+# Set in every pipeline process. "@model" is replaced by the run model tag (one LLM for all roles).
+PYTHONHASHSEED = "0"
+OLLAMA_NUM_CTX = "32768"             # must equal experiment.toml [ollama].num_ctx
+MAX_CONTEXT_TOKENS = "24000"         # pipeline default, recorded explicitly
+OLLAMA_MODEL = "@model"
+ASSESSOR_MODEL = "@model"
+EVAL_JUDGE_MODEL = "@model"
+EMBEDDING_DEVICE = "cpu"             # query-time embedding on CPU on both machines
+ANONYMIZED_TELEMETRY = "False"       # Chroma telemetry off; no effect on results
+GASR_HARD_CAP = "2"
+GASR_MAX_NEIGHBORS = "8"
+GASR_NEIGHBOR_BUDGET_FRACTION = "0.30"
+OLLAMA_THINK = "0"
+
+[assert_unset]
+# These change the pipeline when set. The launcher refuses to start if any is present in the environment.
+vars = ["GAPA_COMPACT_PROMPT", "GAPA_NEED", "GAPA_GRAPHMETA", "GAPA_META", "INDEX_CONTEXT_OLLAMA",
+        "GASR_OFFLINE", "RERANKER_ENABLED", "PREROUTE_DEBUG", "OLLAMA_SKIP"]
+
+[known_env]
+# Every environment variable the pipeline reads at the frozen SHA, with its code default
+# ("" = read without default). Each log line records the effective value of all of them.
+ASSESSOR_MODEL = ""
+BM25_TOP_N = "120"
+BM25_WEIGHT = "0.30304975850615135"
+CHROMA_COLLECTION = "code_embeddings"
+CHROMA_META_COLLECTION = "code_meta_embeddings"
+CHROMA_PATH = ""
+CLASS_DEF_WEIGHT = "0.14213806413377017"
+DENSE_ALPHA = "0.40"
+DENSE_WEIGHT = "0.36116489734850177"
+EMBEDDING_DEVICE = ""
+EVAL_JUDGE_MODEL = ""
+EVAL_OLLAMA_NUM_CTX = ""
+EXACT_TOP_N = "400"
+EXACT_WEIGHT = "0.12353950364432467"
+FINAL_W_FUNCTION = "0"
+FINAL_W_HYBRID = "1"
+FINAL_W_PROXIMITY = "0"
+FINAL_W_SYMBOL = "0"
+GASR_HARD_CAP = "2"
+GASR_MAX_NEIGHBORS = "8"
+GASR_NEIGHBOR_BUDGET_FRACTION = "0.30"
+GASR_OFFLINE = ""
+GRAPHIFY_OUT = ""
+INDEX_CACHE_SAVE_INTERVAL = "50"
+INDEX_CONTEXT_MODEL = ""
+INDEX_CONTEXT_OLLAMA = "0"
+INDEX_CONTEXT_TIMEOUT = "20"
+INDEX_CPU_THREADS = "2"
+INDEX_EMBED_BATCH_SIZE = "16"
+INDEX_MAX_FILES = "600"
+INDEX_SITUATING_MAX_CHARS = "700"
+KEYWORD_WEIGHT = "0.09538879448754434"
+MAX_CONTEXT_TOKENS = "24000"
+OLLAMA_ASSESSOR_MODEL = ""
+OLLAMA_BASE_URL = "http://localhost:11434"
+OLLAMA_HOST = "http://127.0.0.1:11434"
+OLLAMA_MODEL = ""
+OLLAMA_NUM_CTX = "0"
+OLLAMA_NUM_GPU = "99"
+OLLAMA_NUM_PREDICT = "8192"
+OLLAMA_SKIP = ""
+OLLAMA_THINK = "0"
+PATH_MATCH_WEIGHT = "0.20500050082771293"
+PREROUTE_DEBUG = ""
+PRUNE_W_FUNCTION = "0.824755791189501"
+PRUNE_W_QUERY_MATCH = "0.2887302647124196"
+PRUNE_W_RETRIEVAL = "0.7741918328343507"
+PRUNE_W_STRUCTURE = "0.42360256074513347"
+RERANKER_ENABLED = "0"
+RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+RERANK_TOP_N = "80"
+SOURCE_WEIGHT = "0.10461575657334723"
+USE_HYBRID_EMBEDDINGS = "1"
+PYTHONHASHSEED = ""

@@ -1,9 +1,6 @@
 # Versioned experiment settings (hashed into every log line). Decisions recorded 2026-10-18.
 
-[pipeline]
-# DEVELOPMENT TARGET ONLY until the integration SHA is frozen and confirmed by the owner.
-pipeline_commit = "origin/GASR"
-record_results = false          # harness refuses to write result logs while false
+# Which pipeline code is evaluated now lives in pipeline.toml.
 
 [seed]
 value = 42                       # the one seed: sampling, Ollama options, any tie-breaks
@@ -18,6 +15,10 @@ think = false                    # judges AND answer call
 judge_temperature = 0.0
 answer_temperature = 0.0
 keep_alive = "10m"
+seed = 42                        # options.seed on every call (also [seed].value)
+override_num_ctx = true          # D15: judges asked for 4096/2048; the shim sets the uniform value and logs the original
+inject_when_absent = ["think", "seed", "temperature", "keep_alive"]
+truncation_margin_tokens = 8     # prompt_eval_count >= num_ctx - margin counts as possible truncation
 # num_gpu is NOT forced; instead every job must be fully VRAM-resident and the
 # `ollama ps` split (size / size_vram) is logged.
 require_full_vram = true

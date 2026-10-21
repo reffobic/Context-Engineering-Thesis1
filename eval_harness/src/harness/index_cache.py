@@ -1,7 +1,7 @@
 """Index cache: build, key, export, import, verify.
 
-  python -m harness.index_cache build  --profile P --experiment E --index-config I [--dataset D ...] [--limit N] [--only-key-of INSTANCE_ID]
-  python -m harness.index_cache export --profile P --experiment E --index-config I --out <new-dir> [--dataset D ...]
+  python -m harness.index_cache build  --profile P --experiment E --pipeline-config PC --index-config I [--dataset D ...] [--limit N] [--only-instance ID]
+  python -m harness.index_cache export --profile P --experiment E --pipeline-config PC --index-config I --out <new-dir> [--dataset D ...]
   python -m harness.index_cache import --profile P --src <export-dir>
   python -m harness.index_cache verify --profile P --dir <index-dir>
 
@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -24,6 +25,7 @@ from pathlib import Path
 
 from .common import config_hash, load_toml
 from .envinfo import _graphify_version
+from .pipelineenv import assert_unset, pipeline_identity
 from .pipeline_src import snapshot
 from .smallfiles import sha256_file
 
@@ -44,9 +46,16 @@ def index_settings(icfg: dict) -> dict:
 
 def make_key(repo: str, commit: str, pipeline_sha: str, icfg: dict, graphify_version: str | None) -> dict:
     parts = {"repo": repo, "base_commit": commit, "pipeline_sha": pipeline_sha,
-             "settings": index_settings(icfg), "graphify": graphify_version}
+             "settings": index_settings(icfg), "graphify": graphify_version, "pythonhashseed": "0"}
     blob = json.dumps(parts, sort_keys=True).encode("utf-8")
     return {**parts, "key": hashlib.sha256(blob).hexdigest()[:16]}
+
+
+def require_call_graph(idx: Path) -> None:
+    """Fail the job if an index lacks call_graph.json (the structure re-rank would silently not apply)."""
+    from .instrument import JobFailure
+    if not (idx / "chroma" / "call_graph.json").is_file():
+        raise JobFailure(f"call_graph.json missing in index {idx.name}")
 
 
 def index_dir(data_dir: Path, parts: dict) -> Path:
@@ -71,8 +80,8 @@ def _inside(child: Path, parent: Path) -> bool:
     return parent.resolve() in child.resolve().parents
 
 
-def build_one(data_dir: Path, exp: dict, icfg_path: Path, icfg: dict, pair: dict, pipe: tuple[str, Path],
-              profile: dict, gver: str | None) -> dict:
+def build_one(data_dir: Path, ident: dict, pcfg: dict, icfg_path: Path, icfg: dict, pair: dict,
+              pipe: tuple[str, Path], profile: dict, gver: str | None) -> dict:
     sha, root = pipe
     parts = make_key(pair["repo"], pair["base_commit"], sha, icfg, gver)
     final = index_dir(data_dir, parts)
@@ -87,15 +96,18 @@ def build_one(data_dir: Path, exp: dict, icfg_path: Path, icfg: dict, pair: dict
         assert _inside(partial, cache_idx)
         shutil.rmtree(partial)
     cache_idx.mkdir(parents=True, exist_ok=True)
-    meta = {"key_parts": parts, "machine_id": profile["machine_id"], "pipeline_commit_config": exp["pipeline"]["pipeline_commit"],
-            "record_results": exp["pipeline"]["record_results"], "icfg_hash": config_hash(icfg_path),
+    meta = {"key_parts": parts, "machine_id": profile["machine_id"], "pipeline_identity": ident,
+            "record_results": pcfg["pipeline"]["record_results"], "icfg_hash": config_hash(icfg_path),
             "sample_instance": pair["instance_id"], "dataset": pair["dataset"]}
     meta_path = partial.with_name(partial.name + ".meta.json")
     meta_path.write_text(json.dumps(meta), encoding="utf-8")
     t = time.perf_counter()
     cmd = [sys.executable, "-m", "harness.index_worker", "--pipeline-root", str(root), "--checkout", str(checkout),
            "--out", str(partial), "--index-config", str(icfg_path), "--meta", str(meta_path)]
-    r = subprocess.run(cmd, capture_output=True, text=True)
+    env = {**os.environ, "PYTHONHASHSEED": "0"}      # the indexer's output order depends on it
+    for v in pcfg["assert_unset"]["vars"]:
+        env.pop(v, None)
+    r = subprocess.run(cmd, capture_output=True, text=True, env=env)
     wall = time.perf_counter() - t
     meta_path.unlink(missing_ok=True)
     if r.returncode != 0:
@@ -239,12 +251,17 @@ def verify_index(idx: Path, sample: int = 200, compare_with: Path | None = None,
     docs = json.loads((idx / "chroma" / "bm25_index.json").read_text(encoding="utf-8"))
     res["checks"]["bm25_chunks"] = len(docs.get("chunks", []))
     res["checks"]["graphify_json"] = (idx / "graphify-out" / "graph.json").is_file()
+    res["checks"]["call_graph_json"] = (idx / "chroma" / "call_graph.json").is_file()
     return res
 
 
 def verdict(v: dict, man: dict) -> list[str]:
     """Failures against the thresholds stored in the archive manifest."""
     t, fails = man["verify"], []
+    if not v["checks"].get("call_graph_json"):
+        fails.append("call_graph.json missing (structure re-rank would silently not apply)")
+    if not v["checks"].get("graphify_json"):
+        fails.append("graphify graph.json missing")
     for cname in (CODE, META):
         c = v["checks"][cname]
         if c["count"] != man["counts"][cname]:
@@ -317,6 +334,7 @@ def main() -> int:
         p = sub.add_parser(n)
         p.add_argument("--profile", type=Path, required=True)
         p.add_argument("--experiment", type=Path, required=True)
+        p.add_argument("--pipeline-config", type=Path, required=True)
         p.add_argument("--index-config", type=Path, required=True)
         p.add_argument("--dataset", action="append")
         p.add_argument("--limit", type=int, default=None)
@@ -344,20 +362,23 @@ def main() -> int:
             rc |= r["status"] == "error"
         return int(rc)
 
-    exp, icfg = load_toml(a.experiment), load_toml(a.index_config)
+    exp, icfg, pcfg = load_toml(a.experiment), load_toml(a.index_config), load_toml(a.pipeline_config)
+    assert_unset(pcfg)
+    ident = pipeline_identity(a.pipeline_config)
     datasets = a.dataset or exp["sampling"]["datasets"]
     pairs = sampled_pairs(data_dir, datasets)
     if a.only_instance:
         pairs = [p for p in pairs if p["instance_id"] == a.only_instance]
     if a.limit:
         pairs = pairs[: a.limit]
-    sha, root = snapshot(exp["pipeline"]["pipeline_commit"], data_dir)
+    sha, root = snapshot(pcfg["pipeline"]["frozen_sha"], data_dir)
     gver = _graphify_version()
-    print(f"pipeline {exp['pipeline']['pipeline_commit']} -> {sha} (development target; record_results="
-          f"{exp['pipeline']['record_results']}); graphify={gver}; {len(pairs)} indexes")
+    print(f"pipeline frozen_sha={sha} (base {ident['base_commit'][:7]}, seed alignment "
+          f"{ident['seed_alignment_commit'][:7]}); record_results={pcfg['pipeline']['record_results']}; "
+          f"graphify={gver}; {len(pairs)} indexes")
     if a.cmd == "build":
         for p in pairs:
-            r = build_one(data_dir, exp, a.index_config, icfg, p, (sha, root), profile, gver)
+            r = build_one(data_dir, ident, pcfg, a.index_config, icfg, p, (sha, root), profile, gver)
             print(json.dumps({k: r[k] for k in r if k not in ("settings",)}, indent=1))
             if r["status"] == "error":
                 return 1

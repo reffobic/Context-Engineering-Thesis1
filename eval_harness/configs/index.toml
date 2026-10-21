@@ -6,8 +6,8 @@ fingerprint_text = "def load_config(path):\n    with open(path) as f:\n        r
 fingerprint_decimals = 4
 
 [index]
-# Pipeline env that changes what is indexed. Values are passed to the index worker as-is.
-INDEX_CONTEXT_OLLAMA = "0"          # no LLM file summaries at index time
+# Pipeline env that changes what is indexed. INDEX_CONTEXT_OLLAMA must be UNSET (asserted, see pipeline.toml).
+# PYTHONHASHSEED=0 is set by the launcher and is part of the cache key (the indexer's output order depends on it).
 USE_HYBRID_EMBEDDINGS = "1"         # pipeline default
 
 [chunking]
