@@ -393,7 +393,7 @@ def test_graph_metadata_gate_prompt_has_facts_and_no_chunk_text():
         decision = graph_metadata_gate("q", facts)
     prompt = mock_post.call_args.kwargs["json"]["messages"][1]["content"]
     assert "neighbours_added: 10" in prompt
-    assert "neighbours_kept_after_prune: 3" in prompt
+    assert "chunks_kept_after_prune: 3" in prompt
     assert "def " not in prompt
     assert decision["route"] == "RAG"
     assert decision["stage"] == "graph_metadata"

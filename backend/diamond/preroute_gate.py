@@ -679,13 +679,14 @@ query: "{query}"
 hops_used: {hops}
 seed_chunks: {n_seeds}
 neighbours_added: {n_new}
-neighbours_kept_after_prune: {n_kept}
+chunks_kept_after_prune: {n_kept}
 neighbour_files: {n_files}
 edge_counts: {edge_counts}
 top_score: {top_score}
 
-Prefer sufficient=true when neighbours were added and survived pruning;
-prefer sufficient=false when none were found or none survived.
+Prefer sufficient=true when neighbours were added and chunks_kept_after_prune
+is larger than seed_chunks; prefer sufficient=false when none were found or
+the kept set did not grow.
 State your reasoning in one sentence, then output the JSON verdict."""
 
 
