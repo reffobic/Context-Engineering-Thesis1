@@ -3,12 +3,20 @@
 import json
 import os
 import re
+import logging
 import chromadb
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Optional
 
 from indexing.sentence_model import get_sentence_transformer
+
+try:
+    from retrieval.hybrid_retrieval import enhance_ranking_with_structure
+    _STRUCTURE_RERANK = True
+except ImportError:  # pragma: no cover
+    enhance_ranking_with_structure = None  # type: ignore[misc, assignment]
+    _STRUCTURE_RERANK = False
 
 try:
     from rank_bm25 import BM25Okapi
@@ -25,24 +33,27 @@ except ImportError:  # pragma: no cover - sentence-transformers is optional at r
 # ══════════════════════════════════════════════════════════════════
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 CHROMA_PATH     = str(Path(__file__).resolve().parent.parent / "chroma_db")
-COLLECTION_NAME = "code_embeddings"
+COLLECTION_NAME = os.getenv("CHROMA_COLLECTION", "code_embeddings")
+META_COLLECTION_NAME = os.getenv("CHROMA_META_COLLECTION", "code_meta_embeddings")
 BM25_PATH       = str(Path(CHROMA_PATH) / "bm25_index.json")
 CONTEXT_SEPARATOR = "\n\n--- RAW CODE ---\n"
+# Dense blend: (1-α)·sim_code + α·sim_meta  (preroute-ready channels)
+DENSE_ALPHA = float(os.getenv("DENSE_ALPHA", "0.40"))
 
 # Ranking weights
-W_HYBRID    = 0.46
-W_PROXIMITY = 0.26
-W_FUNCTION  = 0.18
-W_SYMBOL    = 0.10  # boost when chunk body contains query’s C-style API symbol
+W_HYBRID    = float(os.getenv("FINAL_W_HYBRID", "1"))
+W_PROXIMITY = float(os.getenv("FINAL_W_PROXIMITY", "0"))
+W_FUNCTION  = float(os.getenv("FINAL_W_FUNCTION", "0"))
+W_SYMBOL    = float(os.getenv("FINAL_W_SYMBOL", "0"))  # boost when chunk body contains query’s C-style API symbol
 
 # New retrieval stream weights
-W_DENSE = float(os.getenv("DENSE_WEIGHT", "0.42"))
-W_BM25 = float(os.getenv("BM25_WEIGHT", "0.28"))
-W_EXACT = float(os.getenv("EXACT_WEIGHT", "0.22"))
-W_KEYWORD = float(os.getenv("KEYWORD_WEIGHT", "0.08"))
-W_SOURCE = float(os.getenv("SOURCE_WEIGHT", "0.14"))
-W_PATH_MATCH = float(os.getenv("PATH_MATCH_WEIGHT", "0.32"))
-W_CLASS_DEF = float(os.getenv("CLASS_DEF_WEIGHT", "0.28"))
+W_DENSE = float(os.getenv("DENSE_WEIGHT", "0.36116489734850177"))
+W_BM25 = float(os.getenv("BM25_WEIGHT", "0.30304975850615135"))
+W_EXACT = float(os.getenv("EXACT_WEIGHT", "0.12353950364432467"))
+W_KEYWORD = float(os.getenv("KEYWORD_WEIGHT", "0.09538879448754434"))
+W_SOURCE = float(os.getenv("SOURCE_WEIGHT", "0.10461575657334723"))
+W_PATH_MATCH = float(os.getenv("PATH_MATCH_WEIGHT", "0.20500050082771293"))
+W_CLASS_DEF = float(os.getenv("CLASS_DEF_WEIGHT", "0.14213806413377017"))
 
 # Long context config
 # How many candidates to fetch before re-ranking
@@ -73,9 +84,35 @@ SYMBOL_STOPWORDS = {
 # ══════════════════════════════════════════════════════════════════
 
 client     = chromadb.PersistentClient(path=CHROMA_PATH)
-collection = client.get_collection(COLLECTION_NAME)
+collection = client.get_or_create_collection(
+    name=COLLECTION_NAME,
+    metadata={"hnsw:space": "cosine"},
+)
+try:
+    meta_collection = client.get_collection(META_COLLECTION_NAME)
+except Exception:
+    meta_collection = None
 _bm25_cache: dict[str, Any] | None = None
 _reranker: Any | None = None
+
+
+def _get_meta_collection():
+    """Lazy bind to code_meta_embeddings after reindex creates it."""
+    global meta_collection
+    if meta_collection is not None:
+        return meta_collection
+    try:
+        meta_collection = client.get_collection(META_COLLECTION_NAME)
+    except Exception:
+        return None
+    return meta_collection
+
+
+def blend_dense_scores(sim_code: float, sim_meta: float, alpha: float | None = None) -> float:
+    """score = (1-α)·sim_code + α·sim_meta — shared by retrieval and future preroute."""
+    a = DENSE_ALPHA if alpha is None else float(alpha)
+    a = max(0.0, min(1.0, a))
+    return (1.0 - a) * float(sim_code) + a * float(sim_meta)
 
 
 # ══════════════════════════════════════════════════
@@ -119,6 +156,10 @@ def _chunk_id(meta: dict[str, Any]) -> str:
 
 
 def _make_chunk(doc: str, meta: dict[str, Any], *, similarity: float = 0.0, source: str = "unknown") -> dict:
+    """
+    Build a retrieval hit. Metadata fields mirror the indexer ContextMeta contract
+    so a future mode prerouter (RAG/GRAPH/LC) can read the same signals.
+    """
     code = _raw_code(doc)
     return {
         "code": code,
@@ -135,9 +176,21 @@ def _make_chunk(doc: str, meta: dict[str, Any], *, similarity: float = 0.0, sour
             "qualified_name": meta.get("qualified_name", ""),
             "symbols":      meta.get("symbols", "[]"),
             "file_summary": meta.get("file_summary", ""),
+            "situating_text": meta.get("situating_text", ""),
+            "chunk_role": meta.get("chunk_role", "other"),
+            "context_header": meta.get("context_header", ""),
         },
+        # Top-level aliases for preroute-ready consumers
+        "file_summary": meta.get("file_summary", ""),
+        "situating_text": meta.get("situating_text", ""),
+        "chunk_role": meta.get("chunk_role", "other"),
+        "symbols": _safe_json_list(meta.get("symbols", "[]")),
+        "dependencies": _safe_json_list(meta.get("dependencies", "[]")),
         "similarity": round(similarity, 4),
         "dense_score": round(similarity, 4) if source == "vector" else 0.0,
+        "sim_code": 0.0,
+        "sim_meta": 0.0,
+        "sim_gap": 0.0,  # sim_meta - sim_code (preroute signal)
         "bm25_score": 0.0,
         "exact_match_score": 0.0,
         "candidate_sources": [source],
@@ -281,13 +334,27 @@ def _c_style_symbols(query: str) -> list[str]:
     return out
 
 
-def _rows_to_chunks(rows: dict[str, Any]) -> list[dict]:
+def _rows_to_chunks(
+    rows: dict[str, Any],
+    *,
+    source: str = "vector",
+    sim_field: str | None = None,
+) -> list[dict]:
     chunks: list[dict] = []
     docs = rows["documents"][0] if rows["documents"] else []
     metas = rows["metadatas"][0] if rows["metadatas"] else []
     dists = rows["distances"][0] if rows["distances"] else []
     for doc, meta, dist in zip(docs, metas, dists):
-        chunks.append(_make_chunk(doc, meta, similarity=1 - dist, source="vector"))
+        sim = 1.0 - float(dist)
+        item = _make_chunk(doc, meta, similarity=sim, source=source)
+        if sim_field == "sim_code":
+            item["sim_code"] = round(sim, 4)
+        elif sim_field == "sim_meta":
+            item["sim_meta"] = round(sim, 4)
+            # Meta collection stores NL-only docs; keep placeholders until merged with code hit.
+            item["code"] = ""
+            item["contextual_document"] = ""
+        chunks.append(item)
     return chunks
 
 
@@ -297,35 +364,132 @@ def vector_retrieve(
     *,
     where_document: Optional[dict] = None,
     query_embedding: Optional[list[float]] = None,
+    coll=None,
+    source: str = "vector",
+    sim_field: str | None = "sim_code",
 ) -> list[dict]:
+    target = coll if coll is not None else collection
     model = get_sentence_transformer(EMBEDDING_MODEL)
     qvec = query_embedding if query_embedding is not None else model.encode([query])[0].tolist()
 
-    n_docs = max(collection.count(), 1)
+    n_docs = max(target.count(), 1)
     n_results = min(top_k, n_docs)
+    if n_docs <= 0 or target.count() == 0:
+        return []
 
-    results = collection.query(
+    results = target.query(
         query_embeddings=[qvec],
         n_results=n_results,
         where_document=where_document,
         include=["documents", "metadatas", "distances"],
     )
-    return _rows_to_chunks(results)
+    return _rows_to_chunks(results, source=source, sim_field=sim_field)
+
+
+def _merge_dual_dense(code_hits: list[dict], meta_hits: list[dict], alpha: float | None = None) -> list[dict]:
+    """
+    Join code_embeddings and code_meta_embeddings on chunk_id.
+    Prefer code-channel document (contextual) for answer text.
+    """
+    a = DENSE_ALPHA if alpha is None else float(alpha)
+    by_id: dict[str, dict] = {}
+
+    for item in code_hits:
+        cid = _chunk_id(item.get("metadata", {}))
+        if not cid:
+            continue
+        row = dict(item)
+        row["sim_code"] = float(item.get("sim_code") or item.get("dense_score") or 0.0)
+        row["sim_meta"] = float(item.get("sim_meta") or 0.0)
+        by_id[cid] = row
+
+    for item in meta_hits:
+        cid = _chunk_id(item.get("metadata", {}))
+        if not cid:
+            continue
+        sim_m = float(item.get("sim_meta") or item.get("dense_score") or 0.0)
+        if cid not in by_id:
+            # Meta-only hit: fetch is incomplete; keep metadata and empty code until filled.
+            row = dict(item)
+            row["sim_code"] = 0.0
+            row["sim_meta"] = sim_m
+            # Prefer contextual if somehow present; else leave empty (rare).
+            by_id[cid] = row
+        else:
+            by_id[cid]["sim_meta"] = max(float(by_id[cid].get("sim_meta") or 0.0), sim_m)
+            # Fill missing ContextMeta from meta hit if code hit lacked them (legacy index).
+            for key in ("situating_text", "chunk_role", "file_summary"):
+                if not by_id[cid].get(key) and item.get(key):
+                    by_id[cid][key] = item[key]
+                    by_id[cid]["metadata"][key] = item["metadata"].get(key, item.get(key))
+
+    merged = []
+    for row in by_id.values():
+        sim_c = float(row.get("sim_code") or 0.0)
+        sim_m = float(row.get("sim_meta") or 0.0)
+        blended = blend_dense_scores(sim_c, sim_m, a)
+        row["sim_code"] = round(sim_c, 4)
+        row["sim_meta"] = round(sim_m, 4)
+        row["sim_gap"] = round(sim_m - sim_c, 4)
+        row["dense_score"] = round(blended, 4)
+        row["similarity"] = round(blended, 4)
+        sources = list(row.get("candidate_sources") or [])
+        if "vector_code" not in sources and sim_c > 0:
+            sources.append("vector_code")
+        if "vector_meta" not in sources and sim_m > 0:
+            sources.append("vector_meta")
+        row["candidate_sources"] = sources
+        merged.append(row)
+    return merged
 
 
 def vector_retrieve_merged(query: str, top_k: int) -> list[dict]:
     """
-    Wide dense retrieval + optional Chroma ``$contains`` passes for underscore
-    identifiers (Subversion C APIs, etc.) so symbol-heavy questions are not
-    drowned out by unrelated vector neighbors (e.g. tiny Flask samples).
+    Dual-channel dense retrieval: query code_embeddings and code_meta_embeddings,
+    blend with α, then optional symbol $contains passes on the code collection.
     """
     model = get_sentence_transformer(EMBEDDING_MODEL)
     qvec = model.encode([query])[0].tolist()
 
-    n_docs = max(collection.count(), 1)
-    n_vec = min(max(top_k, MIN_VECTOR_CANDIDATES), n_docs)
+    n_code = max(collection.count(), 1)
+    n_vec = min(max(top_k, MIN_VECTOR_CANDIDATES), n_code)
 
-    candidates = vector_retrieve(query, top_k=n_vec, query_embedding=qvec)
+    code_hits = vector_retrieve(
+        query, top_k=n_vec, query_embedding=qvec, coll=collection,
+        source="vector", sim_field="sim_code",
+    )
+
+    meta_coll = _get_meta_collection()
+    meta_hits: list[dict] = []
+    if meta_coll is not None and meta_coll.count() > 0:
+        n_meta = min(max(top_k, MIN_VECTOR_CANDIDATES), meta_coll.count())
+        meta_hits = vector_retrieve(
+            query, top_k=n_meta, query_embedding=qvec, coll=meta_coll,
+            source="vector_meta", sim_field="sim_meta",
+        )
+
+    candidates = _merge_dual_dense(code_hits, meta_hits)
+    # Meta-only hits come back with empty code; fetch their text from the code collection.
+    missing = [
+        _chunk_id(c.get("metadata", {}))
+        for c in candidates
+        if not c.get("code") and _chunk_id(c.get("metadata", {}))
+    ]
+    if missing:
+        got = collection.get(
+            where={"chunk_id": {"$in": missing}},
+            include=["documents", "metadatas"],
+        )
+        filled = {
+            _chunk_id(m): _make_chunk(d, m)
+            for d, m in zip(got["documents"], got["metadatas"])
+        }
+        for c in candidates:
+            f = filled.get(_chunk_id(c.get("metadata", {})))
+            if f:
+                c["code"] = f.get("code", "")
+                c["contextual_document"] = f.get("contextual_document", "")
+                c["metadata"] = {**c.get("metadata", {}), **f.get("metadata", {})}
     seen: set[str] = {
         str(c["metadata"].get("chunk_id") or "")
         for c in candidates
@@ -333,69 +497,134 @@ def vector_retrieve_merged(query: str, top_k: int) -> list[dict]:
     }
 
     for sym in _c_style_symbols(query)[:MAX_SYMBOL_QUERIES]:
-        n_sym = min(SYMBOL_QUERY_TOP_K, n_docs)
+        n_sym = min(SYMBOL_QUERY_TOP_K, n_code)
         extra = vector_retrieve(
             query,
             top_k=n_sym,
             where_document={"$contains": sym},
             query_embedding=qvec,
+            coll=collection,
+            source="vector",
+            sim_field="sim_code",
         )
         for c in extra:
             cid = str(c["metadata"].get("chunk_id") or "")
             if cid and cid in seen:
+                # Boost sim_code if this pass scored higher
+                for existing in candidates:
+                    if _chunk_id(existing.get("metadata", {})) == cid:
+                        existing["sim_code"] = max(
+                            float(existing.get("sim_code") or 0.0),
+                            float(c.get("sim_code") or 0.0),
+                        )
+                        existing["dense_score"] = round(
+                            blend_dense_scores(
+                                existing["sim_code"],
+                                float(existing.get("sim_meta") or 0.0),
+                            ),
+                            4,
+                        )
+                        existing["similarity"] = existing["dense_score"]
+                        existing["sim_gap"] = round(
+                            float(existing.get("sim_meta") or 0.0) - float(existing["sim_code"]),
+                            4,
+                        )
+                        break
                 continue
             if cid:
                 seen.add(cid)
             candidates.append(c)
+            # Re-blend single append
+            c["dense_score"] = round(
+                blend_dense_scores(float(c.get("sim_code") or 0.0), float(c.get("sim_meta") or 0.0)),
+                4,
+            )
+            c["similarity"] = c["dense_score"]
+            c["sim_gap"] = round(float(c.get("sim_meta") or 0.0) - float(c.get("sim_code") or 0.0), 4)
 
     return candidates
 
 
 def exact_retrieve(query_plan: dict[str, Any], top_k: int = EXACT_TOP_N) -> list[dict]:
     """Force include chunks from exact path/symbol matches."""
-    try:
-        rows = collection.get(include=["documents", "metadatas"])
-    except Exception as exc:
-        print(f"[retrieval] Warning: exact retrieval failed: {exc}")
-        return []
-
     paths = [p.lower() for p in query_plan.get("paths", [])]
     symbols_raw = [str(s) for s in query_plan.get("symbols", [])]
     symbols = [s.lower() for s in symbols_raw]
-    docs = rows.get("documents", []) or []
-    metas = rows.get("metadatas", []) or []
+    if not paths and not symbols:
+        return []
+
     candidates = []
+    seen_ids = set()
 
-    for doc, meta in zip(docs, metas):
-        file_path = str(meta.get("file_path", "")).lower()
-        name = str(meta.get("name", "")).lower()
-        qualified = str(meta.get("qualified_name", "")).lower()
-        symbol_list_raw = _safe_json_list(meta.get("symbols"))
-        symbol_list = [s.lower() for s in symbol_list_raw]
-        text = f"{doc}\n{file_path}\n{name}\n{qualified}".lower()
+    # Step 1: Targeted path lookup if paths are specified in query plan
+    for p in paths:
+        for candidate_path in [p, p.replace("/", "\\"), p.replace("\\", "/")]:
+            try:
+                res = collection.get(where={"file_path": candidate_path}, include=["documents", "metadatas"])
+                for doc, meta in zip(res.get("documents", []) or [], res.get("metadatas", []) or []):
+                    cid = str(meta.get("chunk_id") or "")
+                    if cid and cid not in seen_ids:
+                        seen_ids.add(cid)
+                        item = _make_chunk(doc, meta, similarity=0.0, source="exact")
+                        item["exact_match_score"] = 1.0
+                        candidates.append(item)
+            except Exception:
+                pass
 
-        score = 0.0
-        if paths and any(file_path == p or file_path.endswith(p) or p.endswith(file_path) for p in paths):
-            score = max(score, 1.0)
-        if symbols:
-            exact_symbol_hits = 0
-            for raw, lower in zip(symbols_raw, symbols):
-                if raw[:1].isupper():
-                    exact_symbol_hits += int(raw == str(meta.get("name", "")) or raw in symbol_list_raw)
-                else:
-                    exact_symbol_hits += int(lower == name or lower in symbol_list)
-            contains_hits = sum(1 for s in symbols if s in text)
-            if exact_symbol_hits:
-                score = max(score, 0.92)
-            elif contains_hits:
-                class_like_query = any(raw[:1].isupper() for raw in symbols_raw)
-                score = max(score, 0.45 if class_like_query else 0.65)
+    if len(candidates) >= top_k:
+        candidates.sort(key=lambda item: item["exact_match_score"], reverse=True)
+        return candidates[:top_k]
 
-        if score > 0:
-            score = min(1.0, score + (0.18 * _source_score(str(meta.get("file_path", "")), query_plan)))
-            item = _make_chunk(doc, meta, similarity=0.0, source="exact")
-            item["exact_match_score"] = round(score, 4)
-            candidates.append(item)
+    # Step 2: Paginated scan in safe batches of 2000
+    try:
+        total = collection.count()
+        batch_size = 2000
+        for offset in range(0, total, batch_size):
+            rows = collection.get(include=["documents", "metadatas"], limit=batch_size, offset=offset)
+            docs = rows.get("documents", []) or []
+            metas = rows.get("metadatas", []) or []
+
+            for doc, meta in zip(docs, metas):
+                cid = str(meta.get("chunk_id") or "")
+                if cid and cid in seen_ids:
+                    continue
+
+                file_path = str(meta.get("file_path", "")).lower()
+                name = str(meta.get("name", "")).lower()
+                qualified = str(meta.get("qualified_name", "")).lower()
+                symbol_list_raw = _safe_json_list(meta.get("symbols"))
+                symbol_list = [s.lower() for s in symbol_list_raw]
+                text = f"{doc}\n{file_path}\n{name}\n{qualified}".lower()
+
+                score = 0.0
+                if paths and any(file_path == p or file_path.endswith(p) or p.endswith(file_path) for p in paths):
+                    score = max(score, 1.0)
+                if symbols:
+                    exact_symbol_hits = 0
+                    for raw, lower in zip(symbols_raw, symbols):
+                        if raw[:1].isupper():
+                            exact_symbol_hits += int(raw == str(meta.get("name", "")) or raw in symbol_list_raw)
+                        else:
+                            exact_symbol_hits += int(lower == name or lower in symbol_list)
+                    contains_hits = sum(1 for s in symbols if s in text)
+                    if exact_symbol_hits:
+                        score = max(score, 0.92)
+                    elif contains_hits:
+                        class_like_query = any(raw[:1].isupper() for raw in symbols_raw)
+                        score = max(score, 0.45 if class_like_query else 0.65)
+
+                if score > 0:
+                    if cid:
+                        seen_ids.add(cid)
+                    score = min(1.0, score + (0.18 * _source_score(str(meta.get("file_path", "")), query_plan)))
+                    item = _make_chunk(doc, meta, similarity=0.0, source="exact")
+                    item["exact_match_score"] = round(score, 4)
+                    candidates.append(item)
+
+            if len(candidates) >= top_k * 2:
+                break
+    except Exception as exc:
+        print(f"[retrieval] Warning: exact retrieval failed: {exc}")
 
     candidates.sort(key=lambda item: item["exact_match_score"], reverse=True)
     return candidates[:top_k]
@@ -472,8 +701,18 @@ def _merge_candidates(streams: dict[str, list[dict]]) -> list[dict]:
             target = merged[cid]
             if source not in target["candidate_sources"]:
                 target["candidate_sources"].append(source)
-            for score_key in ("dense_score", "bm25_score", "exact_match_score", "similarity"):
-                target[score_key] = max(float(target.get(score_key, 0.0) or 0.0), float(item.get(score_key, 0.0) or 0.0))
+            for score_key in (
+                "dense_score", "bm25_score", "exact_match_score", "similarity",
+                "sim_code", "sim_meta",
+            ):
+                target[score_key] = max(
+                    float(target.get(score_key, 0.0) or 0.0),
+                    float(item.get(score_key, 0.0) or 0.0),
+                )
+            target["sim_gap"] = round(
+                float(target.get("sim_meta") or 0.0) - float(target.get("sim_code") or 0.0),
+                4,
+            )
     return list(merged.values())
 
 
@@ -502,6 +741,9 @@ def _retrieval_diagnostics(query_plan: dict[str, Any], streams: dict[str, list[d
         },
         "bm25_available": bool(_load_bm25()),
         "reranker_enabled": RERANKER_ENABLED,
+        "dual_dense": bool(_get_meta_collection() is not None),
+        "dense_alpha": DENSE_ALPHA,
+        "meta_collection": META_COLLECTION_NAME,
     }
 
 
@@ -551,6 +793,17 @@ def hybrid_retrieve(query: str, top_k: int = 5) -> list[dict]:
 
     diagnostics = _retrieval_diagnostics(query_plan, streams, scored)
     scored.sort(key=lambda x: x["hybrid_score"], reverse=True)
+
+    # Optional PageRank / degree boost from call_graph.json (graph-embeddings).
+    if _STRUCTURE_RERANK and enhance_ranking_with_structure is not None:
+        try:
+            scored = enhance_ranking_with_structure(scored, CHROMA_PATH)
+            scored.sort(key=lambda x: x.get("hybrid_score", 0), reverse=True)
+        except Exception as exc:
+            logging.getLogger("retrieval_tool").debug(
+                "Structural re-rank skipped: %s", exc
+            )
+
     for item in scored:
         item["retrieval_diagnostics"] = diagnostics
     return scored
@@ -720,67 +973,22 @@ def reconstruct_file_context(ranked_chunks: list[dict]) -> list[dict]:
 # PUBLIC API
 # ══════════════════════════════════════════════════════════════════
 
-def retrieve_context(
-    query: str,
-    top_k: int = 5,
-    mode: str = "vector",
-    alpha: Optional[float] = None,
-    w_pagerank: Optional[float] = None,
-    w_indegree: Optional[float] = None,
-) -> list[dict]:
+def retrieve_context(query: str, top_k: int = 5, include_parent: bool = False) -> list[dict]:
     """
     Full retrieval pipeline:
-      vector search → hybrid scoring → ranking → (optional graph rerank) → late chunking
-
-    Parameters
-    ----------
-    query:
-        Natural-language or code query.
-    top_k:
-        Final number of stitched results to return.
-    mode:
-        ``"vector"`` (default) — the standard hybrid pipeline (dense + BM25 +
-        exact-symbol + cross-encoder rerank) without any call-graph signal.
-        ``"graph"`` — same candidate set, plus a final structural rerank that
-        blends ``final_score`` with PageRank / in-degree from
-        ``call_graph.json``. Falls back to ``"vector"`` semantics if the
-        sidecar is missing.
-    alpha:
-        ``graph`` mode only. Weight on the hybrid score in the blend
-        ``alpha * hybrid + (1 - alpha) * structural``. ``None`` → env default.
-    w_pagerank, w_indegree:
-        ``graph`` mode only. Split of the structural score between PageRank and
-        normalized in-degree. Auto-normalized to sum to 1.
+      vector search → hybrid scoring → ranking → late chunking context
 
     Each returned dict contains:
       "code"           — the matched chunk (exact function/block)
       "metadata"       — file_path, function name, start/end line, language
       "similarity"     — raw vector similarity score
       "hybrid_score"   — vector + keyword combined score
-      "final_score"    — final ranked score (graph-blended when mode="graph")
-      "graph_score"    — structural score (graph mode only)
-      "rerank_weights" — {alpha, w_pagerank, w_indegree} actually used (graph)
+      "final_score"    — final ranked score
       "parent_context" — all chunks from the same file stitched in line order
                          Pass this to the LLM for full surrounding context.
     """
-    mode_normalized = (mode or "vector").strip().lower()
-    if mode_normalized not in {"vector", "graph"}:
-        mode_normalized = "vector"
-
     candidates = hybrid_retrieve(query, top_k=top_k * CHILD_FETCH_MULTIPLIER)
     ranked     = rank_chunks(query, candidates)
-
-    if mode_normalized == "graph":
-        from .graph_rerank import rerank_with_graph
-        ranked = rerank_with_graph(
-            ranked,
-            alpha=alpha,
-            w_pagerank=w_pagerank,
-            w_indegree=w_indegree,
-        )
-
     top        = ranked[:top_k]
-    results    = reconstruct_file_context(top)
-    for item in results:
-        item["retrieval_mode"] = mode_normalized
+    results    = reconstruct_file_context(top) if include_parent else top
     return results

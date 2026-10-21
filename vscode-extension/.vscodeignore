@@ -1,0 +1,13 @@
+.vscode/**
+.vscode-test/**
+src/**
+node_modules/**
+out/test/**
+!out/extension.js
+!out/sidebarProvider.js
+!out/backendClient.js
+tsconfig.json
+.eslintrc.json
+**/*.map
+**/*.ts
+!webview/**

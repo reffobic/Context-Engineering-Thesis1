@@ -1,4 +1,5 @@
 flask_test/
+superset/
 backend/chroma_db/
 .deps/
 
@@ -17,9 +18,18 @@ env/
 data/chroma_db/
 data/subversion/
 
-# Graphify generated output / cache
+# Graphify / generated viz (rebuild with `graphify update .`)
 graphify-out/
 **/graphify-out/
+backend/mcp_server/static/graphify_view.html
+
+# Local eval dumps / Office slide builds
+docs/superset_gasr_run/
+docs/*.pptx
+docs/*.docx
+docs/*.png
+docs/_build_*.py
+docs/_tmp_*.py
 
 # Mem0 local persistence
 .mem0/

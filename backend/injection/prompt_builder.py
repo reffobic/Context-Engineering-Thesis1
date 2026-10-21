@@ -40,7 +40,6 @@ class ContextChunk(TypedDict, total=False):
 
 DEFAULT_SYSTEM_PROMPT = """You are an expert software engineer assisting with code changes.
 Rules:
-- Conversation memory first: if the user asks what they previously asked, said, or discussed, answer from prior chat turns only. Never invent a prior question from code CONTEXT.
 - Use only the information in the CONTEXT sections when discussing the codebase.
 - If context is insufficient, state what is missing instead of inventing files or APIs.
 - Prefer concise, correct code and explain non-obvious choices briefly.

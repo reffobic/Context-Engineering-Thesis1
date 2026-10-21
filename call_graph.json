@@ -1,0 +1,114 @@
+{
+  "nodes": {
+    "demo.py:entry_point": {
+      "id": "demo.py:entry_point",
+      "name": "entry_point",
+      "file": "demo.py",
+      "type": "function",
+      "pagerank": 0.6470746832030198,
+      "in_degree": 0.0,
+      "out_degree": 1.0,
+      "callers": [],
+      "calls": [
+        "demo.py:helper1",
+        "demo.py:helper2",
+        "demo.py:orchestrate"
+      ]
+    },
+    "demo.py:helper1": {
+      "id": "demo.py:helper1",
+      "name": "helper1",
+      "file": "demo.py",
+      "type": "function",
+      "pagerank": 0.830412510110542,
+      "in_degree": 1.0,
+      "out_degree": 0.0,
+      "callers": [
+        "demo.py:entry_point"
+      ],
+      "calls": []
+    },
+    "demo.py:helper2": {
+      "id": "demo.py:helper2",
+      "name": "helper2",
+      "file": "demo.py",
+      "type": "function",
+      "pagerank": 0.830412510110542,
+      "in_degree": 1.0,
+      "out_degree": 0.0,
+      "callers": [
+        "demo.py:entry_point"
+      ],
+      "calls": []
+    },
+    "demo.py:orchestrate": {
+      "id": "demo.py:orchestrate",
+      "name": "orchestrate",
+      "file": "demo.py",
+      "type": "function",
+      "pagerank": 0.830412510110542,
+      "in_degree": 1.0,
+      "out_degree": 0.6666666666666666,
+      "callers": [
+        "demo.py:entry_point"
+      ],
+      "calls": [
+        "demo.py:core_logic",
+        "demo.py:cleanup"
+      ]
+    },
+    "demo.py:core_logic": {
+      "id": "demo.py:core_logic",
+      "name": "core_logic",
+      "file": "demo.py",
+      "type": "function",
+      "pagerank": 1.0,
+      "in_degree": 1.0,
+      "out_degree": 0.0,
+      "callers": [
+        "demo.py:orchestrate"
+      ],
+      "calls": []
+    },
+    "demo.py:cleanup": {
+      "id": "demo.py:cleanup",
+      "name": "cleanup",
+      "file": "demo.py",
+      "type": "function",
+      "pagerank": 1.0,
+      "in_degree": 1.0,
+      "out_degree": 0.0,
+      "callers": [
+        "demo.py:orchestrate"
+      ],
+      "calls": []
+    }
+  },
+  "edges": [
+    {
+      "source": "demo.py:entry_point",
+      "target": "demo.py:helper1",
+      "type": "calls"
+    },
+    {
+      "source": "demo.py:entry_point",
+      "target": "demo.py:helper2",
+      "type": "calls"
+    },
+    {
+      "source": "demo.py:entry_point",
+      "target": "demo.py:orchestrate",
+      "type": "calls"
+    },
+    {
+      "source": "demo.py:orchestrate",
+      "target": "demo.py:core_logic",
+      "type": "calls"
+    },
+    {
+      "source": "demo.py:orchestrate",
+      "target": "demo.py:cleanup",
+      "type": "calls"
+    }
+  ]
+}
