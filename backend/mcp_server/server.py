@@ -551,6 +551,7 @@ def run_pipeline(
             "retrieve", "assess", "prune", "graph_expand", "re_prune", "inject", "generate"
         ]
         from diamond.gasr_ladder import run_gasr_ladder
+        from diamond.gasr_seeds import build_gasr_seed_pool
         from diamond.preroute_gate import preroute_structured_gate
         from retrieval.graph_expand import graph_expand
 
@@ -571,7 +572,11 @@ def run_pipeline(
         )
         entry_decision = {**entry_decision, "duration_ms": entry_ms}
 
-        seed_pool = list(context)
+        # Same seed selection as GASR: pruned, non-test chunks (diamond/gasr_seeds.py).
+        seed_pool = _to_retrieve_shaped(
+            build_gasr_seed_pool(pruned_context, context),
+            source="gasr_seed",
+        )
 
         def _assess_structure():
             judge, ms = _time_stage(
