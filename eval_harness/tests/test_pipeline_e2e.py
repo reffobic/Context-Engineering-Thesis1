@@ -260,3 +260,23 @@ def test_seed_pool_fallback_order(snapshots):
     for (pruned, raw), expected, tier in cases:
         assert m.build_gasr_seed_pool(pruned, raw) == expected
         assert seed_tier(pruned, raw, m) == tier
+
+
+def test_seed_tier_and_working_tree_database_never_opened(runs, index_dir, snapshots, work, fake, pcfg, exp):
+    from harness.instrument import seed_tier_shares
+    recs = []
+    for cid, o in runs["wrapped"].items():
+        r = dict(o["record"], arm=o["result"]["pipeline"]["mode"], instance_id=cid)
+        recs.append(r)
+    sh = seed_tier_shares(recs)
+    assert sh["GAPA"]["share"] == {"pruned_non_test": 1.0} and sh["GASR"]["share"] == {"pruned_non_test": 1.0}
+    # the runner installed the guard for the working-tree databases; opening one must fail loudly
+    import subprocess
+    import sys
+    from conftest import HARNESS, SRC
+    from harness.pipelineenv import forbidden_chroma_paths
+    code = ("import sys; sys.path.insert(0, %r); from harness.pipelineenv import install_chroma_guard, forbidden_chroma_paths;"
+            "from pathlib import Path; import chromadb; install_chroma_guard(forbidden_chroma_paths(Path(%r)));"
+            "chromadb.PersistentClient(path=%r)") % (str(SRC), str(HARNESS.parent), str(HARNESS.parent / "backend" / "chroma_db"))
+    r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+    assert r.returncode != 0 and "refusing to open working-tree Chroma database" in r.stderr

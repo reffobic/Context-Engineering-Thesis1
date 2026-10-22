@@ -300,3 +300,30 @@ def gapa_gate_summary(records: list[dict]) -> dict:
         "mean_call1_tokens_on_call2_path": mean([tk(x, "gapa_call1") for x in second]),
         "mean_call2_tokens": mean([tk(x, "gapa_call2") for x in second]),
     }
+
+
+def seed_tier_rows(records: list[dict]) -> list[dict]:
+    """Per-task seed pool facts for the metrics output (GASR and GAPA; others have no seed pool)."""
+    rows = []
+    for r in records:
+        sp = r.get("seed_pool")
+        rows.append({"instance_id": r.get("instance_id"), "arm": r.get("arm"),
+                     "seed_tier": sp["tier"] if sp else None, "seed_pool_size": sp["size"] if sp else None,
+                     "seed_pool_pruned_n": sp["pruned_n"] if sp else None, "seed_pool_raw_n": sp["raw_n"] if sp else None})
+    return rows
+
+
+def seed_tier_shares(records: list[dict]) -> dict:
+    """Share of tasks per fallback tier, per arm, over tasks that reached the seed-pool step."""
+    out: dict = {}
+    for row in seed_tier_rows(records):
+        if row["seed_tier"] is None:
+            continue
+        a = out.setdefault(row["arm"], {"n": 0, "tiers": {}, "mean_size": 0.0})
+        a["n"] += 1
+        a["tiers"][row["seed_tier"]] = a["tiers"].get(row["seed_tier"], 0) + 1
+        a["mean_size"] += row["seed_pool_size"]
+    for a in out.values():
+        a["mean_size"] = a["mean_size"] / a["n"]
+        a["share"] = {t: c / a["n"] for t, c in a["tiers"].items()}
+    return out

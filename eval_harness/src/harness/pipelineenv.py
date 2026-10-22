@@ -88,3 +88,44 @@ def require_runnable(identity: dict) -> None:
         raise EnvError("tracked files have uncommitted changes; commit before running")
     if not identity["backend_matches_frozen"]:
         raise EnvError("backend/ differs from the frozen pipeline commit")
+
+
+# ── clean snapshot only ──────────────────────────────────────────────────────
+
+def assert_snapshot_root(pipeline_root: Path, data_dir: Path, pcfg: dict, repo_root: Path) -> None:
+    """Runs use the extracted copy of the frozen SHA under <data_dir>/cache/pipeline, never the working tree."""
+    root = pipeline_root.resolve()
+    snap_base = (data_dir / "cache" / "pipeline").resolve()
+    frozen = pcfg["pipeline"]["frozen_sha"]
+    if snap_base not in root.parents:
+        raise EnvError(f"pipeline root {root} is not under the snapshot cache {snap_base}")
+    if root.name != frozen:
+        raise EnvError(f"snapshot {root.name} is not the frozen SHA {frozen}")
+    marker = root / "backend" / ".snapshot_ok"
+    if not marker.is_file() or marker.read_text(encoding="utf-8").strip() != frozen:
+        raise EnvError("snapshot marker missing or for another commit")
+    if root == repo_root.resolve() or repo_root.resolve() / "backend" == root / "backend":
+        raise EnvError("pipeline root is the working tree")
+
+
+def forbidden_chroma_paths(repo_root: Path) -> list[Path]:
+    r = repo_root.resolve()
+    return [r / "backend" / "chroma_db", r / "chroma_db", r / "backend" / "superset_chroma_db"]
+
+
+def install_chroma_guard(forbidden: list[Path]) -> None:
+    """Make chromadb.PersistentClient raise for any path inside a forbidden folder (the working-tree databases)."""
+    import chromadb
+    orig = chromadb.PersistentClient
+    bad = [p.resolve() for p in forbidden]
+
+    def guarded(*a, **k):
+        path = k.get("path", a[0] if a else None)
+        if path is not None:
+            p = Path(path).resolve()
+            for f in bad:
+                if p == f or f in p.parents:
+                    raise EnvError(f"refusing to open working-tree Chroma database {p}")
+        return orig(*a, **k)
+
+    chromadb.PersistentClient = guarded

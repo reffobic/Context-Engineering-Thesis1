@@ -86,3 +86,42 @@ def test_git_identity_flags(tmp_path):
     assert not git_identity(tmp_path, pcfg)["backend_matches_frozen"]
     pcfg["pipeline"]["revoked_harness_commits"] = [run("rev-parse", "HEAD")[:10]]
     assert git_identity(tmp_path, pcfg)["revoked"]
+
+
+def test_seed_tier_shares():
+    from harness.instrument import seed_tier_shares
+    recs = [{"arm": "GAPA", "seed_pool": {"tier": "pruned_non_test", "size": 2, "pruned_n": 5, "raw_n": 5}},
+            {"arm": "GAPA", "seed_pool": {"tier": "raw_non_test", "size": 3, "pruned_n": 5, "raw_n": 5}},
+            {"arm": "GAPA", "seed_pool": None},                       # sufficient at the gate: no seed pool
+            {"arm": "GASR", "seed_pool": {"tier": "pruned_non_test", "size": 4, "pruned_n": 5, "raw_n": 5}}]
+    s = seed_tier_shares(recs)
+    assert s["GAPA"]["n"] == 2 and s["GAPA"]["share"] == {"pruned_non_test": 0.5, "raw_non_test": 0.5}
+    assert s["GASR"]["share"] == {"pruned_non_test": 1.0} and s["GAPA"]["mean_size"] == 2.5
+
+
+def test_chroma_guard_and_snapshot_root(tmp_path):
+    import chromadb
+    from harness.pipelineenv import assert_snapshot_root, install_chroma_guard
+    repo, data = tmp_path / "repo", tmp_path / "data"
+    sha = "a" * 40
+    pc = {"pipeline": {"frozen_sha": sha}}
+    snap = data / "cache" / "pipeline" / sha
+    (snap / "backend").mkdir(parents=True)
+    with pytest.raises(EnvError):
+        assert_snapshot_root(snap, data, pc, repo)                     # no marker yet
+    (snap / "backend" / ".snapshot_ok").write_text(sha)
+    assert_snapshot_root(snap, data, pc, repo)
+    (repo / "backend").mkdir(parents=True)
+    with pytest.raises(EnvError):
+        assert_snapshot_root(repo, data, pc, repo)                     # the working tree is refused
+    orig = chromadb.PersistentClient
+    try:
+        install_chroma_guard([repo / "backend" / "chroma_db"])
+        with pytest.raises(EnvError):
+            chromadb.PersistentClient(path=str(repo / "backend" / "chroma_db"))
+        with pytest.raises(EnvError):
+            chromadb.PersistentClient(str(repo / "backend" / "chroma_db" / "sub"))
+        assert not (repo / "backend" / "chroma_db").exists()           # never created either
+        chromadb.PersistentClient(path=str(tmp_path / "ok_db"))        # other paths still work
+    finally:
+        chromadb.PersistentClient = orig

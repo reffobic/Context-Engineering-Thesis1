@@ -94,6 +94,9 @@ def run_cases(pipeline_root: Path, index_dir: Path, work: Path, fake, cases: lis
     cases_path.write_text(json.dumps(cases), encoding="utf-8")
     cmd = [sys.executable, str(HERE / "runner_pipeline.py"), "--pipeline-root", str(root), "--cases", str(cases_path),
            "--out", str(out_path), "--fake-port", str(fake.port), "--experiment", str(EXP_PATH)]
+    from harness.pipelineenv import forbidden_chroma_paths
+    for f in forbidden_chroma_paths(HARNESS.parent):
+        cmd += ["--forbid", str(f)]
     if instrument:
         cmd.append("--instrument")
     r = subprocess.run(cmd, capture_output=True, text=True, env=env)

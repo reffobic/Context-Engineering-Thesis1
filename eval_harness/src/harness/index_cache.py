@@ -25,7 +25,7 @@ from pathlib import Path
 
 from .common import config_hash, load_toml
 from .envinfo import _graphify_version
-from .pipelineenv import assert_unset, pipeline_identity
+from .pipelineenv import assert_snapshot_root, assert_unset, git_identity, pipeline_identity
 from .pipeline_src import snapshot
 from .smallfiles import sha256_file
 
@@ -97,7 +97,7 @@ def build_one(data_dir: Path, ident: dict, pcfg: dict, icfg_path: Path, icfg: di
         shutil.rmtree(partial)
     cache_idx.mkdir(parents=True, exist_ok=True)
     meta = {"key_parts": parts, "machine_id": profile["machine_id"], "pipeline_identity": ident,
-            "record_results": pcfg["pipeline"]["record_results"], "icfg_hash": config_hash(icfg_path),
+            "record_results": pcfg["pipeline"]["record_results"], "icfg_hash": config_hash(icfg_path), "harness": git_identity(Path(__file__).resolve().parents[3], pcfg),
             "sample_instance": pair["instance_id"], "dataset": pair["dataset"]}
     meta_path = partial.with_name(partial.name + ".meta.json")
     meta_path.write_text(json.dumps(meta), encoding="utf-8")
@@ -327,6 +327,48 @@ def import_one(tar_path: Path, data_dir: Path) -> dict:
     return {"status": "imported", "dir": str(final), "chroma_rebuild_s": round(rebuild_s, 2), "verify": v["checks"]}
 
 
+def _du(path: Path) -> int:
+    return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
+
+
+def summarize(data_dir: Path, pairs: list[dict], sha: str, icfg: dict, gver: str | None, pcfg: dict) -> int:
+    import statistics
+    rows, missing = [], []
+    for p in pairs:
+        parts = make_key(p["repo"], p["base_commit"], sha, icfg, gver)
+        d = index_dir(data_dir, parts)
+        if not (d / "DONE").is_file():
+            missing.append(f"{p['repo']}@{p['base_commit'][:8]}")
+            continue
+        rep = json.loads((d / "build_report.json").read_text(encoding="utf-8"))
+        c, t = rep["counts"], rep["timing_s"]
+        rows.append({"repo": p["repo"], "commit": p["base_commit"][:12], "dir": d.name, "disk_bytes": _du(d),
+                     "files_scanned": c["files_scanned"], "files_indexed": c["files_indexed"],
+                     "beyond_cap": c["files_beyond_pipeline_default_cap"], "chunks": c["chunks_code"],
+                     "graphify_nodes": c["graphify_nodes"], "graphify_edges": c["graphify_edges"],
+                     "worker_total_s": t["worker_total"], "timing_s": t, "device": rep["index_device"],
+                     "pythonhashseed": rep.get("pythonhashseed"), "call_graph": (d / "chroma" / "call_graph.json").is_file(),
+                     "harness_commit": (rep.get("harness") or {}).get("harness_commit")})
+    cap = icfg["build"]["pipeline_default_max_files"]
+    over = sorted((r for r in rows if r["files_scanned"] > cap), key=lambda r: -r["files_scanned"])
+    stages = {k: round(sum(r["timing_s"][k] for r in rows), 1) for k in rows[0]["timing_s"]} if rows else {}
+    out = {"pipeline_sha": sha, "indexes_expected": len(pairs), "indexes_present": len(rows), "missing": missing,
+           "total_worker_s": round(sum(r["worker_total_s"] for r in rows), 1), "stage_totals_s": stages,
+           "disk_bytes_total": sum(r["disk_bytes"] for r in rows), "chunks_total": sum(r["chunks"] for r in rows),
+           "files_total": sum(r["files_scanned"] for r in rows), "default_cap": cap,
+           "repos_over_cap": [{k: r[k] for k in ("repo", "commit", "files_scanned", "files_indexed", "beyond_cap", "chunks")} for r in over],
+           "median_worker_s": statistics.median(r["worker_total_s"] for r in rows) if rows else None,
+           "all_hashseed_0": all(r["pythonhashseed"] == "0" for r in rows), "all_have_call_graph": all(r["call_graph"] for r in rows),
+           "devices": sorted({r["device"] for r in rows}), "harness_commits": sorted({str(r["harness_commit"]) for r in rows}),
+           "slowest": sorted(({k: r[k] for k in ("repo", "commit", "chunks", "worker_total_s")} for r in rows),
+                             key=lambda r: -r["worker_total_s"])[:5], "per_index": rows}
+    rd = data_dir / "reports"
+    rd.mkdir(parents=True, exist_ok=True)
+    (rd / f"index_summary_{sha[:7]}.json").write_text(json.dumps(out, indent=1), encoding="utf-8", newline="\n")
+    print(json.dumps({k: v for k, v in out.items() if k != "per_index"}, indent=1))
+    return 0 if not missing else 1
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -341,9 +383,15 @@ def main() -> int:
         p.add_argument("--only-instance", default=None)
         if n == "export":
             p.add_argument("--out", type=Path, required=True)
+        else:
+            p.add_argument("--continue-on-error", action="store_true")
     i = sub.add_parser("import")
     i.add_argument("--profile", type=Path, required=True)
     i.add_argument("--src", type=Path, required=True)
+    sm = sub.add_parser("summary")
+    for x in ("profile", "experiment", "pipeline-config", "index-config"):
+        sm.add_argument(f"--{x}", type=Path, required=True)
+    sm.add_argument("--dataset", action="append")
     v = sub.add_parser("verify")
     v.add_argument("--dir", type=Path, required=True)
     v.add_argument("--compare-with", type=Path, default=None)
@@ -372,17 +420,30 @@ def main() -> int:
     if a.limit:
         pairs = pairs[: a.limit]
     sha, root = snapshot(pcfg["pipeline"]["frozen_sha"], data_dir)
+    assert_snapshot_root(root, data_dir, pcfg, Path(__file__).resolve().parents[3])
     gver = _graphify_version()
     print(f"pipeline frozen_sha={sha} (base {ident['base_commit'][:7]}, seed alignment "
           f"{ident['seed_alignment_commit'][:7]}); record_results={pcfg['pipeline']['record_results']}; "
           f"graphify={gver}; {len(pairs)} indexes")
+    if a.cmd == "summary":
+        return summarize(data_dir, pairs, sha, icfg, gver, pcfg)
     if a.cmd == "build":
-        for p in pairs:
+        failed = 0
+        t_all = time.perf_counter()
+        for i, p in enumerate(pairs, 1):
             r = build_one(data_dir, ident, pcfg, a.index_config, icfg, p, (sha, root), profile, gver)
-            print(json.dumps({k: r[k] for k in r if k not in ("settings",)}, indent=1))
+            slim = {k: r[k] for k in r if k not in ("settings",)}
+            print(f"[{i}/{len(pairs)}] {time.strftime('%H:%M:%S')} {p['repo']}@{p['base_commit'][:8]} {r['status']} "
+                  f"wall_s={r.get('wall_s')} chunks={(r.get('counts') or {}).get('chunks_code')} "
+                  f"files={(r.get('counts') or {}).get('files_scanned')}", flush=True)
             if r["status"] == "error":
-                return 1
-        return 0
+                failed += 1
+                print(json.dumps(slim, indent=1), flush=True)
+                if not a.continue_on_error:
+                    return 1
+        print(f"build finished: {len(pairs) - failed} ok, {failed} failed, "
+              f"{(time.perf_counter() - t_all):.0f}s total", flush=True)
+        return 1 if failed else 0
     a.out.mkdir(parents=True, exist_ok=False)
     for p in pairs:
         parts = make_key(p["repo"], p["base_commit"], sha, icfg, gver)

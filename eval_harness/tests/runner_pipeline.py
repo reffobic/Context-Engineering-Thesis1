@@ -31,6 +31,7 @@ def main() -> int:
     ap.add_argument("--fake-port", type=int, required=True)
     ap.add_argument("--instrument", action="store_true")
     ap.add_argument("--experiment", type=Path, required=True)
+    ap.add_argument("--forbid", type=Path, action="append", default=[])
     a = ap.parse_args()
     root = a.pipeline_root.resolve()
     sys.path.insert(0, str(root / "backend"))
@@ -45,6 +46,9 @@ def main() -> int:
     else:
         redirect_only(redirect)
 
+    if a.forbid:
+        from harness.pipelineenv import install_chroma_guard
+        install_chroma_guard(a.forbid)
     import mcp_server.server as server
     ins = None
     if a.instrument:
