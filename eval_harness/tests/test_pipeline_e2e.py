@@ -40,14 +40,35 @@ NO_EXPANSION = ["gapa_sufficient", "gapa_call2_context", "gapa_no_call_graph"]
 EXPANSION = ["gapa_expand_1hop", "gapa_expand_2hop"]
 
 
+# server.py adds re_prune_kept / re_prune_kind to the last expansion entry only when the integer
+# millisecond timer of the re-prune is non-zero, so these keys appear or not depending on speed
+# (observed without any wrapper). They are therefore excluded from output comparison; the harness
+# reads the re-pruned chunks from its own wrapper instead.
+TIMING_CONDITIONAL = ("re_prune_kept", "re_prune_kind")
+
+
 def norm(o):
     """Drop timings, which differ between runs."""
     if isinstance(o, dict):
         return {k: norm(v) for k, v in o.items()
-                if not (k.endswith("_ms") or k in ("duration_ms", "ms", "wall_ms", "time", "timestamp"))}
+                if not (k.endswith("_ms") or k in ("duration_ms", "ms", "wall_ms", "time", "timestamp") + TIMING_CONDITIONAL)}
     if isinstance(o, list):
         return [norm(v) for v in o]
     return o
+
+
+def diffs(a, b, path="", out=None):
+    """Paths where two normalised structures differ (for readable failures)."""
+    out = [] if out is None else out
+    if isinstance(a, dict) and isinstance(b, dict):
+        for k in sorted(set(a) | set(b)):
+            diffs(a.get(k), b.get(k), f"{path}/{k}", out)
+    elif isinstance(a, list) and isinstance(b, list) and len(a) == len(b):
+        for i, (x, y) in enumerate(zip(a, b)):
+            diffs(x, y, f"{path}[{i}]", out)
+    elif a != b:
+        out.append((path, str(a)[:150], str(b)[:150]))
+    return out
 
 
 def request_view(log, drop_options=("num_ctx", "seed", "temperature"), drop_top=("think", "keep_alive")):
@@ -158,7 +179,7 @@ def test_wrapped_outputs_equal_plain_outputs(runs):
     for cid in [c["id"] for c in CASES]:
         a, b = runs["aligned"][cid], runs["wrapped"][cid]
         assert a["error"] is None and b["error"] is None, cid
-        assert norm(a["result"]) == norm(b["result"]), cid
+        assert norm(a["result"]) == norm(b["result"]), (cid, diffs(norm(a["result"]), norm(b["result"]))[:6])
         assert request_view(a["fake_log"]) == request_view(b["fake_log"]), cid
 
 
