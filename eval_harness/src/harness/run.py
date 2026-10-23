@@ -317,7 +317,7 @@ def run_task(job: Job, task: dict, force_timeout: bool) -> dict:
     overhead: dict[str, Any] = {}
     line = {**job.header, "job_id": job.job_id, "task_id": tid, "dataset": a.dataset, "repo": task["repo"],
             "base_commit": task["base_commit"], "arm": job.arm, "arm_impl": job.arm_impl, "model": a.model,
-            "query_sha256": hashlib.sha256(task["query"].encode()).hexdigest(), "started_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "index_dir": str(idx), "query_sha256": hashlib.sha256(task["query"].encode()).hexdigest(), "started_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "forced_timeout": force_timeout}
     proc = None
     try:
