@@ -415,9 +415,9 @@ def main() -> int:
     ident = pipeline_identity(a.pipeline_config)
     datasets = a.dataset or exp["sampling"]["datasets"]
     pairs = sampled_pairs(data_dir, datasets)
-    if a.only_instance:
+    if getattr(a, "only_instance", None):
         pairs = [p for p in pairs if p["instance_id"] == a.only_instance]
-    if a.limit:
+    if getattr(a, "limit", None):
         pairs = pairs[: a.limit]
     sha, root = snapshot(pcfg["pipeline"]["frozen_sha"], data_dir)
     assert_snapshot_root(root, data_dir, pcfg, Path(__file__).resolve().parents[3])

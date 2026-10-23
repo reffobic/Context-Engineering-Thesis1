@@ -50,3 +50,23 @@ def test_verdict_flags_each_failure():
     v["checks"]["call_graph_json"] = True
     v["checks"]["code_meta_embeddings"] = {**good, "self_recall": 0.9, "golden_overlap_mean": 0.5, "count": 4}
     assert len(verdict(v, man)) == 3
+
+
+def test_summarize_reads_build_reports(tmp_path):
+    import json
+    from harness.index_cache import summarize
+    icfg = {"embedding": {"model": "m"}, "chunking": {}, "index": {}, "build": {"max_files": 1, "pipeline_default_max_files": 600}}
+    pair = {"repo": "o/r", "base_commit": "c" * 40}
+    k = make_key("o/r", "c" * 40, "p" * 40, icfg, "g")
+    d = index_dir(tmp_path, k)
+    (d / "chroma").mkdir(parents=True)
+    (d / "chroma" / "call_graph.json").write_text("{}")
+    (d / "DONE").write_text("x")
+    timing = {"worker_total": 10.0, "chunking": 1.0}
+    (d / "build_report.json").write_text(json.dumps({
+        "counts": {"files_scanned": 700, "files_indexed": 700, "files_beyond_pipeline_default_cap": 100, "chunks_code": 5,
+                   "graphify_nodes": 1, "graphify_edges": 1}, "timing_s": timing, "index_device": "cuda:0", "pythonhashseed": "0"}))
+    assert summarize(tmp_path, [pair], "p" * 40, icfg, "g", {}) == 0
+    out = json.loads((tmp_path / "reports" / ("index_summary_" + "p" * 7 + ".json")).read_text())
+    assert out["repos_over_cap"][0]["beyond_cap"] == 100 and out["all_hashseed_0"] and out["all_have_call_graph"]
+    assert summarize(tmp_path, [pair, {"repo": "x/y", "base_commit": "d" * 40}], "p" * 40, icfg, "g", {}) == 1
