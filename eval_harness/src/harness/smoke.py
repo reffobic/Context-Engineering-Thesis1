@@ -41,8 +41,10 @@ def main() -> int:
     ap.add_argument("--kill-during", type=int, default=3)
     ap.add_argument("--allow-dirty", action="store_true")
     a = ap.parse_args()
+    for n in ("profile", "sample", "out", "experiment", "pipeline_config", "index_config", "run_config"):
+        setattr(a, n, getattr(a, n).resolve())
     ids = json.loads(a.sample.read_text(encoding="utf-8"))["instance_ids"][: a.n]
-    data = Path(load_toml(a.profile)["data_dir"])
+    data = Path(load_toml(a.profile)["data_dir"]).resolve()
     cmd = [sys.executable, "-m", "harness.run", "--profile", str(a.profile), "--dataset", a.dataset, "--model", a.model,
            "--arm", a.arm, "--sample", str(a.sample), "--out", str(a.out), "--experiment", str(a.experiment),
            "--pipeline-config", str(a.pipeline_config), "--index-config", str(a.index_config),

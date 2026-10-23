@@ -51,16 +51,21 @@ def mini(tmp_path_factory, pcfg, index_dir, fake):
     (idx / "key.json").write_text(json.dumps(parts), encoding="utf-8")
     (idx / "DONE").write_text(parts["key"], encoding="utf-8")
     profile = root / "profile.toml"
-    profile.write_text(f'machine_id = "test-machine"\ndata_dir = "{data.as_posix()}"\nqueue_file = "q.toml"\nntfy_topic_env = "X"\n', encoding="utf-8")
+    profile.write_text(f'machine_id = "test-machine"\ndata_dir = "data"\nqueue_file = "q.toml"\nntfy_topic_env = "X"\n', encoding="utf-8")
     rc = root / "run.toml"
     rc.write_text(RUN_TOML.read_text(encoding="utf-8").replace("http://127.0.0.1:11434", f"http://127.0.0.1:{fake.port}")
                   .replace("worker_ready_timeout_s = 180", "worker_ready_timeout_s = 180"), encoding="utf-8")
     return {"data": data, "profile": profile, "run_config": rc, "sample": sample, "idx": idx, "root": root, "tasks": tasks}
 
 
+def rel(mini, p):
+    """Paths are passed relative to the working directory (as the real profile does)."""
+    return os.path.relpath(p, mini["root"])
+
+
 def cmd(mini, out, arm="GAPA", extra=()):
-    return [sys.executable, "-m", "harness.run", "--profile", str(mini["profile"]), "--dataset", "mini", "--model", MODEL,
-            "--arm", arm, "--sample", str(mini["sample"]), "--out", str(out), "--experiment", str(EXP_PATH),
+    return [sys.executable, "-m", "harness.run", "--profile", rel(mini, mini["profile"]), "--dataset", "mini", "--model", MODEL,
+            "--arm", arm, "--sample", rel(mini, mini["sample"]), "--out", rel(mini, out), "--experiment", str(EXP_PATH),
             "--pipeline-config", str(PCFG_PATH), "--index-config", str(IDX_PATH), "--run-config", str(mini["run_config"]),
             "--smoke", "--allow-dirty", *extra]
 
@@ -86,7 +91,7 @@ EXPAND = {"gapa1": False, "structure": "STRUCTURE", "post_expand": [True]}
 def test_gapa_job_writes_complete_lines(mini, fake):
     out = mini["root"] / "out_gapa"
     scenario(fake, EXPAND)
-    r = subprocess.run(cmd(mini, out), capture_output=True, text=True, env=env_for(fake))
+    r = subprocess.run(cmd(mini, out), capture_output=True, text=True, env=env_for(fake), cwd=mini["root"])
     assert r.returncode == 0, r.stdout[-1500:] + r.stderr[-1500:]
     rows = lines(out)
     assert [x["task_id"] for x in rows] == [t["instance_id"] for t in mini["tasks"]]
@@ -117,7 +122,7 @@ def test_gapa_job_writes_complete_lines(mini, fake):
 def test_forced_timeout_is_recorded_as_failure_and_job_continues(mini, fake):
     out = mini["root"] / "out_timeout"
     scenario(fake, {"gapa1": True})
-    r = subprocess.run(cmd(mini, out, extra=["--inject-timeout", "shop__shop-1"]), capture_output=True, text=True, env=env_for(fake))
+    r = subprocess.run(cmd(mini, out, extra=["--inject-timeout", "shop__shop-1"]), capture_output=True, text=True, env=env_for(fake), cwd=mini["root"])
     assert r.returncode == 0, r.stdout[-1500:] + r.stderr[-1500:]
     st = {x["task_id"]: x for x in lines(out)}
     assert st["shop__shop-1"]["status"] == "timeout" and st["shop__shop-1"]["counted_as_failed"] is True
@@ -131,7 +136,7 @@ def test_forced_timeout_is_recorded_as_failure_and_job_continues(mini, fake):
 def test_kill_and_resume(mini, fake):
     out = mini["root"] / "out_resume"
     scenario(fake, {"gapa1": True, "answer_delay_s": 4})
-    p = subprocess.Popen(cmd(mini, out), env=env_for(fake), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    p = subprocess.Popen(cmd(mini, out), env=env_for(fake), cwd=mini["root"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     deadline = time.time() + 240
     while time.time() < deadline and not ((out / "results.jsonl").is_file() and len(lines(out)) >= 1):
         time.sleep(0.5)
@@ -143,7 +148,7 @@ def test_kill_and_resume(mini, fake):
     p.wait()
     assert len(lines(out)) == 1 and os.path.exists(f"/proc/{worker_pid}")             # orphan still alive
     scenario(fake, {"gapa1": True})
-    r = subprocess.run(cmd(mini, out), capture_output=True, text=True, env=env_for(fake))
+    r = subprocess.run(cmd(mini, out), capture_output=True, text=True, env=env_for(fake), cwd=mini["root"])
     assert r.returncode == 0, r.stdout[-1500:] + r.stderr[-1500:]
     ids = [x["task_id"] for x in lines(out)]
     assert ids == [t["instance_id"] for t in mini["tasks"]] and len(set(ids)) == 3  # no duplicates, nothing lost
@@ -156,18 +161,18 @@ def test_kill_and_resume(mini, fake):
 def test_resume_refuses_different_settings_and_torn_last_line(mini, fake):
     out = mini["root"] / "out_resume"                                             # job finished in the previous test
     scenario(fake, {"gapa1": True})
-    r = subprocess.run(cmd(mini, out, arm="GASR"), capture_output=True, text=True, env=env_for(fake))
+    r = subprocess.run(cmd(mini, out, arm="GASR"), capture_output=True, text=True, env=env_for(fake), cwd=mini["root"])
     assert r.returncode == 2 and "different settings" in r.stdout
     with (out / "results.jsonl").open("a") as f:
         f.write('{"task_id": "torn')
-    r = subprocess.run(cmd(mini, out), capture_output=True, text=True, env=env_for(fake))
+    r = subprocess.run(cmd(mini, out), capture_output=True, text=True, env=env_for(fake), cwd=mini["root"])
     assert r.returncode == 0 and "3 done, 0 to run" in r.stdout
     assert len(lines(out)) == 3
 
 
 def test_non_smoke_run_refused_while_record_results_false(mini, fake):
     c = [x for x in cmd(mini, mini["root"] / "out_refused") if x != "--smoke"]
-    r = subprocess.run(c, capture_output=True, text=True, env=env_for(fake))
+    r = subprocess.run(c, capture_output=True, text=True, env=env_for(fake), cwd=mini["root"])
     assert r.returncode == 2 and "record_results" in r.stdout
 
 
@@ -177,7 +182,7 @@ def test_missing_call_graph_fails_the_task_not_silently(mini, fake):
     cg.unlink()
     try:
         out = mini["root"] / "out_nocg"
-        r = subprocess.run(cmd(mini, out, extra=["--limit", "1"]), capture_output=True, text=True, env=env_for(fake))
+        r = subprocess.run(cmd(mini, out, extra=["--limit", "1"]), capture_output=True, text=True, env=env_for(fake), cwd=mini["root"])
         x = lines(out)[0]
         assert x["status"] == "preflight_failed" and "call_graph.json missing" in x["failure"]["detail"] and x["counted_as_failed"]
     finally:
@@ -187,7 +192,7 @@ def test_missing_call_graph_fails_the_task_not_silently(mini, fake):
 def test_always_graph_arm_is_harness_composed(mini, fake):
     out = mini["root"] / "out_ag"
     scenario(fake, {})
-    r = subprocess.run(cmd(mini, out, arm="ALWAYS_GRAPH", extra=["--limit", "1"]), capture_output=True, text=True, env=env_for(fake))
+    r = subprocess.run(cmd(mini, out, arm="ALWAYS_GRAPH", extra=["--limit", "1"]), capture_output=True, text=True, env=env_for(fake), cwd=mini["root"])
     assert r.returncode == 0, r.stdout[-1500:] + r.stderr[-1500:]
     x = lines(out)[0]
     assert x["arm_impl"] == "harness" and x["route"] == "GRAPH" and x["status"] == "ok" and x["hops_used"] == 2
@@ -199,7 +204,7 @@ def test_self_route_and_gasr_arms_run(mini, fake):
     for arm, sc in (("SELF_ROUTE", {"selfroute": False}), ("GASR", {"gasr": {"sufficient": False, "need": "STRUCTURE"}, "post_expand": [True]})):
         out = mini["root"] / f"out_{arm}"
         scenario(fake, sc)
-        r = subprocess.run(cmd(mini, out, arm=arm, extra=["--limit", "1"]), capture_output=True, text=True, env=env_for(fake))
+        r = subprocess.run(cmd(mini, out, arm=arm, extra=["--limit", "1"]), capture_output=True, text=True, env=env_for(fake), cwd=mini["root"])
         assert r.returncode == 0, r.stdout[-1500:] + r.stderr[-1500:]
         x = lines(out)[0]
         assert x["status"] == "ok" and x["route"] == ("LC" if arm == "SELF_ROUTE" else "GRAPH")
@@ -208,7 +213,7 @@ def test_self_route_and_gasr_arms_run(mini, fake):
 def test_oom_in_ollama_response_is_classified(mini, fake):
     out = mini["root"] / "out_oom"
     scenario(fake, {"gapa1": True, "http_error": "llama runner process has terminated: CUDA error: out of memory"})
-    r = subprocess.run(cmd(mini, out, extra=["--limit", "2"]), capture_output=True, text=True, env=env_for(fake))
+    r = subprocess.run(cmd(mini, out, extra=["--limit", "2"]), capture_output=True, text=True, env=env_for(fake), cwd=mini["root"])
     assert (out / "results.jsonl").is_file(), r.stdout[-1500:] + r.stderr[-1500:]
     rows = lines(out)
     assert [x["status"] for x in rows] == ["oom", "oom"] and all(x["counted_as_failed"] for x in rows), rows[0].get("failure")

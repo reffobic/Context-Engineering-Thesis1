@@ -118,7 +118,7 @@ class Job:
         self.profile = load_toml(a.profile)
         self.exp, self.pcfg = load_toml(a.experiment), load_toml(a.pipeline_config)
         self.icfg, self.rcfg = load_toml(a.index_config), load_toml(a.run_config)
-        self.data = Path(self.profile["data_dir"])
+        self.data = Path(self.profile["data_dir"]).resolve()
         self.out = a.out
         self.client = OllamaClient(self.rcfg["run"]["ollama_base_url"], 120)
         self.arm = a.arm
@@ -429,6 +429,8 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--inject-timeout", action="append", default=[], help="smoke test: force a timeout for this task id")
     a = ap.parse_args()
+    for n in ("profile", "sample", "out", "experiment", "pipeline_config", "index_config", "run_config"):
+        setattr(a, n, getattr(a, n).resolve())             # the worker changes directory; every path must be absolute
     a.out.mkdir(parents=True, exist_ok=True)
     job = Job(a)
     lock = a.out / ".lock"

@@ -12,11 +12,12 @@ import tarfile
 from pathlib import Path
 
 SUBDIR = "backend"
+REPO = Path(__file__).resolve().parents[3]          # git is always run in the harness repository, whatever the cwd
 
 
 def _git(args: list[str], binary: bool = False):
     return subprocess.run(["git", "-c", "credential.helper=", *args], capture_output=True,
-                          text=not binary, check=True, timeout=600)
+                          text=not binary, check=True, timeout=600, cwd=REPO)
 
 
 def resolve_sha(ref: str) -> str:
