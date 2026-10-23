@@ -17,6 +17,7 @@ import io
 import json
 import threading
 import time
+import urllib.error
 import urllib.request
 from typing import Any
 from urllib.parse import urlparse
@@ -93,7 +94,8 @@ class OllamaShim:
         return b, changed
 
     def _record(self, url: str, orig: dict, sent: dict, changed: dict, resp: dict | None,
-                wall_ms: float, error: str | None) -> None:
+                wall_ms: float, error: str | None, http_status: int | None = None,
+                error_text: str | None = None) -> None:
         o = self.cfg["ollama"]
         num_ctx = sent["options"]["num_ctx"]
         pe = (resp or {}).get("prompt_eval_count")
@@ -112,7 +114,7 @@ class OllamaShim:
             "done_reason": (resp or {}).get("done_reason"), "wall_ms": round(wall_ms, 2),
             "num_ctx": num_ctx,
             "truncation_suspected": bool(pe is not None and pe >= num_ctx - int(o["truncation_margin_tokens"])),
-            "error": error,
+            "error": error, "http_status": http_status, "error_text": error_text,
         })
 
     # ── patches ──────────────────────────────────────────────────────────────
@@ -132,7 +134,9 @@ class OllamaShim:
                     body = r.json()
                 except ValueError:
                     body = None
-                shim._record(url, json, sent, changed, body, (time.perf_counter() - t) * 1000, None)
+                bad = r.status_code >= 400
+                shim._record(url, json, sent, changed, body, (time.perf_counter() - t) * 1000, None,
+                             r.status_code, (r.text or "")[:400] if bad else None)
                 return r
             except Exception as exc:
                 shim._record(url, json, sent, changed, None, (time.perf_counter() - t) * 1000, repr(exc))
@@ -154,6 +158,17 @@ class OllamaShim:
                 shim._record(url, orig, sent, changed, _json.loads(raw.decode("utf-8")),
                              (time.perf_counter() - t) * 1000, None)
                 return _Replay(raw)
+            except urllib.error.HTTPError as exc:
+                # read the body for classification, then put it back so the pipeline's own read still works
+                body = b""
+                try:
+                    body = exc.read()
+                    exc.fp = io.BytesIO(body)
+                except Exception:
+                    pass
+                shim._record(url, orig, sent, changed, None, (time.perf_counter() - t) * 1000, repr(exc),
+                             exc.code, body.decode("utf-8", "replace")[:400])
+                raise
             except Exception as exc:
                 shim._record(url, orig, sent, changed, None, (time.perf_counter() - t) * 1000, repr(exc))
                 raise

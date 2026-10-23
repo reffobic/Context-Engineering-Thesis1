@@ -46,7 +46,10 @@ def build_env(pcfg: dict, model: str | None, experiment: dict | None = None, ext
 def effective_record(pcfg: dict, env: dict[str, str]) -> dict[str, dict]:
     """Every pipeline-relevant variable: effective value and where it came from."""
     out = {}
-    for k, default in pcfg["known_env"].items():
+    known = dict(pcfg["known_env"])
+    for k in pcfg["env_pinned"]:
+        known.setdefault(k, "")
+    for k, default in known.items():
         if k in env:
             out[k] = {"value": env[k], "source": "pinned" if k in pcfg["env_pinned"] else "env"}
         else:

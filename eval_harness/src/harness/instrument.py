@@ -12,6 +12,7 @@ Every wrapper returns exactly what the original returned. Token counts come from
 from __future__ import annotations
 
 import importlib
+import re
 import sys
 import time
 from pathlib import Path
@@ -20,6 +21,8 @@ from typing import Any, Callable
 from .ollama_shim import Recorder, role
 
 ROUTER_ROLES_EXCLUDED = {"answer"}
+# The pipeline silently falls back to LC/CONTEXT when a judge call fails or its JSON cannot be parsed (D13).
+GATE_FALLBACK = re.compile(r"(unavailable \(|Could not parse).*defaulting", re.S)
 
 
 def _item(c: dict) -> dict:
@@ -147,8 +150,8 @@ class Instrument:
             "re_prune", lambda a, k, r: {"kept": [_item(c) for c in r[0]], "n_seeds": len(a[1]), "n_neighbors": len(a[2])}))
 
         # gates and judges (role decides how the shim labels the HTTP call)
-        dec = lambda a, k, r: {k2: r.get(k2) for k2 in ("sufficient", "need", "route", "confidence", "stage")} | {
-            "pipeline_token_usage": r.get("token_usage")}
+        dec = lambda a, k, r: {k2: r.get(k2) for k2 in ("sufficient", "need", "route", "confidence", "stage", "reason")} | {
+            "pipeline_token_usage": r.get("token_usage"), "gate_error": bool(GATE_FALLBACK.search(str(r.get("reason") or "")))}
         self._wrap(server, "assess_sufficiency", self._with_result(
             "assess_sufficiency", lambda a, k, r: dec(a, k, r) | {"phase": k.get("phase", "rag")},
             ollama_role=lambda a, k: "post_expand_judge" if k.get("phase") == "graph" else "selfroute_judge"))
@@ -180,7 +183,8 @@ class Instrument:
                     "hit_max_context_tokens": pb.CONTEXT_TRUNCATED_TAG in user, "n_chunks": len(a[1])}
         self._wrap(reg.tools, "inject_context", self._with_result("inject", inj))
         self._wrap(reg.tools, "ollama_generate", self._with_result(
-            "generate", lambda a, k, r: {"output_chars": len(r) if isinstance(r, str) else len(str(r))},
+            "generate", lambda a, k, r: {"output_chars": len(r) if isinstance(r, str) else len(str(r)),
+                                         "answer_error": isinstance(r, str) and r.lstrip().startswith("[Ollama error")},
             ollama_role="answer"))
 
     # ── per task ─────────────────────────────────────────────────────────────
@@ -231,6 +235,9 @@ class Instrument:
                        "answer_prompt": tok(answer, "prompt_eval_count"), "answer_completion": tok(answer, "eval_count")},
             "ollama_calls": calls,
             "any_truncation_suspected": any(c["truncation_suspected"] for c in calls),
+            "gate_error": any(e.get("gate_error") for e in ev),
+            "gate_error_events": [{"name": e["name"], "reason": e.get("reason")} for e in ev if e.get("gate_error")],
+            "answer_error": any(e.get("answer_error") for e in ev),
         }
         rec["token_reconciliation"] = reconcile(calls, result)
         return rec

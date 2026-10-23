@@ -48,6 +48,12 @@ class FakeOllama:
             def do_GET(self):
                 if self.path == "/__log":
                     return self._send(outer.log)
+                if self.path == "/api/version":
+                    return self._send({"version": "fake-0"})
+                if self.path == "/api/tags":
+                    return self._send({"models": [{"name": "fake:model", "digest": "sha256:fake"}]})
+                if self.path == "/api/ps":
+                    return self._send({"models": [{"name": "fake:model", "size": 100, "size_vram": 100}]})
                 self._send({"models": []})
 
             def do_POST(self):
@@ -58,7 +64,10 @@ class FakeOllama:
                 if self.path == "/__reset":
                     outer.log.clear()
                     return self._send({"ok": True})
-                self._send(outer.reply(self.path, body))
+                try:
+                    self._send(outer.reply(self.path, body))
+                except RuntimeError as exc:                    # scripted server error (e.g. an OOM message)
+                    self._send({"error": str(exc)}, 500)
 
         self.httpd = ThreadingHTTPServer(("127.0.0.1", 0), H)
         self.port = self.httpd.server_address[1]
@@ -78,6 +87,11 @@ class FakeOllama:
         kind = classify(system) if msgs else "answer"
         self.log.append({"role": kind, "path": path, "body": body})
         sc = self.scenario
+        if kind == "answer" and sc.get("answer_delay_s"):
+            import time
+            time.sleep(sc["answer_delay_s"])
+        if sc.get("http_error") and kind == "answer" and sc.get("http_error_match", "cart") in user.lower():
+            raise RuntimeError(sc["http_error"])
         if kind == "gapa_gate_call1":
             content = json.dumps({"sufficient": bool(sc.get("gapa1", True)), "confidence": "high", "reason": "fake"})
         elif kind == "gapa_gate_call2":

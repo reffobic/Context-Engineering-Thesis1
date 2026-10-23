@@ -1,0 +1,23 @@
+# Run-script settings (hashed into every log line).
+
+[run]
+ollama_base_url = "http://127.0.0.1:11434"
+task_timeout_s = 900                 # per task, the pipeline subprocess is killed after this
+worker_ready_timeout_s = 180         # subprocess start-up (imports, embedding model)
+max_consecutive_failures = 5         # the job stops after this many failed tasks in a row
+warmup_prompt = "Reply with the single word OK."
+warmup_timeout_s = 900
+scratch_subdir = "cache/scratch"     # per-task verified index copies live here and are deleted afterwards
+min_free_disk_gb = 40
+require_full_vram = true             # size_vram must equal size in `ollama ps` after warm-up
+pruning_method = "heuristic"         # run_pipeline default
+
+[arms]
+# arm name -> pipeline mode. ALWAYS_GRAPH is composed by the harness from pipeline functions (D7).
+SELF_ROUTE = "SELF_ROUTE"
+GASR = "GASR"
+GAPA = "GAPA"
+ALWAYS_GRAPH = "HARNESS"
+
+[arms.always_graph]
+hops = 2
