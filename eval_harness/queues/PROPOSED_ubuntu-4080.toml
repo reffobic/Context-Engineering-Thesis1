@@ -1,0 +1,276 @@
+# PROPOSED queue for ubuntu-4080. NOT ACTIVE: nothing runs until you confirm; record_results stays false until then.
+# One job at a time, model-major (qwen3.5:9b first = the model the gates were developed on), then GAPA, GASR,
+# ALWAYS_GRAPH, SELF_ROUTE; swe-bench-lite (27 tasks) before loc-bench (56 tasks). 83 tasks per arm x model.
+# Not queued: Pre-Route standalone (D8, undecided), ablations (Table IX), LocAgent/BM25 baselines (D18).
+# Estimates come from 4-task timing runs (data/smoke/timing_20261023T140747) plus per-index copy cost; "high" = 2x latency and copy.
+
+[queue]
+enabled = false
+frozen_sha = "3bbc52f220addbc648d4802dab6b1c658d427612"
+estimated_total_hours = 4.0
+estimated_total_hours_high = 7.1
+deadline = "2026-11-03"
+
+[[job]]
+id = "01-qwen3.5-9b-GAPA-swe-bench-lite"
+dataset = "swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GAPA"
+sample = "eval_harness/data/samples/swe-bench-lite.sample.json"
+out = "eval_harness/data/runs/3bbc52f/qwen3.5-9b/GAPA__swe-bench-lite"
+tasks = 27
+estimated_minutes = 8
+estimated_minutes_high = 14
+
+[[job]]
+id = "02-qwen3.5-9b-GAPA-loc-bench"
+dataset = "loc-bench"
+model = "qwen3.5:9b"
+arm = "GAPA"
+sample = "eval_harness/data/samples/loc-bench.sample.json"
+out = "eval_harness/data/runs/3bbc52f/qwen3.5-9b/GAPA__loc-bench"
+tasks = 56
+estimated_minutes = 16
+estimated_minutes_high = 28
+
+[[job]]
+id = "03-qwen3.5-9b-GASR-swe-bench-lite"
+dataset = "swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GASR"
+sample = "eval_harness/data/samples/swe-bench-lite.sample.json"
+out = "eval_harness/data/runs/3bbc52f/qwen3.5-9b/GASR__swe-bench-lite"
+tasks = 27
+estimated_minutes = 7
+estimated_minutes_high = 12
+
+[[job]]
+id = "04-qwen3.5-9b-GASR-loc-bench"
+dataset = "loc-bench"
+model = "qwen3.5:9b"
+arm = "GASR"
+sample = "eval_harness/data/samples/loc-bench.sample.json"
+out = "eval_harness/data/runs/3bbc52f/qwen3.5-9b/GASR__loc-bench"
+tasks = 56
+estimated_minutes = 14
+estimated_minutes_high = 25
+
+[[job]]
+id = "05-qwen3.5-9b-ALWAYS_GRAPH-swe-bench-lite"
+dataset = "swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "ALWAYS_GRAPH"
+sample = "eval_harness/data/samples/swe-bench-lite.sample.json"
+out = "eval_harness/data/runs/3bbc52f/qwen3.5-9b/ALWAYS_GRAPH__swe-bench-lite"
+tasks = 27
+estimated_minutes = 6
+estimated_minutes_high = 10
+
+[[job]]
+id = "06-qwen3.5-9b-ALWAYS_GRAPH-loc-bench"
+dataset = "loc-bench"
+model = "qwen3.5:9b"
+arm = "ALWAYS_GRAPH"
+sample = "eval_harness/data/samples/loc-bench.sample.json"
+out = "eval_harness/data/runs/3bbc52f/qwen3.5-9b/ALWAYS_GRAPH__loc-bench"
+tasks = 56
+estimated_minutes = 12
+estimated_minutes_high = 20
+
+[[job]]
+id = "07-qwen3.5-9b-SELF_ROUTE-swe-bench-lite"
+dataset = "swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "SELF_ROUTE"
+sample = "eval_harness/data/samples/swe-bench-lite.sample.json"
+out = "eval_harness/data/runs/3bbc52f/qwen3.5-9b/SELF_ROUTE__swe-bench-lite"
+tasks = 27
+estimated_minutes = 8
+estimated_minutes_high = 14
+
+[[job]]
+id = "08-qwen3.5-9b-SELF_ROUTE-loc-bench"
+dataset = "loc-bench"
+model = "qwen3.5:9b"
+arm = "SELF_ROUTE"
+sample = "eval_harness/data/samples/loc-bench.sample.json"
+out = "eval_harness/data/runs/3bbc52f/qwen3.5-9b/SELF_ROUTE__loc-bench"
+tasks = 56
+estimated_minutes = 15
+estimated_minutes_high = 27
+
+[[job]]
+id = "09-qwen2.5-coder-7b-instruct-GAPA-swe-bench-lite"
+dataset = "swe-bench-lite"
+model = "qwen2.5-coder:7b-instruct"
+arm = "GAPA"
+sample = "eval_harness/data/samples/swe-bench-lite.sample.json"
+out = "eval_harness/data/runs/3bbc52f/qwen2.5-coder-7b-instruct/GAPA__swe-bench-lite"
+tasks = 27
+estimated_minutes = 7
+estimated_minutes_high = 12
+
+[[job]]
+id = "10-qwen2.5-coder-7b-instruct-GAPA-loc-bench"
+dataset = "loc-bench"
+model = "qwen2.5-coder:7b-instruct"
+arm = "GAPA"
+sample = "eval_harness/data/samples/loc-bench.sample.json"
+out = "eval_harness/data/runs/3bbc52f/qwen2.5-coder-7b-instruct/GAPA__loc-bench"
+tasks = 56
+estimated_minutes = 13
+estimated_minutes_high = 23
+
+[[job]]
+id = "11-qwen2.5-coder-7b-instruct-GASR-swe-bench-lite"
+dataset = "swe-bench-lite"
+model = "qwen2.5-coder:7b-instruct"
+arm = "GASR"
+sample = "eval_harness/data/samples/swe-bench-lite.sample.json"
+out = "eval_harness/data/runs/3bbc52f/qwen2.5-coder-7b-instruct/GASR__swe-bench-lite"
+tasks = 27
+estimated_minutes = 7
+estimated_minutes_high = 12
+
+[[job]]
+id = "12-qwen2.5-coder-7b-instruct-GASR-loc-bench"
+dataset = "loc-bench"
+model = "qwen2.5-coder:7b-instruct"
+arm = "GASR"
+sample = "eval_harness/data/samples/loc-bench.sample.json"
+out = "eval_harness/data/runs/3bbc52f/qwen2.5-coder-7b-instruct/GASR__loc-bench"
+tasks = 56
+estimated_minutes = 14
+estimated_minutes_high = 25
+
+[[job]]
+id = "13-qwen2.5-coder-7b-instruct-ALWAYS_GRAPH-swe-bench-lite"
+dataset = "swe-bench-lite"
+model = "qwen2.5-coder:7b-instruct"
+arm = "ALWAYS_GRAPH"
+sample = "eval_harness/data/samples/swe-bench-lite.sample.json"
+out = "eval_harness/data/runs/3bbc52f/qwen2.5-coder-7b-instruct/ALWAYS_GRAPH__swe-bench-lite"
+tasks = 27
+estimated_minutes = 6
+estimated_minutes_high = 10
+
+[[job]]
+id = "14-qwen2.5-coder-7b-instruct-ALWAYS_GRAPH-loc-bench"
+dataset = "loc-bench"
+model = "qwen2.5-coder:7b-instruct"
+arm = "ALWAYS_GRAPH"
+sample = "eval_harness/data/samples/loc-bench.sample.json"
+out = "eval_harness/data/runs/3bbc52f/qwen2.5-coder-7b-instruct/ALWAYS_GRAPH__loc-bench"
+tasks = 56
+estimated_minutes = 11
+estimated_minutes_high = 19
+
+[[job]]
+id = "15-qwen2.5-coder-7b-instruct-SELF_ROUTE-swe-bench-lite"
+dataset = "swe-bench-lite"
+model = "qwen2.5-coder:7b-instruct"
+arm = "SELF_ROUTE"
+sample = "eval_harness/data/samples/swe-bench-lite.sample.json"
+out = "eval_harness/data/runs/3bbc52f/qwen2.5-coder-7b-instruct/SELF_ROUTE__swe-bench-lite"
+tasks = 27
+estimated_minutes = 7
+estimated_minutes_high = 13
+
+[[job]]
+id = "16-qwen2.5-coder-7b-instruct-SELF_ROUTE-loc-bench"
+dataset = "loc-bench"
+model = "qwen2.5-coder:7b-instruct"
+arm = "SELF_ROUTE"
+sample = "eval_harness/data/samples/loc-bench.sample.json"
+out = "eval_harness/data/runs/3bbc52f/qwen2.5-coder-7b-instruct/SELF_ROUTE__loc-bench"
+tasks = 56
+estimated_minutes = 15
+estimated_minutes_high = 26
+
+[[job]]
+id = "17-llama3.1-8b-instruct-q4_K_M-GAPA-swe-bench-lite"
+dataset = "swe-bench-lite"
+model = "llama3.1:8b-instruct-q4_K_M"
+arm = "GAPA"
+sample = "eval_harness/data/samples/swe-bench-lite.sample.json"
+out = "eval_harness/data/runs/3bbc52f/llama3.1-8b-instruct-q4_K_M/GAPA__swe-bench-lite"
+tasks = 27
+estimated_minutes = 7
+estimated_minutes_high = 13
+
+[[job]]
+id = "18-llama3.1-8b-instruct-q4_K_M-GAPA-loc-bench"
+dataset = "loc-bench"
+model = "llama3.1:8b-instruct-q4_K_M"
+arm = "GAPA"
+sample = "eval_harness/data/samples/loc-bench.sample.json"
+out = "eval_harness/data/runs/3bbc52f/llama3.1-8b-instruct-q4_K_M/GAPA__loc-bench"
+tasks = 56
+estimated_minutes = 14
+estimated_minutes_high = 24
+
+[[job]]
+id = "19-llama3.1-8b-instruct-q4_K_M-GASR-swe-bench-lite"
+dataset = "swe-bench-lite"
+model = "llama3.1:8b-instruct-q4_K_M"
+arm = "GASR"
+sample = "eval_harness/data/samples/swe-bench-lite.sample.json"
+out = "eval_harness/data/runs/3bbc52f/llama3.1-8b-instruct-q4_K_M/GASR__swe-bench-lite"
+tasks = 27
+estimated_minutes = 6
+estimated_minutes_high = 11
+
+[[job]]
+id = "20-llama3.1-8b-instruct-q4_K_M-GASR-loc-bench"
+dataset = "loc-bench"
+model = "llama3.1:8b-instruct-q4_K_M"
+arm = "GASR"
+sample = "eval_harness/data/samples/loc-bench.sample.json"
+out = "eval_harness/data/runs/3bbc52f/llama3.1-8b-instruct-q4_K_M/GASR__loc-bench"
+tasks = 56
+estimated_minutes = 12
+estimated_minutes_high = 21
+
+[[job]]
+id = "21-llama3.1-8b-instruct-q4_K_M-ALWAYS_GRAPH-swe-bench-lite"
+dataset = "swe-bench-lite"
+model = "llama3.1:8b-instruct-q4_K_M"
+arm = "ALWAYS_GRAPH"
+sample = "eval_harness/data/samples/swe-bench-lite.sample.json"
+out = "eval_harness/data/runs/3bbc52f/llama3.1-8b-instruct-q4_K_M/ALWAYS_GRAPH__swe-bench-lite"
+tasks = 27
+estimated_minutes = 6
+estimated_minutes_high = 10
+
+[[job]]
+id = "22-llama3.1-8b-instruct-q4_K_M-ALWAYS_GRAPH-loc-bench"
+dataset = "loc-bench"
+model = "llama3.1:8b-instruct-q4_K_M"
+arm = "ALWAYS_GRAPH"
+sample = "eval_harness/data/samples/loc-bench.sample.json"
+out = "eval_harness/data/runs/3bbc52f/llama3.1-8b-instruct-q4_K_M/ALWAYS_GRAPH__loc-bench"
+tasks = 56
+estimated_minutes = 12
+estimated_minutes_high = 20
+
+[[job]]
+id = "23-llama3.1-8b-instruct-q4_K_M-SELF_ROUTE-swe-bench-lite"
+dataset = "swe-bench-lite"
+model = "llama3.1:8b-instruct-q4_K_M"
+arm = "SELF_ROUTE"
+sample = "eval_harness/data/samples/swe-bench-lite.sample.json"
+out = "eval_harness/data/runs/3bbc52f/llama3.1-8b-instruct-q4_K_M/SELF_ROUTE__swe-bench-lite"
+tasks = 27
+estimated_minutes = 7
+estimated_minutes_high = 12
+
+[[job]]
+id = "24-llama3.1-8b-instruct-q4_K_M-SELF_ROUTE-loc-bench"
+dataset = "loc-bench"
+model = "llama3.1:8b-instruct-q4_K_M"
+arm = "SELF_ROUTE"
+sample = "eval_harness/data/samples/loc-bench.sample.json"
+out = "eval_harness/data/runs/3bbc52f/llama3.1-8b-instruct-q4_K_M/SELF_ROUTE__loc-bench"
+tasks = 56
+estimated_minutes = 13
+estimated_minutes_high = 24
