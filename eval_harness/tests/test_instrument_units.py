@@ -125,3 +125,13 @@ def test_chroma_guard_and_snapshot_root(tmp_path):
         chromadb.PersistentClient(path=str(tmp_path / "ok_db"))        # other paths still work
     finally:
         chromadb.PersistentClient = orig
+
+
+def test_reconcile_explains_mismatch_caused_by_a_failed_judge_parse():
+    calls = [{"role": "gapa_gate_call1", "prompt_eval_count": 1265, "eval_count": 71},
+             {"role": "gapa_gate_call2", "prompt_eval_count": 2337, "eval_count": 81}]
+    result = {"pipeline": {"stages": {"assess": {"summary": {"trace": [
+        {"token_usage": {"prompt_tokens": 2337, "completion_tokens": 81}}]}}}}}     # call 1 had no usage: parse failure
+    r = reconcile(calls, result, gate_error=True)
+    assert r["match"] is False and r["explained_by_gate_error"] is True
+    assert reconcile(calls, result, gate_error=False)["explained_by_gate_error"] is False

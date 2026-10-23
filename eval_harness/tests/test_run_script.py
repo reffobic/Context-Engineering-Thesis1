@@ -109,6 +109,8 @@ def test_gapa_job_writes_complete_lines(mini, fake):
     assert x["token_reconciliation"]["match"] is True
     rk = x["ranked"]
     assert rk["after_retrieval"]["files"] and rk["after_expansion"]["files"] and rk["after_pruning"]["files"]
+    assert any(c["content_head"] for c in x["ollama_calls"] if c["role"] != "answer")
+    assert all(c["content_head"] is None for c in x["ollama_calls"] if c["role"] == "answer")
     assert any(f.startswith("shop/") for f in rk["after_retrieval"]["functions"][0].split(":")[:1])
     assert x["structure_rerank"]["applied"] is True and x["ollama_ps"] == {"size": 100, "size_vram": 100}
     assert x["answer_call"]["num_ctx"] == 32768 and x["inject"]["hit_max_context_tokens"] is False
@@ -117,6 +119,15 @@ def test_gapa_job_writes_complete_lines(mini, fake):
     fp = json.loads((mini["idx"] / "fingerprint.json").read_text())
     assert sqlite_fingerprint(mini["idx"] / "chroma") == fp
     assert (out / "summary.json").is_file()
+
+
+def test_no_expansion_list_when_the_task_did_not_expand(mini, fake):
+    out = mini["root"] / "out_noexp"
+    scenario(fake, {"gapa1": False, "structure": "CONTEXT"})
+    r = subprocess.run(cmd(mini, out, extra=["--limit", "1"]), capture_output=True, text=True, env=env_for(fake), cwd=mini["root"])
+    assert r.returncode == 0, r.stdout[-800:]
+    x = lines(out)[0]
+    assert x["route"] == "LC" and x["ranked"]["after_expansion"] is None and x["expansions"] == []
 
 
 def test_forced_timeout_is_recorded_as_failure_and_job_continues(mini, fake):

@@ -239,7 +239,7 @@ class Instrument:
             "gate_error_events": [{"name": e["name"], "reason": e.get("reason")} for e in ev if e.get("gate_error")],
             "answer_error": any(e.get("answer_error") for e in ev),
         }
-        rec["token_reconciliation"] = reconcile(calls, result)
+        rec["token_reconciliation"] = reconcile(calls, result, rec["gate_error"])
         return rec
 
     def _gate(self, calls: list[dict]) -> dict:
@@ -282,15 +282,20 @@ def trace_tokens(result: dict | None) -> dict:
     return {"prompt": p, "completion": c, "entries": n, "reported": n > 0}
 
 
-def reconcile(calls: list[dict], result: dict | None) -> dict:
-    """Shim token sum over judge/gate calls vs pipeline token_usage over trace entries."""
+def reconcile(calls: list[dict], result: dict | None, gate_error: bool = False) -> dict:
+    """Shim token sum over judge/gate calls vs pipeline token_usage over trace entries.
+
+    The pipeline drops token_usage when a judge reply cannot be parsed (the fallback decision carries none),
+    so a mismatch together with a gate error is explained: the shim count is the complete one."""
     router = [c for c in calls if c["role"] not in ROUTER_ROLES_EXCLUDED]
     sp = sum((c.get("prompt_eval_count") or 0) for c in router)
     sc = sum((c.get("eval_count") or 0) for c in router)
     t = trace_tokens(result)
     return {"shim_prompt": sp, "shim_completion": sc, "trace_prompt": t["prompt"], "trace_completion": t["completion"],
             "trace_entries": t["entries"], "trace_reported": t["reported"],
-            "match": (sp == t["prompt"] and sc == t["completion"]) if t["reported"] else None}
+            "match": (sp == t["prompt"] and sc == t["completion"]) if t["reported"] else None,
+            "explained_by_gate_error": bool(gate_error and t["reported"] and (sp, sc) != (t["prompt"], t["completion"])
+                                            and sp >= t["prompt"] and sc >= t["completion"])}
 
 
 def gapa_gate_summary(records: list[dict]) -> dict:

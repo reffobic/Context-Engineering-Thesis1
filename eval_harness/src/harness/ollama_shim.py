@@ -115,6 +115,9 @@ class OllamaShim:
             "num_ctx": num_ctx,
             "truncation_suspected": bool(pe is not None and pe >= num_ctx - int(o["truncation_margin_tokens"])),
             "error": error, "http_status": http_status, "error_text": error_text,
+            # first words of judge/gate replies (not of answers) to diagnose unparseable verdicts
+            "content_head": (None if ROLE.get() == "answer" else
+                             (((resp or {}).get("message") or {}).get("content") or (resp or {}).get("response") or "")[:240]),
         })
 
     # ── patches ──────────────────────────────────────────────────────────────

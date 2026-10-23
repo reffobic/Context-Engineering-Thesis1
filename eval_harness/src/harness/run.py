@@ -296,7 +296,7 @@ def classify(out: dict | None, returncode: int | None, timed_out: bool, stderr: 
 def build_lists(job: Job, task: dict, raw: dict) -> dict:
     m = Mapper(job.data / "cache" / "checkouts" / task["repo"].replace("/", "__") / task["base_commit"])
     exp = None
-    if raw.get("seeds") is not None or any(raw.get("neighbors") or []):
+    if raw.get("neighbors"):                                  # at least one expansion hop happened
         exp = (raw.get("seeds") or []) + [c for hop in raw["neighbors"] for c in hop]
     final = raw.get("re_pruned_last") or raw.get("pruned")
     def lists(items):

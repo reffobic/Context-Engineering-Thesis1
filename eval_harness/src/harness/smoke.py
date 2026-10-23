@@ -111,7 +111,13 @@ def main() -> int:
     report["overhead_seconds_mean"] = {k: mean([r["overhead_s"].get(k) for r in rows]) for k in
                                        ("subprocess_startup_s", "spawn_to_ready_s", "index_copy_s", "index_verify_s")}
     report["routes"] = {k: sum(1 for r in ok if r["route"] == k) for k in sorted({r["route"] for r in ok})}
-    report["token_reconciliation_mismatches"] = [r["task_id"] for r in ok if r["token_reconciliation"]["match"] is False]
+    report["token_reconciliation_mismatches"] = [
+        {"task": r["task_id"], "explained_by_gate_error": r["token_reconciliation"]["explained_by_gate_error"],
+         "shim": [r["token_reconciliation"]["shim_prompt"], r["token_reconciliation"]["shim_completion"]],
+         "pipeline_trace": [r["token_reconciliation"]["trace_prompt"], r["token_reconciliation"]["trace_completion"]]}
+        for r in ok if r["token_reconciliation"]["match"] is False]
+    report["gate_error_tasks"] = [{"task": r["task_id"], "judge_reply_head": [c["content_head"] for c in r["ollama_calls"]
+                                                                             if c["role"] != "answer"][:2]} for r in ok if r.get("gate_error")]
     report["any_truncation_suspected"] = [r["task_id"] for r in ok if r["any_truncation_suspected"]]
     report["structure_rerank_applied_all"] = all(r["structure_rerank"]["applied"] for r in ok)
     report["wall_seconds_total"] = round(time.time() - t0, 1)
