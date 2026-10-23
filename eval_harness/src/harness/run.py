@@ -144,9 +144,18 @@ class Job:
     def preflight(self) -> dict:
         t0 = time.perf_counter()
         a, p, rc = self.a, self.pcfg["pipeline"], self.rcfg["run"]
-        if not a.smoke and not p["record_results"]:
-            raise JobAbort("record_results is false in pipeline.toml; only --smoke runs are allowed until it is confirmed")
         self.ident = git_identity(self.repo, self.pcfg)
+        self.record_auth = None
+        if not a.smoke:
+            if not p["record_results"] or p.get("record_results_pipeline_sha") != p["frozen_sha"]:
+                raise JobAbort("record_results is not enabled for the frozen pipeline SHA; only --smoke runs are allowed")
+            af = self.data / "queue" / "record_authorisation.json"
+            try:
+                self.record_auth = json.loads(af.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                raise JobAbort(f"no record authorisation file {af}")
+            if self.record_auth.get("pipeline_sha") != p["frozen_sha"] or self.record_auth.get("harness_commit") != self.ident["harness_commit"]:
+                raise JobAbort("record authorisation is for another pipeline SHA / harness commit than the one running")
         if not a.allow_dirty:
             require_runnable(self.ident)
         elif self.ident["revoked"]:
@@ -208,7 +217,8 @@ class Job:
             "harness_commit": self.ident["harness_commit"], "harness_clean": self.ident["clean"],
             "pipeline_frozen_sha": p["frozen_sha"], "pipeline_base_commit": p["base_commit"],
             "pipeline_seed_alignment_commit": p["seed_alignment_commit"],
-            "ablation": self.ablation, "record_results": p["record_results"], "env": env_rec,
+            "ablation": self.ablation, "record_results": bool(self.record_auth), "record_authorised_for": self.record_auth,
+            "env": env_rec,
             "python_packages": environment_info(), "num_ctx": self.exp["ollama"]["num_ctx"]}
         self.job_info = {"arm": self.arm, "arm_impl": self.arm_impl, "dataset": a.dataset, "model": a.model,
                          "n_tasks": len(self.tasks), "warmup": warm, "preflight_s": round(time.perf_counter() - t0, 2),
@@ -361,7 +371,7 @@ def run_task(job: Job, task: dict, force_timeout: bool) -> dict:
 
     spec = {"pipeline_root": str(job.root), "arm": job.arm, "arm_impl": job.arm_impl, "mode": job.rcfg["arms"][job.arm],
             "prompt": task["query"], "hops": job.rcfg["arms"]["always_graph"]["hops"], "pruning_method": rc["pruning_method"],
-            "experiment": str(a.experiment), "forbid": [str(p) for p in forbidden_chroma_paths(job.repo)],
+            "experiment": str(a.experiment), "forbid": [str(p) for r in {job.repo, job.data.parents[1]} for p in forbidden_chroma_paths(r)],
             "ready": str(scratch / "ready.json"), "out": str(scratch / "out.json"),
             "expect_structure_rerank": job.pcfg["pipeline"]["structure_rerank_expected"]}
     (scratch / "spec.json").write_text(json.dumps(spec), encoding="utf-8")
@@ -457,6 +467,10 @@ def main() -> int:
     for n in ("profile", "sample", "out", "experiment", "pipeline_config", "index_config", "run_config", "ablations_config"):
         setattr(a, n, getattr(a, n).resolve())             # the worker changes directory; every path must be absolute
     a.out.mkdir(parents=True, exist_ok=True)
+
+    def _term(signum, frame):                       # queue deadline / systemd stop: unwind so scratch and lock are cleaned
+        raise SystemExit(143)
+    signal.signal(signal.SIGTERM, _term)
     try:
         job = Job(a)
     except (JobAbort, EnvError) as exc:
@@ -477,7 +491,8 @@ def main() -> int:
         return 2
     jf = a.out / "job.json"
     ident = {"arm": job.arm, "model": a.model, "dataset": a.dataset, "ablation": a.ablation, "config_hash": job.header["config_hash"],
-             "pipeline_frozen_sha": job.header["pipeline_frozen_sha"], "sample_sha256": info["sample_sha256"]}
+             "pipeline_frozen_sha": job.header["pipeline_frozen_sha"], "harness_commit": job.header["harness_commit"],
+             "sample_sha256": info["sample_sha256"]}
     if jf.is_file():
         prev = json.loads(jf.read_text(encoding="utf-8"))
         if prev["identity"] != ident:

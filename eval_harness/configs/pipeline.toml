@@ -10,8 +10,11 @@ chroma_path_patch = "patches/0001-retrieval-tool-chroma-path-env.patch"
 ablation_patch = "patches/0002-graphify-prefix-env-and-ablation-switches.patch"
 base_commit = "166dbd01e126cdfe91524534a172498746a49cc2"          # origin/main as frozen by the team
 seed_alignment_commit = "50cf149efd6180b41098210b234efef81685ceaf"  # GAPA expands from GASR's seeds
-# Results are only recorded once the user confirms the frozen SHA for a run.
-record_results = false
+# Results are recorded only for this pipeline SHA and for the harness commit named in the untracked file
+# <data_dir>/queue/record_authorisation.json (written by the launcher at the user's confirmation). Both are
+# part of the job identity and of every log line. Without a matching authorisation only --smoke runs are allowed.
+record_results = true
+record_results_pipeline_sha = "2350c0b2e064e4fd808e941731366e6cc71a9551"
 mode_names = ["SELF_ROUTE", "GASR", "GAPA", "RAG", "LC"]
 structure_rerank_expected = true     # retrieval_tool._STRUCTURE_RERANK (module flag, not an env var)
 require_call_graph_json = true       # every index must ship call_graph.json; the job fails otherwise

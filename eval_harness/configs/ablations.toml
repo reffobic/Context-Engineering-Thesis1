@@ -38,7 +38,7 @@ env = { ABL_GATE_NO_SCORES = "1" }
 needs_gate_diagnosis = true
 
 [settings.gate_no_deps]
-label = "gate without the dependency count"
+label = "without dependency count"
 env = { ABL_GATE_NO_DEPS = "1" }
 needs_gate_diagnosis = true
 

@@ -181,10 +181,10 @@ def test_resume_refuses_different_settings_and_torn_last_line(mini, fake):
     assert len(lines(out)) == 3
 
 
-def test_non_smoke_run_refused_while_record_results_false(mini, fake):
+def test_non_smoke_run_refused_without_authorisation(mini, fake):
     c = [x for x in cmd(mini, mini["root"] / "out_refused") if x != "--smoke"]
     r = subprocess.run(c, capture_output=True, text=True, env=env_for(fake), cwd=mini["root"])
-    assert r.returncode == 2 and "record_results" in r.stdout
+    assert r.returncode == 2 and "no record authorisation" in r.stdout
 
 
 def test_missing_call_graph_fails_the_task_not_silently(mini, fake):
@@ -283,3 +283,28 @@ def test_prefix_mismatch_stub_aborts_the_job(mini, fake, tmp_path):
     rows = lines(out)
     assert len(rows) == 1 and rows[0]["failure"]["type"] == "prefix_mismatch_stub_neighbours" and rows[0]["counted_as_failed"] is True
     assert rows[0]["stub_neighbors"]["by_category"]["prefix_mismatch"] > 0
+
+
+# ── record authorisation ─────────────────────────────────────────────────────
+
+def test_result_runs_need_an_authorisation_for_this_pipeline_sha_and_harness_commit(mini, fake):
+    pcfg = load_toml(PCFG_PATH)["pipeline"]
+    head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=HARNESS).stdout.strip()
+    auth = mini["data"] / "queue" / "record_authorisation.json"
+    c = lambda out: [x for x in cmd(mini, out, extra=["--limit", "1"]) if x != "--smoke"]
+    scenario(fake, {"gapa1": True})
+    r = subprocess.run(c(mini["root"] / "out_auth0"), capture_output=True, text=True, env=env_for(fake), cwd=mini["root"])
+    assert r.returncode == 2 and "no record authorisation" in r.stdout
+    auth.parent.mkdir(parents=True, exist_ok=True)
+    auth.write_text(json.dumps({"pipeline_sha": pcfg["frozen_sha"], "harness_commit": "0" * 40}), encoding="utf-8")
+    r = subprocess.run(c(mini["root"] / "out_auth1"), capture_output=True, text=True, env=env_for(fake), cwd=mini["root"])
+    assert r.returncode == 2 and "another pipeline SHA / harness commit" in r.stdout
+    auth.write_text(json.dumps({"pipeline_sha": pcfg["frozen_sha"], "harness_commit": head}), encoding="utf-8")
+    out = mini["root"] / "out_auth2"
+    r = subprocess.run(c(out), capture_output=True, text=True, env=env_for(fake), cwd=mini["root"])
+    assert r.returncode == 0, r.stdout[-800:]
+    x = lines(out)[0]
+    assert x["record_results"] is True and x["record_authorised_for"] == {"pipeline_sha": pcfg["frozen_sha"], "harness_commit": head}
+    ident = json.loads((out / "job.json").read_text())["identity"]
+    assert ident["harness_commit"] == head and ident["pipeline_frozen_sha"] == pcfg["frozen_sha"]
+    auth.unlink()

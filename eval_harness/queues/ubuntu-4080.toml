@@ -1,0 +1,129 @@
+# Queue for ubuntu-4080, tonight's run (qwen3.5:9b only). Run from a clean worktree by harness.queue.
+# Estimates are minutes for the whole job (4-task timing runs plus index copy cost); a job is started only if
+# estimate x safety_factor fits before the hard stop. Left out tonight: heading controls, Loc-Bench gate rows,
+# other models, Pre-Route standalone (D8).
+
+[queue]
+enabled = true
+frozen_sha = "2350c0b2e064e4fd808e941731366e6cc71a9551"
+hard_stop = "2026-10-23T22:00:00"
+hard_stop_tz = "Africa/Cairo"
+safety_factor = 1.25
+
+[[job]]
+id = "01-qwen3.5-9b-GAPA-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "swe-bench-lite"
+tasks = 27
+estimated_minutes = 8
+
+[[job]]
+id = "02-qwen3.5-9b-GAPA-loc-bench"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "loc-bench"
+tasks = 56
+estimated_minutes = 16
+
+[[job]]
+id = "03-qwen3.5-9b-GASR-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GASR"
+dataset = "swe-bench-lite"
+tasks = 27
+estimated_minutes = 7
+
+[[job]]
+id = "04-qwen3.5-9b-GASR-loc-bench"
+model = "qwen3.5:9b"
+arm = "GASR"
+dataset = "loc-bench"
+tasks = 56
+estimated_minutes = 14
+
+[[job]]
+id = "05-qwen3.5-9b-ALWAYS_GRAPH-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "ALWAYS_GRAPH"
+dataset = "swe-bench-lite"
+tasks = 27
+estimated_minutes = 6
+
+[[job]]
+id = "06-qwen3.5-9b-ALWAYS_GRAPH-loc-bench"
+model = "qwen3.5:9b"
+arm = "ALWAYS_GRAPH"
+dataset = "loc-bench"
+tasks = 56
+estimated_minutes = 12
+
+[[job]]
+id = "07-qwen3.5-9b-SELF_ROUTE-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "SELF_ROUTE"
+dataset = "swe-bench-lite"
+tasks = 27
+estimated_minutes = 8
+
+[[job]]
+id = "08-qwen3.5-9b-SELF_ROUTE-loc-bench"
+model = "qwen3.5:9b"
+arm = "SELF_ROUTE"
+dataset = "loc-bench"
+tasks = 56
+estimated_minutes = 15
+
+[[job]]
+id = "09-qwen3.5-9b-GAPA-no_graph_expansion-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "swe-bench-lite"
+ablation = "no_graph_expansion"
+tasks = 27
+estimated_minutes = 6
+
+[[job]]
+id = "10-qwen3.5-9b-GAPA-contains_only-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "swe-bench-lite"
+ablation = "contains_only"
+tasks = 27
+estimated_minutes = 8
+
+[[job]]
+id = "11-qwen3.5-9b-GAPA-truncation-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "swe-bench-lite"
+ablation = "truncation"
+tasks = 27
+estimated_minutes = 8
+
+[[job]]
+id = "12-qwen3.5-9b-GAPA-no_keyword_channel-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "swe-bench-lite"
+ablation = "no_keyword_channel"
+tasks = 27
+estimated_minutes = 8
+
+[[job]]
+id = "13-qwen3.5-9b-GAPA-gate_no_scores-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "swe-bench-lite"
+ablation = "gate_no_scores"
+tasks = 27
+estimated_minutes = 8
+
+[[job]]
+id = "14-qwen3.5-9b-GAPA-gate_no_deps-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "swe-bench-lite"
+ablation = "gate_no_deps"
+tasks = 27
+estimated_minutes = 8
