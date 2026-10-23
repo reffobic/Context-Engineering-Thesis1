@@ -32,7 +32,7 @@ except ImportError:  # pragma: no cover - sentence-transformers is optional at r
 # CONFIG
 # ══════════════════════════════════════════════════════════════════
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
-CHROMA_PATH     = str(Path(__file__).resolve().parent.parent / "chroma_db")
+CHROMA_PATH     = os.getenv("CHROMA_PATH", str(Path(__file__).resolve().parent.parent / "chroma_db"))
 COLLECTION_NAME = os.getenv("CHROMA_COLLECTION", "code_embeddings")
 META_COLLECTION_NAME = os.getenv("CHROMA_META_COLLECTION", "code_meta_embeddings")
 BM25_PATH       = str(Path(CHROMA_PATH) / "bm25_index.json")
