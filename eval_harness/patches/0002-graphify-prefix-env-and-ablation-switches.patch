@@ -1,0 +1,202 @@
+diff --git a/backend/diamond/preroute_gate.py b/backend/diamond/preroute_gate.py
+index e89fbbc..3c91408 100644
+--- a/backend/diamond/preroute_gate.py
++++ b/backend/diamond/preroute_gate.py
+@@ -501,6 +501,12 @@ def _guess_task_type(query: str) -> str:
+     return "unclear from query alone"
+ 
+ 
++def _drop_line(template: str, line: str) -> str:
++    """Ablation helper: remove one input line from the prompt template (never edits the text itself)."""
++    assert line in template, line
++    return template.replace(line, "", 1)
++
++
+ def preroute_structured_gate(
+     query: str,
+     raw_chunks: list[dict[str, Any]],
+@@ -561,7 +567,19 @@ def preroute_structured_gate(
+         sim_lines.append(f"sim_gap: {top_chunk['sim_gap']}")
+     similarity_lines = "\n".join(sim_lines)
+ 
+-    user_msg = _STRUCTURED_USER_TEMPLATE.format(
++    template = _STRUCTURED_USER_TEMPLATE
++    drop_headings = _os.environ.get("ABL_GATE_DROP_HEADINGS", "0") == "1"
++    if _os.environ.get("ABL_GATE_NO_SCORES", "0") == "1":
++        for line in ("top_score: {top_score}\n", "score_margin: {score_margin}\n",
++                     "candidate_files: {candidate_files}\n"):
++            template = _drop_line(template, line)
++        if drop_headings and not similarity_lines:
++            template = _drop_line(template, "## Step 3 — distribution pattern\n")
++    if _os.environ.get("ABL_GATE_NO_DEPS", "0") == "1":
++        template = _drop_line(template, "dependencies: {n_dependencies}\n")
++        if drop_headings:
++            template = _drop_line(template, "## Step 4 — relationships\n")
++    user_msg = template.format(
+         query=query,
+         task_type=_guess_task_type(query),
+         file_path=file_path,
+diff --git a/backend/indexing/graphify_adapter.py b/backend/indexing/graphify_adapter.py
+index aa5d705..f2e4606 100644
+--- a/backend/indexing/graphify_adapter.py
++++ b/backend/indexing/graphify_adapter.py
+@@ -237,6 +237,7 @@ class CodeGraphAdapter:
+         extracted_only: bool,
+         allowed: frozenset[str],
+     ) -> None:
++        prefix = os.environ.get("GRAPHIFY_PATH_PREFIX", "superset/")
+         for node in data.get("nodes") or []:
+             if not isinstance(node, dict):
+                 continue
+@@ -245,8 +246,8 @@ class CodeGraphAdapter:
+             label = _clean_symbol(str(node.get("label") or node.get("name") or ""))
+             src_file = _norm_path(str(node.get("source_file") or node.get("file") or ""))
+             # Prefixed path used by our indexer (package under ``superset/``).
+-            if src_file and not src_file.startswith("superset/"):
+-                prefixed = f"superset/{src_file}"
++            if prefix and src_file and not src_file.startswith(prefix):
++                prefixed = f"{prefix}{src_file}"
+             else:
+                 prefixed = src_file
+             self._register_node(
+diff --git a/backend/pruning/file.py b/backend/pruning/file.py
+index d77a9d1..98d0dbc 100644
+--- a/backend/pruning/file.py
++++ b/backend/pruning/file.py
+@@ -442,6 +442,30 @@ def prune_single_item_selective(
+ 
+ # ── Main API ───────────────────────────────────────────────────
+ 
++def _truncate_pack(items: list[dict], budget: int) -> tuple[list[ContextChunk], int]:
++    """Ablation (ABL_TRUNCATE_PRUNING): chunks in the given order, raw text, cut at the token budget."""
++    out: list[ContextChunk] = []
++    used = 0
++    for it in items:
++        code = it.get("code", "") or ""
++        meta = it.get("metadata", {}) or {}
++        if not code.strip():
++            continue
++        room = budget - used
++        if room <= 0:
++            break
++        text = code if estimate_tokens(code) <= room else code[: room * 4]
++        path = meta.get("file", "") or "(unknown path)"
++        out.append({
++            "text": text,
++            "path": path,
++            "symbol": meta.get("function", "") or "",
++            "language": infer_language_from_path(path),
++        })
++        used += estimate_tokens(text)
++    return out, used
++
++
+ def prune_context(
+     query: str,
+     retrieved_items: list[dict],
+@@ -478,6 +502,21 @@ def prune_context(
+         raise ValueError(f"selective_mode must be one of {SELECTIVE_MODES}, got {selective_mode!r}")
+     if target_ratio is None:
+         target_ratio = DEFAULT_TARGET_RATIO[selective_mode]
++    if os.environ.get("ABL_TRUNCATE_PRUNING", "0") == "1":
++        chunks, used = _truncate_pack(retrieved_items, token_budget)
++        return chunks, PruningStats(
++            original_chunks=len(retrieved_items),
++            kept_chunks=len(chunks),
++            dropped_chunks=max(0, len(retrieved_items) - len(chunks)),
++            original_est_tokens=sum(estimate_tokens(x.get("code", "") or "") for x in retrieved_items),
++            kept_est_tokens=used,
++            method="truncate",
++            compression_ratio=1.0,
++            requested_method=method,
++            selective_mode=None,
++            fallback_chunks=0,
++            fallback_reason=None,
++        )
+     w = weights or DEFAULT_WEIGHTS
+     original_est_tokens = sum(estimate_tokens((x.get("code", "") or "")) for x in retrieved_items)
+ 
+@@ -719,6 +758,25 @@ def prune_context_graph_aware(
+     neighbor_budget = int(token_budget * neighbor_budget_fraction)
+     seed_budget = token_budget - neighbor_budget
+ 
++    if os.environ.get("ABL_TRUNCATE_PRUNING", "0") == "1":
++        n_chunks, n_used = _truncate_pack(list(neighbors), neighbor_budget)
++        s_chunks, s_used = _truncate_pack(list(seeds), seed_budget + (neighbor_budget - n_used))
++        kept = n_chunks + s_chunks
++        total = len(seeds) + len(neighbors)
++        return kept, PruningStats(
++            original_chunks=total,
++            kept_chunks=len(kept),
++            dropped_chunks=max(0, total - len(kept)),
++            original_est_tokens=sum(estimate_tokens(x.get("code") or "") for x in list(seeds) + list(neighbors)),
++            kept_est_tokens=n_used + s_used,
++            method="truncate",
++            compression_ratio=1.0,
++            requested_method=method,
++            selective_mode=None,
++            fallback_chunks=0,
++            fallback_reason=None,
++        )
++
+     all_items = list(seeds) + list(neighbors)
+     original_est_tokens = sum(estimate_tokens(x.get("code") or "") for x in all_items)
+ 
+diff --git a/backend/retrieval/graph_expand.py b/backend/retrieval/graph_expand.py
+index 5f17a2f..ec29384 100644
+--- a/backend/retrieval/graph_expand.py
++++ b/backend/retrieval/graph_expand.py
+@@ -177,10 +177,22 @@ def graph_expand(
+         if k:
+             seed_keys.append(k)
+ 
++    if os.environ.get("ABL_NO_GRAPH_EXPAND", "0") == "1":
++        return {
++            "chunks": [],
++            "new_chunk_count": 0,
++            "neighbor_ids": [],
++            "seed_keys": seed_keys,
++            "hops": hops,
++            "graph_backend": adapter.backend,
++            "edge_counts": {"neighbors": 0},
++        }
++
+     neighbor_ids = adapter.neighbors(
+         seed_keys,
+         hops=hops,
+         extracted_only=extracted_only,
++        edge_types=("contains",) if os.environ.get("ABL_CONTAINS_ONLY", "0") == "1" else None,
+     )
+     if max_neighbors and len(neighbor_ids) > max_neighbors:
+         neighbor_ids = neighbor_ids[:max_neighbors]
+diff --git a/backend/retrieval/retrieval_tool.py b/backend/retrieval/retrieval_tool.py
+index 3bda0ef..298ce06 100644
+--- a/backend/retrieval/retrieval_tool.py
++++ b/backend/retrieval/retrieval_tool.py
+@@ -752,12 +752,12 @@ def _retrieval_diagnostics(query_plan: dict[str, Any], streams: dict[str, list[d
+ # ══════════════════════════════════════════════════
+ 
+ def hybrid_retrieve(query: str, top_k: int = 5) -> list[dict]:
++    dense_only = os.getenv("ABL_DENSE_ONLY", "0") == "1"
+     query_plan = plan_query(query)
+-    streams = {
+-        "vector": vector_retrieve_merged(query, top_k=top_k * 2),
+-        "bm25": bm25_retrieve(query, top_k=BM25_TOP_N),
+-        "exact": exact_retrieve(query_plan, top_k=EXACT_TOP_N),
+-    }
++    streams = {"vector": vector_retrieve_merged(query, top_k=top_k * 2)}
++    if not dense_only:
++        streams["bm25"] = bm25_retrieve(query, top_k=BM25_TOP_N)
++        streams["exact"] = exact_retrieve(query_plan, top_k=EXACT_TOP_N)
+     candidates = _merge_candidates(streams)
+ 
+     scored = []
+@@ -770,7 +770,7 @@ def hybrid_retrieve(query: str, top_k: int = 5) -> list[dict]:
+         source_score = _source_score(file_path, query_plan)
+         path_match_score = _path_match_score(file_path, query_plan)
+         class_def_score = _class_definition_score(item, query_plan)
+-        k_score     = keyword_match_score(query, doc)
++        k_score     = 0.0 if dense_only else keyword_match_score(query, doc)
+ 
+         hybrid_score = (
+             W_DENSE * similarity

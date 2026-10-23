@@ -22,6 +22,7 @@ import urllib.request
 from typing import Any
 from urllib.parse import urlparse
 
+LOG_REQUEST_ROLES = ("gapa_gate_call1", "gapa_gate_call2", "gasr_gate")
 ROLE: contextvars.ContextVar[str] = contextvars.ContextVar("ollama_role", default="unknown")
 
 
@@ -116,6 +117,12 @@ class OllamaShim:
             "truncation_suspected": bool(pe is not None and pe >= num_ctx - int(o["truncation_margin_tokens"])),
             "error": error, "http_status": http_status, "error_text": error_text,
             # first words of judge/gate replies (not of answers) to diagnose unparseable verdicts
+            # exact request and full reply of the gate calls (small), for diagnosing routing decisions
+            "request": ({"messages": msgs, "options": sent["options"], "think": sent.get("think"),
+                         "keep_alive": sent.get("keep_alive"), "model": sent.get("model")}
+                        if ROLE.get() in LOG_REQUEST_ROLES else None),
+            "reply": ((((resp or {}).get("message") or {}).get("content") or (resp or {}).get("response") or "")[:4000]
+                      if ROLE.get() in LOG_REQUEST_ROLES else None),
             "content_head": (None if ROLE.get() == "answer" else
                              (((resp or {}).get("message") or {}).get("content") or (resp or {}).get("response") or "")[:240]),
         })

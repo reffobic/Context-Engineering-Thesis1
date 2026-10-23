@@ -30,6 +30,7 @@ from typing import Any
 from .common import OllamaClient, OllamaError, config_hash, gpu_info, load_toml
 from .envinfo import _graphify_version, environment_info
 from .index_cache import index_dir, make_key
+from .instrument import JobFailure, check_prefix_mismatch_stubs
 from .locmap import Mapper
 from .pipeline_src import snapshot
 from .pipelineenv import (EnvError, assert_snapshot_root, build_env, effective_record, forbidden_chroma_paths,
@@ -125,6 +126,19 @@ class Job:
         if self.arm not in self.rcfg["arms"]:
             raise JobAbort(f"unknown arm {self.arm}")
         self.arm_impl = "harness" if self.rcfg["arms"][self.arm] == "HARNESS" else "pipeline"
+        # Table VIII ablation setting: every switch gets an explicit "0"/"1"; only GAPA may carry one
+        self.abl_cfg = load_toml(a.ablations_config)
+        settings = self.abl_cfg["settings"]
+        if a.ablation not in settings:
+            raise JobAbort(f"unknown ablation setting {a.ablation!r}")
+        switches = list(self.abl_cfg["switches"])
+        on = dict(settings[a.ablation]["env"])
+        if set(on) - set(switches) or any(v not in ("0", "1") for v in on.values()):
+            raise JobAbort(f"ablation {a.ablation}: only the declared switches with values 0/1 are allowed")
+        if on and self.arm != "GAPA":
+            raise JobAbort(f"ablation {a.ablation} is only allowed on the GAPA arm, not {self.arm}")
+        self.abl_env = {k: "0" for k in switches} | on
+        self.ablation = {"key": a.ablation, "label": settings[a.ablation]["label"], "env": self.abl_env}
 
     # all start-of-job checks; anything wrong aborts before a single task runs
     def preflight(self) -> dict:
@@ -137,7 +151,7 @@ class Job:
             require_runnable(self.ident)
         elif self.ident["revoked"]:
             raise EnvError("revoked harness/pipeline commit")
-        env_probe = build_env(self.pcfg, a.model, self.exp)
+        env_probe = build_env(self.pcfg, a.model, self.exp, extra=self.abl_env)
         self.sha, self.root = snapshot(p["frozen_sha"], self.data)
         assert_snapshot_root(self.root, self.data, self.pcfg, self.repo)
         self.gver = _graphify_version()
@@ -183,8 +197,9 @@ class Job:
         warm = self.warmup()
         self.gpu = gpu_info()
         env_rec = effective_record(self.pcfg, env_probe)
-        cfgs = {n: config_hash(Path(getattr(a, n))) for n in ("experiment", "pipeline_config", "index_config", "run_config")}
-        combined = hashlib.sha256(json.dumps(cfgs, sort_keys=True).encode()).hexdigest()[:16]
+        cfgs = {n: config_hash(Path(getattr(a, n))) for n in ("experiment", "pipeline_config", "index_config", "run_config",
+                                                              "ablations_config")}
+        combined = hashlib.sha256(json.dumps({**cfgs, "ablation": self.ablation}, sort_keys=True).encode()).hexdigest()[:16]
         self.header = {
             "schema": SCHEMA, "smoke": a.smoke, "machine_id": self.profile["machine_id"],
             "gpu_name": (self.gpu or {}).get("name"), "gpu_driver": (self.gpu or {}).get("driver"),
@@ -193,7 +208,7 @@ class Job:
             "harness_commit": self.ident["harness_commit"], "harness_clean": self.ident["clean"],
             "pipeline_frozen_sha": p["frozen_sha"], "pipeline_base_commit": p["base_commit"],
             "pipeline_seed_alignment_commit": p["seed_alignment_commit"],
-            "record_results": p["record_results"], "env": env_rec,
+            "ablation": self.ablation, "record_results": p["record_results"], "env": env_rec,
             "python_packages": environment_info(), "num_ctx": self.exp["ollama"]["num_ctx"]}
         self.job_info = {"arm": self.arm, "arm_impl": self.arm_impl, "dataset": a.dataset, "model": a.model,
                          "n_tasks": len(self.tasks), "warmup": warm, "preflight_s": round(time.perf_counter() - t0, 2),
@@ -351,7 +366,7 @@ def run_task(job: Job, task: dict, force_timeout: bool) -> dict:
             "expect_structure_rerank": job.pcfg["pipeline"]["structure_rerank_expected"]}
     (scratch / "spec.json").write_text(json.dumps(spec), encoding="utf-8")
     env = build_env(job.pcfg, a.model, job.exp, extra={
-        "PYTHONPATH": str(Path(__file__).resolve().parents[1]), "CHROMA_PATH": str(scratch / "chroma"),
+        **job.abl_env, "PYTHONPATH": str(Path(__file__).resolve().parents[1]), "CHROMA_PATH": str(scratch / "chroma"),
         "GRAPHIFY_OUT": str(scratch / "graphify-out"), **({"HARNESS_OLLAMA_REDIRECT_PORT": os.environ["HARNESS_OLLAMA_REDIRECT_PORT"]}
                                                            if os.environ.get("HARNESS_OLLAMA_REDIRECT_PORT") else {})})
     timeout = 1.0 if force_timeout else rc["task_timeout_s"]
@@ -390,13 +405,21 @@ def run_task(job: Job, task: dict, force_timeout: bool) -> dict:
             "gate_error": gate_err, "answer_error": ans_err,
             "latency_ms": {"task_total": rec["wall_ms"], **rec["stage_ms"]},
             "tokens": {**rec["tokens"], "injected_est_len4": out["tokens_injected_est"]},
-            "gate": rec["gate"], "seed_pool": rec["seed_pool"], "structure_rerank": rec["structure_rerank"],
+            "gate": rec["gate"], "gate_inputs": rec.get("gate_inputs"), "seed_pool": rec["seed_pool"],
+            "stub_neighbors": rec.get("stub_neighbors"), "contains_only": rec.get("contains_only"),
+            "structure_rerank": rec["structure_rerank"],
             "inject": rec["inject"], "answer_call": rec["answer_call"], "expansions": rec["expansions"],
             "any_truncation_suspected": rec["any_truncation_suspected"], "token_reconciliation": rec["token_reconciliation"],
             "ollama_calls": [{k: v for k, v in c.items()} for c in rec["ollama_calls"]],
             "ranked": build_lists(job, task, out["lists_raw"]) if out["status"] == "ok" else None,
             "pipeline_error": out.get("error")})
         line["counted_as_failed"] = status != "ok" or gate_err or ans_err
+        if status == "ok":
+            try:
+                check_prefix_mismatch_stubs(rec)
+            except JobFailure as exc:
+                line.update({"status": "error", "failure": {"type": "prefix_mismatch_stub_neighbours", "detail": str(exc)},
+                             "counted_as_failed": True})
         if status == "ok" and line["structure_rerank"]["expected"] and not line["structure_rerank"]["applied"]:
             line.update({"status": "error", "failure": {"type": "structure_rerank_not_applied", "detail": json.dumps(line["structure_rerank"])},
                          "counted_as_failed": True})
@@ -424,15 +447,21 @@ def main() -> int:
     ap.add_argument("--pipeline-config", type=Path, required=True)
     ap.add_argument("--index-config", type=Path, required=True)
     ap.add_argument("--run-config", type=Path, required=True)
+    ap.add_argument("--ablation", default="full", help="Table VIII setting from configs/ablations.toml (GAPA only)")
+    ap.add_argument("--ablations-config", type=Path, default=Path(__file__).resolve().parents[2] / "configs" / "ablations.toml")
     ap.add_argument("--smoke", action="store_true", help="not a result run: allowed while record_results is false")
     ap.add_argument("--allow-dirty", action="store_true", help="development only")
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--inject-timeout", action="append", default=[], help="smoke test: force a timeout for this task id")
     a = ap.parse_args()
-    for n in ("profile", "sample", "out", "experiment", "pipeline_config", "index_config", "run_config"):
+    for n in ("profile", "sample", "out", "experiment", "pipeline_config", "index_config", "run_config", "ablations_config"):
         setattr(a, n, getattr(a, n).resolve())             # the worker changes directory; every path must be absolute
     a.out.mkdir(parents=True, exist_ok=True)
-    job = Job(a)
+    try:
+        job = Job(a)
+    except (JobAbort, EnvError) as exc:
+        print(f"[FAIL] {exc}")
+        return 2
     lock = a.out / ".lock"
     if lock.is_file():
         old = int(lock.read_text() or 0)
@@ -447,7 +476,7 @@ def main() -> int:
         lock.unlink(missing_ok=True)
         return 2
     jf = a.out / "job.json"
-    ident = {"arm": job.arm, "model": a.model, "dataset": a.dataset, "config_hash": job.header["config_hash"],
+    ident = {"arm": job.arm, "model": a.model, "dataset": a.dataset, "ablation": a.ablation, "config_hash": job.header["config_hash"],
              "pipeline_frozen_sha": job.header["pipeline_frozen_sha"], "sample_sha256": info["sample_sha256"]}
     if jf.is_file():
         prev = json.loads(jf.read_text(encoding="utf-8"))
@@ -457,7 +486,8 @@ def main() -> int:
             return 2
         job.job_id = prev["job_id"]
     else:
-        job.job_id = f"{job.arm}__{a.model.replace(':', '-').replace('/', '-')}__{a.dataset}__{job.sha[:7]}__{time.strftime('%Y%m%dT%H%M%S')}"
+        abl = "" if a.ablation == "full" else f"__{a.ablation}"
+        job.job_id = f"{job.arm}{abl}__{a.model.replace(':', '-').replace('/', '-')}__{a.dataset}__{job.sha[:7]}__{time.strftime('%Y%m%dT%H%M%S')}"
     jf.write_text(json.dumps({"job_id": job.job_id, "identity": ident, "info": info, "header": job.header}, indent=1, default=str), encoding="utf-8")
     recover_inflight(job)
     done = job.done_ids()
@@ -480,6 +510,9 @@ def main() -> int:
             print(f"[{len(done) + i}/{len(job.tasks)}] {task['instance_id']} {line['status']} route={line.get('route')} "
                   f"latency_ms={lat} startup_s={line['overhead_s'].get('subprocess_startup_s')} "
                   f"copy_s={line['overhead_s'].get('index_copy_s')}", flush=True)
+            if (line.get("failure") or {}).get("type") == "prefix_mismatch_stub_neighbours":
+                print(f"[ABORT] {line['failure']['detail'][:300]}")
+                return 3
             consecutive = consecutive + 1 if line["status"] in ("timeout", "oom", "error", "preflight_failed") else 0
             if line["status"] in ("timeout", "oom"):                       # a stuck/overloaded runner: reset and re-warm
                 try:

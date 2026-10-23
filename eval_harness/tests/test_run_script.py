@@ -243,3 +243,43 @@ def test_run_scripts_never_open_labels():
         text = (SRC / "harness" / f).read_text(encoding="utf-8")
         code = "\n".join(l for l in text.splitlines() if not l.lstrip().startswith("#"))
         assert not [x for x in forbidden if x in code.replace('"""', "")], f
+
+
+# ── ablation settings ────────────────────────────────────────────────────────
+
+def test_ablation_is_logged_hashed_and_part_of_the_job_identity(mini, fake):
+    out_full, out_abl = mini["root"] / "out_abl_full", mini["root"] / "out_abl_deps"
+    scenario(fake, {"gapa1": True})
+    for out, extra in ((out_full, []), (out_abl, ["--ablation", "gate_no_deps"])):
+        r = subprocess.run(cmd(mini, out, extra=["--limit", "1", *extra]), capture_output=True, text=True, env=env_for(fake), cwd=mini["root"])
+        assert r.returncode == 0, r.stdout[-1000:] + r.stderr[-1000:]
+    f, a = lines(out_full)[0], lines(out_abl)[0]
+    assert f["ablation"]["key"] == "full" and set(f["ablation"]["env"].values()) == {"0"}
+    assert a["ablation"]["key"] == "gate_no_deps" and a["ablation"]["env"]["ABL_GATE_NO_DEPS"] == "1"
+    assert a["env"]["ABL_GATE_NO_DEPS"]["value"] == "1" and f["env"]["ABL_GATE_NO_DEPS"]["value"] == "0"
+    assert f["env"]["GRAPHIFY_PATH_PREFIX"]["value"] == "" and a["config_hash"] != f["config_hash"] and "gate_no_deps" in a["job_id"]
+    assert "ablations_config" in a["config_hashes"]
+    # resuming the full job's folder with another setting is refused
+    r = subprocess.run(cmd(mini, out_full, extra=["--limit", "1", "--ablation", "gate_no_deps"]), capture_output=True, text=True,
+                       env=env_for(fake), cwd=mini["root"])
+    assert r.returncode == 2 and "different settings" in r.stdout
+
+
+def test_ablation_refused_on_other_arms(mini, fake):
+    r = subprocess.run(cmd(mini, mini["root"] / "out_abl_gasr", arm="GASR", extra=["--ablation", "truncation"]),
+                       capture_output=True, text=True, env=env_for(fake), cwd=mini["root"])
+    assert r.returncode == 2 and "only allowed on the GAPA arm" in r.stdout
+
+
+def test_prefix_mismatch_stub_aborts_the_job(mini, fake, tmp_path):
+    """With the pipeline's default prefix (the old behaviour) the fixture's neighbours are unresolved: the job stops."""
+    out = mini["root"] / "out_prefix_abort"
+    pc = tmp_path / "pipeline_default_prefix.toml"
+    pc.write_text(PCFG_PATH.read_text(encoding="utf-8").replace('GRAPHIFY_PATH_PREFIX = ""', 'GRAPHIFY_PATH_PREFIX = "superset/"'), encoding="utf-8")
+    c = [x if x != str(PCFG_PATH) else str(pc) for x in cmd(mini, out)]
+    scenario(fake, EXPAND)
+    r = subprocess.run(c, capture_output=True, text=True, env=env_for(fake), cwd=mini["root"])
+    assert r.returncode == 3 and "[ABORT]" in r.stdout and "prefix mismatch" in r.stdout, r.stdout[-1200:]
+    rows = lines(out)
+    assert len(rows) == 1 and rows[0]["failure"]["type"] == "prefix_mismatch_stub_neighbours" and rows[0]["counted_as_failed"] is True
+    assert rows[0]["stub_neighbors"]["by_category"]["prefix_mismatch"] > 0

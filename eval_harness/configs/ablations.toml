@@ -1,0 +1,54 @@
+# Table VIII settings. Each switch is an environment variable of the pipeline, default "0" (off).
+# A setting turns on exactly the listed switches; "full" turns none on. Hashed into every log line.
+# Ablations are allowed on the GAPA arm only (Table VIII is a GAPA ablation).
+
+[switches]
+# name -> what it removes
+ABL_NO_GRAPH_EXPAND = "graph expansion returns nothing (an insufficient answer ends in LC)"
+ABL_CONTAINS_ONLY = "graph walk follows 'contains' edges only"
+ABL_TRUNCATE_PRUNING = "pruning replaced by truncation to the same token budget (raw chunks in rank order)"
+ABL_DENSE_ONLY = "BM25 stream, exact-match stream and keyword-overlap score term removed from retrieval"
+ABL_GATE_NO_SCORES = "GAPA entry gate input without top_score, score_margin, candidate_files"
+ABL_GATE_NO_DEPS = "GAPA entry gate input without the dependency count"
+ABL_GATE_DROP_HEADINGS = "control: also remove the step headings whose input lines were removed (off by default)"
+
+[settings.full]
+label = "full GAPA"
+env = {}
+
+[settings.no_graph_expansion]
+label = "no graph expansion"
+env = { ABL_NO_GRAPH_EXPAND = "1" }
+
+[settings.contains_only]
+label = "contains-edges-only walk"
+env = { ABL_CONTAINS_ONLY = "1" }
+
+[settings.truncation]
+label = "pruning replaced by truncation to the same token budget"
+env = { ABL_TRUNCATE_PRUNING = "1" }
+
+[settings.no_keyword_channel]
+label = "no keyword channel (BM25, exact match, keyword overlap)"
+env = { ABL_DENSE_ONLY = "1" }
+
+[settings.gate_no_scores]
+label = "gate without score signals (top score, score margin, candidate-file count)"
+env = { ABL_GATE_NO_SCORES = "1" }
+needs_gate_diagnosis = true
+
+[settings.gate_no_deps]
+label = "gate without the dependency count"
+env = { ABL_GATE_NO_DEPS = "1" }
+needs_gate_diagnosis = true
+
+# Optional controls (not Table VIII rows, not queued unless asked for).
+[settings.gate_no_scores_headings]
+label = "control: gate without score signals, matching step heading removed"
+env = { ABL_GATE_NO_SCORES = "1", ABL_GATE_DROP_HEADINGS = "1" }
+control = true
+
+[settings.gate_no_deps_headings]
+label = "control: gate without the dependency count, matching step heading removed"
+env = { ABL_GATE_NO_DEPS = "1", ABL_GATE_DROP_HEADINGS = "1" }
+control = true

@@ -12,6 +12,8 @@ Every wrapper returns exactly what the original returned. Token counts come from
 from __future__ import annotations
 
 import importlib
+import json
+import os
 import re
 import sys
 import time
@@ -21,6 +23,8 @@ from typing import Any, Callable
 from .ollama_shim import Recorder, role
 
 ROUTER_ROLES_EXCLUDED = {"answer"}
+STUB_PREFIX = "# unresolved graph neighbor"
+STUB_CATEGORIES = ("prefix_mismatch", "unindexed_file_type", "other")
 # The pipeline silently falls back to LC/CONTEXT when a judge call fails or its JSON cannot be parsed (D13).
 GATE_FALLBACK = re.compile(r"(unavailable \(|Could not parse).*defaulting", re.S)
 
@@ -39,6 +43,32 @@ def _item(c: dict) -> dict:
         "source": c.get("source"),
         "has_parent_context": ("parent_context" in c) if "parent_context" in c or "code" in c else None,
     }
+
+
+def classify_stub(file_path: str, index_files: set[str]) -> str:
+    """Why a graph neighbour could not be resolved to an indexed chunk.
+
+    prefix_mismatch: the graph path differs from an indexed path only by leading path components
+                     (the superset/ prefix problem, in either direction);
+    unindexed_file_type: no indexed file matches (config, docs, scripts the indexer never chunks);
+    other: the file is indexed but no chunk was found, or the node has no file."""
+    f = file_path or ""
+    if not f:
+        return "other"
+    if f in index_files:
+        return "other"
+    if "." + f in index_files:                              # the adapter's lstrip("./") also strips a leading dot
+        return "other"
+    parts = f.split("/")
+    if any("/".join(parts[i:]) in index_files for i in range(1, len(parts))):
+        return "prefix_mismatch"
+    if len(parts) > 1 and any(g.endswith("/" + f) for g in index_files):
+        return "prefix_mismatch"
+    return "unindexed_file_type"
+
+
+def is_stub(chunk: dict) -> bool:
+    return str(chunk.get("code") or chunk.get("document") or "").startswith(STUB_PREFIX)
 
 
 def seed_tier(pruned: list, raw: list, gasr_seeds) -> str:
@@ -63,6 +93,43 @@ class Instrument:
         self.srv = None
         self.rt = None
         self._t0 = 0.0
+        self._index_files: set[str] | None = None
+
+    def index_files(self) -> set[str]:
+        """File paths of the indexed chunks (from bm25_index.json next to the Chroma files); loaded on first use."""
+        if self._index_files is None:
+            data = json.loads((Path(self.rt.CHROMA_PATH) / "bm25_index.json").read_text(encoding="utf-8"))
+            chunks = data["chunks"] if isinstance(data, dict) else data
+            self._index_files = {(c.get("metadata") or {}).get("file_path") or (c.get("metadata") or {}).get("file") or ""
+                                 for c in chunks} - {""}
+        return self._index_files
+
+    def _expand_summary(self, ge, a, k, r) -> dict:
+        chunks = r.get("chunks") or []
+        stubs = []
+        for c in chunks:
+            if is_stub(c):
+                f = _item(c)["file"] or ""
+                stubs.append({"file": f, "category": classify_stub(f, self.index_files())})
+        out = {
+            "n_seeds": len(a[0]), "hops": k.get("hops", a[1] if len(a) > 1 else None),
+            "max_neighbors": k.get("max_neighbors"), "seed_keys": r.get("seed_keys"),
+            "neighbor_ids": (r.get("neighbor_ids") or [])[:30], "new_chunk_count": r.get("new_chunk_count"),
+            "graph_backend": r.get("graph_backend"), "edge_counts": r.get("edge_counts"),
+            "neighbors": [_item(c) for c in chunks],
+            "stubs": {"neighbor_chunks": len(chunks), "stub_chunks": len(stubs),
+                      "by_category": {c: sum(1 for s in stubs if s["category"] == c) for c in STUB_CATEGORIES},
+                      "examples": stubs[:5]}}
+        if os.environ.get("ABL_CONTAINS_ONLY", "0") == "1":
+            ad = ge.get_adapter()
+            hops = out["hops"] or 1
+            full = ad.neighbors(r.get("seed_keys") or [], hops=hops, extracted_only=True)
+            cont = ad.neighbors(r.get("seed_keys") or [], hops=hops, extracted_only=True, edge_types=("contains",))
+            cap = k.get("max_neighbors") or int(os.environ.get("GASR_MAX_NEIGHBORS", "8"))
+            out["contains_only"] = {"returned": len(r.get("neighbor_ids") or []), "contains_total_pre_cap": len(cont),
+                                    "full_expansion_total_pre_cap": len(full),
+                                    "full_expansion_after_cap": min(len(full), cap) if cap else len(full)}
+        return out
 
     # ── plumbing ─────────────────────────────────────────────────────────────
     def _wrap(self, obj: Any, attr: str, make: Callable[[Callable], Callable]) -> None:
@@ -158,17 +225,21 @@ class Instrument:
         self._wrap(server, "assess_rag_gate", self._with_result("assess_rag_gate", dec, ollama_role="gasr_gate"))
         self._wrap(server, "assess_structure_vs_context", self._with_result(
             "assess_structure_vs_context", dec, ollama_role="gapa_gate_call2"))
+        def gate1(a, k, r):
+            top = (a[1] or [{}])[0]
+            keys = ("final_score", "hybrid_score", "similarity", "dense_score", "bm25_score", "exact_match_score",
+                    "sim_code", "sim_meta", "sim_gap")
+            m = top.get("metadata") or {}
+            return dec(a, k, r) | {"inputs": {"n_chunks": len(a[1] or []), "top_chunk": {x: top.get(x) for x in keys}
+                                              | {"file": m.get("file"), "chunk_type": m.get("chunk_type"),
+                                                 "dependencies": m.get("dependencies"),
+                                                 "has_context_header": bool(m.get("context_header"))}}}
         self._wrap(pg, "preroute_structured_gate", self._with_result(
-            "gapa_gate_call1", dec, ollama_role="gapa_gate_call1"))
+            "gapa_gate_call1", gate1, ollama_role="gapa_gate_call1"))
 
         # graph expansion and seeds
         self._wrap(ge, "graph_expand", self._with_result(
-            "graph_expand", lambda a, k, r: {
-                "n_seeds": len(a[0]), "hops": k.get("hops", a[1] if len(a) > 1 else None),
-                "max_neighbors": k.get("max_neighbors"), "seed_keys": r.get("seed_keys"),
-                "neighbor_ids": (r.get("neighbor_ids") or [])[:30], "new_chunk_count": r.get("new_chunk_count"),
-                "graph_backend": r.get("graph_backend"), "edge_counts": r.get("edge_counts"),
-                "neighbors": [_item(c) for c in (r.get("chunks") or [])]}))
+            "graph_expand", lambda a, k, r: self._expand_summary(ge, a, k, r)))
         self._wrap(gs, "build_gasr_seed_pool", self._with_result(
             "seed_pool", lambda a, k, r: {"pruned_n": len(a[0]), "raw_n": len(a[1]), "size": len(r),
                                          "tier": seed_tier(a[0], a[1], gs), "seeds": [_item(c) for c in r],
@@ -223,6 +294,9 @@ class Instrument:
                           if by("seed_pool") else None),
             "expansions": [{k: v for k, v in e.items() if k not in ("name", "shim_seq", "error")} for e in by("graph_expand")],
             "re_pruned": [e["kept"] for e in by("re_prune")],
+            "stub_neighbors": stub_totals(by("graph_expand")),
+            "contains_only": contains_totals(by("graph_expand")),
+            "gate_inputs": (by("gapa_gate_call1")[0].get("inputs") if by("gapa_gate_call1") else None),
             "gate": self._gate(calls),
             "inject": ({k: v for k, v in by("inject")[-1].items() if k in ("prompt_chars", "est_tokens_div4", "max_context_tokens", "hit_max_context_tokens", "n_chunks")}
                        if by("inject") else None),
@@ -253,6 +327,59 @@ class Instrument:
         if c1 is not None or c2 is not None:
             out["gapa_path"] = "call2" if c2 is not None else "sufficient_or_shortcut"
         return out
+
+
+def stub_totals(expand_events: list[dict]) -> dict:
+    tot = {"neighbor_chunks": 0, "stub_chunks": 0, "by_category": {c: 0 for c in STUB_CATEGORIES}, "examples": []}
+    for e in expand_events:
+        s = e.get("stubs") or {}
+        tot["neighbor_chunks"] += s.get("neighbor_chunks", 0)
+        tot["stub_chunks"] += s.get("stub_chunks", 0)
+        for c in STUB_CATEGORIES:
+            tot["by_category"][c] += (s.get("by_category") or {}).get(c, 0)
+        tot["examples"].extend(s.get("examples") or [])
+    tot["examples"] = tot["examples"][:5]
+    return tot
+
+
+def contains_totals(expand_events: list[dict]) -> dict | None:
+    cs = [e["contains_only"] for e in expand_events if e.get("contains_only")]
+    if not cs:
+        return None
+    return {k: sum(c[k] for c in cs) for k in cs[0]} | {"hops": len(cs)}
+
+
+def stub_shares(records: list[dict]) -> dict:
+    """Per arm: share of neighbour chunks that are stubs, by category, and share of tasks with any stub."""
+    out: dict = {}
+    for r in records:
+        s = r.get("stub_neighbors")
+        if s is None:
+            continue
+        a = out.setdefault(r.get("arm"), {"tasks": 0, "tasks_with_expansion": 0, "tasks_with_stub": 0,
+                                          "neighbor_chunks": 0, "stub_chunks": 0,
+                                          "by_category": {c: 0 for c in STUB_CATEGORIES}})
+        a["tasks"] += 1
+        a["tasks_with_expansion"] += 1 if s["neighbor_chunks"] else 0
+        a["tasks_with_stub"] += 1 if s["stub_chunks"] else 0
+        a["neighbor_chunks"] += s["neighbor_chunks"]
+        a["stub_chunks"] += s["stub_chunks"]
+        for c in STUB_CATEGORIES:
+            a["by_category"][c] += s["by_category"][c]
+    for a in out.values():
+        n = a["neighbor_chunks"]
+        a["share_of_neighbor_chunks"] = {"stub": a["stub_chunks"] / n if n else None,
+                                         **{c: (a["by_category"][c] / n if n else None) for c in STUB_CATEGORIES}}
+        a["share_of_tasks_with_stub"] = a["tasks_with_stub"] / a["tasks"] if a["tasks"] else None
+    return out
+
+
+def check_prefix_mismatch_stubs(rec: dict) -> None:
+    """Unresolved neighbours caused by a path-prefix mismatch mean the environment is wrong (GRAPHIFY_PATH_PREFIX)."""
+    n = ((rec.get("stub_neighbors") or {}).get("by_category") or {}).get("prefix_mismatch", 0)
+    if n:
+        raise JobFailure(f"{n} unresolved graph neighbours caused by a path-prefix mismatch: "
+                         f"{json.dumps(rec['stub_neighbors']['examples'])}")
 
 
 class JobFailure(RuntimeError):

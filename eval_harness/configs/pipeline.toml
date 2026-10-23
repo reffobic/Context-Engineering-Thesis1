@@ -1,10 +1,13 @@
 # Which pipeline code is evaluated, and the environment it runs in. Hashed into every log line.
 
 [pipeline]
-# Frozen SHA for all arms: cd84fad (merge of gapa-aligned-seeds) + patches/0001 (CHROMA_PATH env override).
-frozen_sha = "3bbc52f220addbc648d4802dab6b1c658d427612"
-previous_frozen_sha = "cd84fad1c13d8e7783bff39389cfb195e0cbac5b"   # superseded; indexes re-keyed, runs on it revoked
+# Frozen SHA for all arms: 3bbc52f (cd84fad merge + CHROMA_PATH env override) + patches/0002
+# (GRAPHIFY_PATH_PREFIX env override and the Table VIII ablation switches, all default off).
+frozen_sha = "2350c0b2e064e4fd808e941731366e6cc71a9551"
+previous_frozen_sha = "3bbc52f220addbc648d4802dab6b1c658d427612"   # superseded; indexes re-keyed, runs on it revoked
+earlier_frozen_shas = ["cd84fad1c13d8e7783bff39389cfb195e0cbac5b"]
 chroma_path_patch = "patches/0001-retrieval-tool-chroma-path-env.patch"
+ablation_patch = "patches/0002-graphify-prefix-env-and-ablation-switches.patch"
 base_commit = "166dbd01e126cdfe91524534a172498746a49cc2"          # origin/main as frozen by the team
 seed_alignment_commit = "50cf149efd6180b41098210b234efef81685ceaf"  # GAPA expands from GASR's seeds
 # Results are only recorded once the user confirms the frozen SHA for a run.
@@ -15,7 +18,7 @@ require_call_graph_json = true       # every index must ship call_graph.json; th
 
 # Harness commits whose bundles/builds must not be used for runs (predate the frozen merge).
 # Pipeline commits runs must not use.
-revoked_pipeline_shas = ["cd84fad1c13d8e7783bff39389cfb195e0cbac5b"]
+revoked_pipeline_shas = ["cd84fad1c13d8e7783bff39389cfb195e0cbac5b", "3bbc52f220addbc648d4802dab6b1c658d427612"]
 revoked_harness_commits = [
   "2c22f5ddf2acf31675a112d96c3f73d548014901",
   "cd84fad1c13d8e7783bff39389cfb195e0cbac5b",   # configured frozen_sha cd84fad
@@ -25,6 +28,12 @@ revoked_harness_commits = [
   "9516d84e59b848a950fc35329af9d970880c918e",
   "3bbc52f220addbc648d4802dab6b1c658d427612",   # holds the patched backend but a stale harness config
   "311f9069f33f3c0807ba18cc97cd734e85496525",
+  "0d94581eab09c8a0b98991f2440b52e620e17915",   # configured frozen_sha 3bbc52f
+  "065542e751d1b13a6b88770caf73dc13bdf984ba",
+  "5053af59085b7abee5f0918531f4386191b4aebc",
+  "f43b8efcfd5cdb6fcfa5bbb8f39381ae4680413e",
+  "81bcfd2dc1a9a848f40759ab4f0c253cdae4bdab",
+  "765d016d01809d6bcf4f59564f0a0d07093bdc07",
 ]
 
 [env_pinned]
@@ -43,6 +52,15 @@ GASR_HARD_CAP = "2"
 GASR_MAX_NEIGHBORS = "8"
 GASR_NEIGHBOR_BUDGET_FRACTION = "0.30"
 OLLAMA_THINK = "0"
+GRAPHIFY_PATH_PREFIX = ""            # indexes use repo-relative paths; the pipeline default "superset/" is for the Superset repo
+# Table VIII ablation switches: all off here; a job turns on the ones of its setting (configs/ablations.toml).
+ABL_NO_GRAPH_EXPAND = "0"
+ABL_CONTAINS_ONLY = "0"
+ABL_TRUNCATE_PRUNING = "0"
+ABL_DENSE_ONLY = "0"
+ABL_GATE_NO_SCORES = "0"
+ABL_GATE_NO_DEPS = "0"
+ABL_GATE_DROP_HEADINGS = "0"
 
 [assert_unset]
 # These change the pipeline when set. The launcher refuses to start if any is present in the environment.
@@ -50,6 +68,14 @@ vars = ["GAPA_COMPACT_PROMPT", "GAPA_NEED", "GAPA_GRAPHMETA", "GAPA_META", "INDE
         "GASR_OFFLINE", "RERANKER_ENABLED", "PREROUTE_DEBUG", "OLLAMA_SKIP"]
 
 [known_env]
+ABL_NO_GRAPH_EXPAND = "0"
+ABL_CONTAINS_ONLY = "0"
+ABL_TRUNCATE_PRUNING = "0"
+ABL_DENSE_ONLY = "0"
+ABL_GATE_NO_SCORES = "0"
+ABL_GATE_NO_DEPS = "0"
+ABL_GATE_DROP_HEADINGS = "0"
+GRAPHIFY_PATH_PREFIX = "superset/"
 # Every environment variable the pipeline reads at the frozen SHA, with its code default
 # ("" = read without default). Each log line records the effective value of all of them.
 ASSESSOR_MODEL = ""

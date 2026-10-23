@@ -327,25 +327,54 @@ def import_one(tar_path: Path, data_dir: Path) -> dict:
     return {"status": "imported", "dir": str(final), "chroma_rebuild_s": round(rebuild_s, 2), "verify": v["checks"]}
 
 
-INDEXER_PATHS = ["backend/indexing", "backend/run_index.py", "requirements.txt"]
+INDEXER_PATHS = ["backend/run_index.py", "requirements.txt"]
+_CLOSURE_SCRIPT = (
+    "import sys, json, os\n"
+    "root = os.path.realpath(sys.argv[1]); sys.path.insert(0, os.path.join(root, 'backend'))\n"
+    "import indexing.code_indexer\n"
+    "mods = sorted({os.path.realpath(m.__file__) for m in sys.modules.values() if getattr(m, '__file__', None)})\n"
+    "print(json.dumps([os.path.relpath(f, root).replace(os.sep, '/') for f in mods if f.startswith(os.path.join(root, 'backend') + os.sep)]))\n")
 
 
-def prove_indexer_identity(repo: Path, old_sha: str, new_sha: str) -> dict:
-    """Object hashes of everything the indexer uses must be equal at both commits, else re-keying is refused."""
+def indexer_import_closure(pipeline_root: Path) -> list[str]:
+    """Every file under backend/ that is loaded when the indexer's entry module (code_indexer, as used by the
+    index worker) is imported, measured in a fresh interpreter on the snapshot."""
     import subprocess
-    out = {}
-    for p in INDEXER_PATHS:
-        h = [subprocess.run(["git", "rev-parse", f"{sha}:{p}"], cwd=repo, capture_output=True, text=True, check=True).stdout.strip()
-             for sha in (old_sha, new_sha)]
-        out[p] = h[0]
+    import sys
+    env = {k: v for k, v in os.environ.items() if k in ("PATH", "HOME", "HF_HOME", "XDG_CACHE_HOME", "HF_HUB_OFFLINE")}
+    env.update({"PYTHONHASHSEED": "0", "HF_HUB_OFFLINE": "1", "TRANSFORMERS_OFFLINE": "1", "ANONYMIZED_TELEMETRY": "False"})
+    r = subprocess.run([sys.executable, "-I", "-c", _CLOSURE_SCRIPT, str(pipeline_root)], capture_output=True, text=True, env=env)
+    if r.returncode != 0:
+        raise RuntimeError(f"import closure failed: {r.stderr[-800:]}")
+    return json.loads(r.stdout.strip().splitlines()[-1])
+
+
+def prove_indexer_identity(repo: Path, old_sha: str, new_sha: str, data_dir: Path) -> dict:
+    """Everything the indexer loads must be byte-identical at both commits, else re-keying is refused.
+
+    Files are the import closure of the indexer (measured on both snapshots) plus run_index.py and requirements.txt,
+    compared by git object hash. Files that changed under backend/ are listed and must not be in the closure."""
+    import subprocess
+    from .pipeline_src import snapshot
+    git = lambda *a: subprocess.run(["git", *a], cwd=repo, capture_output=True, text=True, check=True).stdout.strip()
+    closure = sorted(set(indexer_import_closure(snapshot(old_sha, data_dir)[1])) | set(indexer_import_closure(snapshot(new_sha, data_dir)[1]))
+                     | set(INDEXER_PATHS))
+    hashes = {}
+    for f in closure:
+        h = [git("rev-parse", f"{sha}:{f}") for sha in (old_sha, new_sha)]
         if h[0] != h[1]:
-            raise RuntimeError(f"{p} differs between {old_sha[:7]} and {new_sha[:7]}; not re-keying")
-    return out
+            raise RuntimeError(f"{f} differs between {old_sha[:7]} and {new_sha[:7]}; not re-keying")
+        hashes[f] = h[0]
+    changed = [x for x in git("diff", "--name-only", old_sha, new_sha, "--", "backend", "requirements.txt").splitlines() if x]
+    if set(changed) & set(closure):
+        raise RuntimeError(f"changed files inside the indexer closure: {sorted(set(changed) & set(closure))}")
+    return {"closure_files": len(closure), "object_hashes": hashes, "files_changed_between_commits": changed,
+            "changed_files_in_closure": [], "graphify_adapter_in_closure": "backend/indexing/graphify_adapter.py" in closure}
 
 
 def rekey(data_dir: Path, repo: Path, old_sha: str, new_sha: str, icfg: dict, gver: str | None, dry_run: bool) -> dict:
     """Rename indexes built at old_sha to the key of new_sha without rebuilding (indexer code proven identical)."""
-    proof = prove_indexer_identity(repo, old_sha, new_sha)
+    proof = prove_indexer_identity(repo, old_sha, new_sha, data_dir)
     idx_root = data_dir / "cache" / "indexes"
     plan, skipped = [], []
     for d in sorted(idx_root.iterdir()):
@@ -362,7 +391,7 @@ def rekey(data_dir: Path, repo: Path, old_sha: str, new_sha: str, icfg: dict, gv
         new_parts = make_key(parts["repo"], parts["base_commit"], new_sha, icfg, gver)
         plan.append({"old_dir": d.name, "old_key": parts["key"], "new_dir": index_dir(data_dir, new_parts).name,
                      "new_key": new_parts["key"], "repo": parts["repo"], "base_commit": parts["base_commit"], "_parts": new_parts})
-    mapping = {"old_sha": old_sha, "new_sha": new_sha, "proof_object_hashes": proof, "n_renamed": len(plan),
+    mapping = {"old_sha": old_sha, "new_sha": new_sha, "proof_indexer_identity": proof, "n_renamed": len(plan),
                "already_new": skipped, "entries": [{k: v for k, v in e.items() if k != "_parts"} for e in plan],
                "created_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "dry_run": dry_run}
     map_path = data_dir / "cache" / f"REKEY_{old_sha[:7]}_to_{new_sha[:7]}.json"

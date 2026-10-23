@@ -135,3 +135,34 @@ def test_reconcile_explains_mismatch_caused_by_a_failed_judge_parse():
     r = reconcile(calls, result, gate_error=True)
     assert r["match"] is False and r["explained_by_gate_error"] is True
     assert reconcile(calls, result, gate_error=False)["explained_by_gate_error"] is False
+
+
+# ── stub neighbours ──────────────────────────────────────────────────────────
+
+def test_classify_stub_categories():
+    from harness.instrument import classify_stub
+    files = {"django/db/models/query.py", "setup.py", "pkg/mod.py"}
+    assert classify_stub("superset/django/db/models/query.py", files) == "prefix_mismatch"      # extra leading prefix
+    assert classify_stub("django/db/models/query.py", files) == "other"                         # indexed file, no chunk
+    assert classify_stub("pyproject.toml", files) == "unindexed_file_type"
+    assert classify_stub("docs/index.mdx", files) == "unindexed_file_type"
+    assert classify_stub("src/pkg/mod.py", files) == "prefix_mismatch"                           # prefix removed by the indexer
+    assert classify_stub("mod.py", files) == "unindexed_file_type"                              # bare name is never guessed
+    assert classify_stub("", files) == "other"
+    assert classify_stub("github/workflows/ci.yml", files | {".github/workflows/ci.yml"}) == "other"      # leading dot stripped by the adapter
+
+
+def test_stub_shares_per_arm_and_prefix_check():
+    import pytest
+    from harness.instrument import JobFailure, check_prefix_mismatch_stubs, stub_shares
+    cat = lambda p, u, o: {"prefix_mismatch": p, "unindexed_file_type": u, "other": o}
+    recs = [{"arm": "GAPA", "stub_neighbors": {"neighbor_chunks": 8, "stub_chunks": 2, "by_category": cat(0, 2, 0), "examples": []}},
+            {"arm": "GAPA", "stub_neighbors": {"neighbor_chunks": 0, "stub_chunks": 0, "by_category": cat(0, 0, 0), "examples": []}},
+            {"arm": "GASR", "stub_neighbors": {"neighbor_chunks": 4, "stub_chunks": 0, "by_category": cat(0, 0, 0), "examples": []}}]
+    s = stub_shares(recs)
+    assert s["GAPA"]["share_of_neighbor_chunks"]["stub"] == 0.25 and s["GAPA"]["share_of_neighbor_chunks"]["unindexed_file_type"] == 0.25
+    assert s["GAPA"]["share_of_tasks_with_stub"] == 0.5 and s["GASR"]["share_of_neighbor_chunks"]["stub"] == 0.0
+    check_prefix_mismatch_stubs(recs[0])                                  # unindexed-file stubs do not fail the job
+    bad = {"stub_neighbors": {"neighbor_chunks": 3, "stub_chunks": 1, "by_category": cat(1, 0, 0), "examples": [{"file": "superset/a.py"}]}}
+    with pytest.raises(JobFailure):
+        check_prefix_mismatch_stubs(bad)
