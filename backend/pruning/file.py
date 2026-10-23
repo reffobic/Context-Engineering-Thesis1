@@ -442,6 +442,30 @@ def prune_single_item_selective(
 
 # ── Main API ───────────────────────────────────────────────────
 
+def _truncate_pack(items: list[dict], budget: int) -> tuple[list[ContextChunk], int]:
+    """Ablation (ABL_TRUNCATE_PRUNING): chunks in the given order, raw text, cut at the token budget."""
+    out: list[ContextChunk] = []
+    used = 0
+    for it in items:
+        code = it.get("code", "") or ""
+        meta = it.get("metadata", {}) or {}
+        if not code.strip():
+            continue
+        room = budget - used
+        if room <= 0:
+            break
+        text = code if estimate_tokens(code) <= room else code[: room * 4]
+        path = meta.get("file", "") or "(unknown path)"
+        out.append({
+            "text": text,
+            "path": path,
+            "symbol": meta.get("function", "") or "",
+            "language": infer_language_from_path(path),
+        })
+        used += estimate_tokens(text)
+    return out, used
+
+
 def prune_context(
     query: str,
     retrieved_items: list[dict],
@@ -478,6 +502,21 @@ def prune_context(
         raise ValueError(f"selective_mode must be one of {SELECTIVE_MODES}, got {selective_mode!r}")
     if target_ratio is None:
         target_ratio = DEFAULT_TARGET_RATIO[selective_mode]
+    if os.environ.get("ABL_TRUNCATE_PRUNING", "0") == "1":
+        chunks, used = _truncate_pack(retrieved_items, token_budget)
+        return chunks, PruningStats(
+            original_chunks=len(retrieved_items),
+            kept_chunks=len(chunks),
+            dropped_chunks=max(0, len(retrieved_items) - len(chunks)),
+            original_est_tokens=sum(estimate_tokens(x.get("code", "") or "") for x in retrieved_items),
+            kept_est_tokens=used,
+            method="truncate",
+            compression_ratio=1.0,
+            requested_method=method,
+            selective_mode=None,
+            fallback_chunks=0,
+            fallback_reason=None,
+        )
     w = weights or DEFAULT_WEIGHTS
     original_est_tokens = sum(estimate_tokens((x.get("code", "") or "")) for x in retrieved_items)
 
@@ -718,6 +757,25 @@ def prune_context_graph_aware(
     w = weights or DEFAULT_WEIGHTS
     neighbor_budget = int(token_budget * neighbor_budget_fraction)
     seed_budget = token_budget - neighbor_budget
+
+    if os.environ.get("ABL_TRUNCATE_PRUNING", "0") == "1":
+        n_chunks, n_used = _truncate_pack(list(neighbors), neighbor_budget)
+        s_chunks, s_used = _truncate_pack(list(seeds), seed_budget + (neighbor_budget - n_used))
+        kept = n_chunks + s_chunks
+        total = len(seeds) + len(neighbors)
+        return kept, PruningStats(
+            original_chunks=total,
+            kept_chunks=len(kept),
+            dropped_chunks=max(0, total - len(kept)),
+            original_est_tokens=sum(estimate_tokens(x.get("code") or "") for x in list(seeds) + list(neighbors)),
+            kept_est_tokens=n_used + s_used,
+            method="truncate",
+            compression_ratio=1.0,
+            requested_method=method,
+            selective_mode=None,
+            fallback_chunks=0,
+            fallback_reason=None,
+        )
 
     all_items = list(seeds) + list(neighbors)
     original_est_tokens = sum(estimate_tokens(x.get("code") or "") for x in all_items)

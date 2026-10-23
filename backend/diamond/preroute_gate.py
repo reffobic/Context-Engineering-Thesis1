@@ -501,6 +501,12 @@ def _guess_task_type(query: str) -> str:
     return "unclear from query alone"
 
 
+def _drop_line(template: str, line: str) -> str:
+    """Ablation helper: remove one input line from the prompt template (never edits the text itself)."""
+    assert line in template, line
+    return template.replace(line, "", 1)
+
+
 def preroute_structured_gate(
     query: str,
     raw_chunks: list[dict[str, Any]],
@@ -561,7 +567,19 @@ def preroute_structured_gate(
         sim_lines.append(f"sim_gap: {top_chunk['sim_gap']}")
     similarity_lines = "\n".join(sim_lines)
 
-    user_msg = _STRUCTURED_USER_TEMPLATE.format(
+    template = _STRUCTURED_USER_TEMPLATE
+    drop_headings = _os.environ.get("ABL_GATE_DROP_HEADINGS", "0") == "1"
+    if _os.environ.get("ABL_GATE_NO_SCORES", "0") == "1":
+        for line in ("top_score: {top_score}\n", "score_margin: {score_margin}\n",
+                     "candidate_files: {candidate_files}\n"):
+            template = _drop_line(template, line)
+        if drop_headings and not similarity_lines:
+            template = _drop_line(template, "## Step 3 — distribution pattern\n")
+    if _os.environ.get("ABL_GATE_NO_DEPS", "0") == "1":
+        template = _drop_line(template, "dependencies: {n_dependencies}\n")
+        if drop_headings:
+            template = _drop_line(template, "## Step 4 — relationships\n")
+    user_msg = template.format(
         query=query,
         task_type=_guess_task_type(query),
         file_path=file_path,

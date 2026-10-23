@@ -752,12 +752,12 @@ def _retrieval_diagnostics(query_plan: dict[str, Any], streams: dict[str, list[d
 # ══════════════════════════════════════════════════
 
 def hybrid_retrieve(query: str, top_k: int = 5) -> list[dict]:
+    dense_only = os.getenv("ABL_DENSE_ONLY", "0") == "1"
     query_plan = plan_query(query)
-    streams = {
-        "vector": vector_retrieve_merged(query, top_k=top_k * 2),
-        "bm25": bm25_retrieve(query, top_k=BM25_TOP_N),
-        "exact": exact_retrieve(query_plan, top_k=EXACT_TOP_N),
-    }
+    streams = {"vector": vector_retrieve_merged(query, top_k=top_k * 2)}
+    if not dense_only:
+        streams["bm25"] = bm25_retrieve(query, top_k=BM25_TOP_N)
+        streams["exact"] = exact_retrieve(query_plan, top_k=EXACT_TOP_N)
     candidates = _merge_candidates(streams)
 
     scored = []
@@ -770,7 +770,7 @@ def hybrid_retrieve(query: str, top_k: int = 5) -> list[dict]:
         source_score = _source_score(file_path, query_plan)
         path_match_score = _path_match_score(file_path, query_plan)
         class_def_score = _class_definition_score(item, query_plan)
-        k_score     = keyword_match_score(query, doc)
+        k_score     = 0.0 if dense_only else keyword_match_score(query, doc)
 
         hybrid_score = (
             W_DENSE * similarity

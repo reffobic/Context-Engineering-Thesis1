@@ -237,6 +237,7 @@ class CodeGraphAdapter:
         extracted_only: bool,
         allowed: frozenset[str],
     ) -> None:
+        prefix = os.environ.get("GRAPHIFY_PATH_PREFIX", "superset/")
         for node in data.get("nodes") or []:
             if not isinstance(node, dict):
                 continue
@@ -245,8 +246,8 @@ class CodeGraphAdapter:
             label = _clean_symbol(str(node.get("label") or node.get("name") or ""))
             src_file = _norm_path(str(node.get("source_file") or node.get("file") or ""))
             # Prefixed path used by our indexer (package under ``superset/``).
-            if src_file and not src_file.startswith("superset/"):
-                prefixed = f"superset/{src_file}"
+            if prefix and src_file and not src_file.startswith(prefix):
+                prefixed = f"{prefix}{src_file}"
             else:
                 prefixed = src_file
             self._register_node(

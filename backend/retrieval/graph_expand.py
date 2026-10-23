@@ -177,10 +177,22 @@ def graph_expand(
         if k:
             seed_keys.append(k)
 
+    if os.environ.get("ABL_NO_GRAPH_EXPAND", "0") == "1":
+        return {
+            "chunks": [],
+            "new_chunk_count": 0,
+            "neighbor_ids": [],
+            "seed_keys": seed_keys,
+            "hops": hops,
+            "graph_backend": adapter.backend,
+            "edge_counts": {"neighbors": 0},
+        }
+
     neighbor_ids = adapter.neighbors(
         seed_keys,
         hops=hops,
         extracted_only=extracted_only,
+        edge_types=("contains",) if os.environ.get("ABL_CONTAINS_ONLY", "0") == "1" else None,
     )
     if max_neighbors and len(neighbor_ids) > max_neighbors:
         neighbor_ids = neighbor_ids[:max_neighbors]
