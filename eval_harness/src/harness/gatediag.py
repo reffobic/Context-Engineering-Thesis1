@@ -42,6 +42,8 @@ def main() -> int:
     ap.add_argument("--n", type=int, default=20)
     ap.add_argument("--dataset", action="append", default=None)
     a = ap.parse_args()
+    for n in ("profile", "pipeline_config", "index_config", "experiment", "out"):
+        setattr(a, n, getattr(a, n).resolve())
     pcfg, icfg, exp = load_toml(a.pipeline_config), load_toml(a.index_config), load_toml(a.experiment)
     data = Path(load_toml(a.profile)["data_dir"]).resolve()
     sha = pcfg["pipeline"]["frozen_sha"]
