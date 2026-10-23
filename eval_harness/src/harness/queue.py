@@ -33,6 +33,7 @@ from .run import kill_group, pid_alive_with, safe_rmtree
 
 REPO = Path(__file__).resolve().parents[3]
 ABNORMAL_FAILED_SHARE = 0.20
+STUB_SHARE_LIMIT = 0.05
 
 
 def now_utc() -> datetime:
@@ -60,9 +61,14 @@ def read_results(out: Path) -> list[dict]:
 def abnormalities(rows: list[dict], n_tasks: int) -> list[str]:
     """Reasons a finished job should stop the queue (checked after every job)."""
     out = []
-    stubs = sum((r.get("stub_neighbors") or {}).get("stub_chunks", 0) for r in rows)
-    if stubs:
-        out.append(f"stub neighbours above zero ({stubs})")
+    sn = [r.get("stub_neighbors") or {} for r in rows]
+    pm = sum((s.get("by_category") or {}).get("prefix_mismatch", 0) for s in sn)
+    if pm:
+        out.append(f"prefix-mismatch stub neighbours above zero ({pm})")
+    other = sum(s.get("stub_chunks", 0) for s in sn) - pm
+    chunks = sum(s.get("neighbor_chunks", 0) for s in sn)
+    if chunks and other / chunks > STUB_SHARE_LIMIT:            # unresolved nodes without a source file / unindexed file types are expected, but rare
+        out.append(f"unresolved neighbours (non-prefix) are {other / chunks:.1%} of neighbour chunks (> {STUB_SHARE_LIMIT:.0%})")
     if any((r.get("failure") or {}).get("type") == "prefix_mismatch_stub_neighbours" for r in rows):
         out.append("prefix-mismatch failures")
     if any(r.get("any_truncation_suspected") for r in rows):

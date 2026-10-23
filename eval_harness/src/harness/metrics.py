@@ -14,8 +14,8 @@ Definitions (outline Appendix A; LocAgent code rules, decisions of 2026-10-18):
   * total tokens per task = router prompt + router completion + answer-call prompt tokens (injected context),
     all from Ollama's counters; cost averages cover tasks that have counters; quality per cost = per-task
     function Acc@10 / (total tokens / 1000), averaged over those tasks;
-  * %RAG/%GRAPH/%LC over tasks that produced a route; gate error rate = tasks with a failed gate/judge call /
-    tasks that made a gate/judge call (per-call failures are not logged);
+  * %RAG/%GRAPH/%LC over tasks that produced a route; gate error rate = failed gate/judge calls / all gate/judge
+    calls (router calls); the task-level share (tasks with a failed call / tasks that made one) is also reported;
   * a job that does not have a line for every task of its sample is "not run" in the tables.
 """
 from __future__ import annotations
@@ -205,6 +205,8 @@ def per_task_rows(job: dict, gold: dict[str, dict], sample_ids: list[str]) -> li
                "status": line["status"] if line else "missing", "failed_kind": fk or "", "route": (line or {}).get("route") or "",
                "gate_error": bool((line or {}).get("gate_error")), "made_gate_call": bool(line and any(
                    c["role"] != "answer" for c in line.get("ollama_calls") or [])),
+               "n_gate_calls": sum(1 for c in (line or {}).get("ollama_calls") or [] if c["role"] != "answer"),
+               "n_gate_call_failures": len((line or {}).get("gate_error_events") or []),
                "n_gold_files": len(g["files"]), "n_gold_functions": len(g["functions"])}
         row.update({f"primary.{k}": v for k, v in primary.items()})
         row.update({f"sens.{k}": v for k, v in sens.items()})
@@ -236,7 +238,9 @@ def aggregate(rows: list[dict], prefix: str = "primary") -> dict:
     for rt in ("RAG", "GRAPH", "LC"):
         agg[f"pct_{rt}"] = 100 * sum(1 for r in routed if r["route"] == rt) / len(routed) if routed else None
     gated = [r for r in rows if r["made_gate_call"]]
-    agg["gate_error_rate"] = sum(1 for r in gated if r["gate_error"]) / len(gated) if gated else None
+    calls = sum(r["n_gate_calls"] for r in gated)
+    agg["gate_error_rate"] = sum(r["n_gate_call_failures"] for r in gated) / calls if calls else None
+    agg["gate_error_rate_tasks"] = sum(1 for r in gated if r["gate_error"]) / len(gated) if gated else None
     agg["n_routed"] = len(routed)
     agg["latency_task_total_mean_s"] = mean([r["lat_s.task_total"] for r in rows])
     return agg

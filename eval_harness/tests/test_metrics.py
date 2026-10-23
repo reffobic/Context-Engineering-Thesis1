@@ -22,7 +22,7 @@ def line(tid, files, status="ok", gate_error=False, route="GRAPH", gate=None, to
     return {"task_id": tid, "status": status, "route": route, "gate_error": gate_error, "answer_error": False, "counted_as_failed": status != "ok" or gate_error,
             "ranked": {"after_retrieval": L, "after_expansion": None, "after_pruning": L, "final_context": L},
             "tokens": tokens or {"router_prompt": 400, "router_completion": 40, "answer_prompt": 1600, "answer_completion": 50},
-            "gate": gate or {}, "ollama_calls": [{"role": "gapa_gate_call1"}], "latency_ms": {"task_total": 1000}}
+            "gate": gate or {}, "gate_error_events": ([{"name": "x"}] if gate_error else []), "ollama_calls": [{"role": "gapa_gate_call1"}], "latency_ms": {"task_total": 1000}}
 
 
 def make_job(root: Path, arm, rows, ablation="full", n=4, dataset="swe-bench-lite", **hdr):

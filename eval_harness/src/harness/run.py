@@ -412,7 +412,7 @@ def run_task(job: Job, task: dict, force_timeout: bool) -> dict:
         gate_err, ans_err = rec["gate_error"], rec["answer_error"]
         line.update({
             "route": out["route"], "hops_used": out["hops_used"], "answer": out["answer"],
-            "gate_error": gate_err, "answer_error": ans_err,
+            "gate_error": gate_err, "gate_error_events": rec.get("gate_error_events"), "answer_error": ans_err,
             "latency_ms": {"task_total": rec["wall_ms"], **rec["stage_ms"]},
             "tokens": {**rec["tokens"], "injected_est_len4": out["tokens_injected_est"]},
             "gate": rec["gate"], "gate_inputs": rec.get("gate_inputs"), "seed_pool": rec["seed_pool"],

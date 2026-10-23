@@ -92,11 +92,19 @@ def test_five_consecutive_failures_stop_the_queue_until_the_marker_is_removed(tm
     assert make(tmp_path, [("bad", 3, 1), ("next", 3, 1)], future(60)).main() == 0
 
 
-@pytest.mark.parametrize("stubs", [{"stub_chunks": 2}])
-def test_abnormal_result_stops_after_the_job(tmp_path, stubs):
+def test_prefix_mismatch_stubs_stop_the_queue_after_the_job(tmp_path):
+    stubs = {"stub_chunks": 2, "neighbor_chunks": 30, "by_category": {"prefix_mismatch": 2, "unindexed_file_type": 0, "other": 0}}
     q = make(tmp_path, [("a", 3, 1), ("b", 3, 1)], future(60), stubs=stubs)
     assert q.main() == 0
-    assert statuses(q) == {"a": "complete", "b": "pending"} and "stub neighbours" in q.stop_marker().read_text()
+    assert statuses(q) == {"a": "complete", "b": "pending"} and "prefix-mismatch" in q.stop_marker().read_text()
+
+
+def test_rare_non_prefix_stubs_do_not_stop_the_queue_but_many_do():
+    few = {"stub_chunks": 1, "neighbor_chunks": 300, "by_category": {"prefix_mismatch": 0, "unindexed_file_type": 0, "other": 1}}
+    many = {"stub_chunks": 30, "neighbor_chunks": 300, "by_category": {"prefix_mismatch": 0, "unindexed_file_type": 30, "other": 0}}
+    ok = {"counted_as_failed": False}
+    assert Q.abnormalities([{**ok, "stub_neighbors": few}], 1) == []
+    assert any("non-prefix" in x for x in Q.abnormalities([{**ok, "stub_neighbors": many}], 1))
 
 
 def test_abnormalities_rules():
