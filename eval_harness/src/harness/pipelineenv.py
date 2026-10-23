@@ -76,7 +76,8 @@ def git_identity(repo: Path, pcfg: dict) -> dict:
     p = pcfg["pipeline"]
     dirty = bool(_git(["status", "--porcelain", "--untracked-files=no"], repo))
     same = _git(["diff", "--stat", p["frozen_sha"], "HEAD", "--", "backend"], repo) == ""
-    revoked = any(head.startswith(r) or r.startswith(head) for r in pcfg["pipeline"]["revoked_harness_commits"])
+    revoked = (any(head.startswith(r) or r.startswith(head) for r in pcfg["pipeline"]["revoked_harness_commits"])
+               or p["frozen_sha"] in pcfg["pipeline"].get("revoked_pipeline_shas", []))
     return {"harness_commit": head, "clean": not dirty, "backend_matches_frozen": same, "revoked": revoked,
             "frozen_sha": p["frozen_sha"], "base_commit": p["base_commit"], "seed_alignment_commit": p["seed_alignment_commit"]}
 

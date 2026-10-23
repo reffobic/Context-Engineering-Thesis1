@@ -1,8 +1,10 @@
 # Which pipeline code is evaluated, and the environment it runs in. Hashed into every log line.
 
 [pipeline]
-# eval-harness merge commit of gapa-aligned-seeds: the frozen SHA for all arms.
-frozen_sha = "cd84fad1c13d8e7783bff39389cfb195e0cbac5b"
+# Frozen SHA for all arms: cd84fad (merge of gapa-aligned-seeds) + patches/0001 (CHROMA_PATH env override).
+frozen_sha = "3bbc52f220addbc648d4802dab6b1c658d427612"
+previous_frozen_sha = "cd84fad1c13d8e7783bff39389cfb195e0cbac5b"   # superseded; indexes re-keyed, runs on it revoked
+chroma_path_patch = "patches/0001-retrieval-tool-chroma-path-env.patch"
 base_commit = "166dbd01e126cdfe91524534a172498746a49cc2"          # origin/main as frozen by the team
 seed_alignment_commit = "50cf149efd6180b41098210b234efef81685ceaf"  # GAPA expands from GASR's seeds
 # Results are only recorded once the user confirms the frozen SHA for a run.
@@ -12,8 +14,16 @@ structure_rerank_expected = true     # retrieval_tool._STRUCTURE_RERANK (module 
 require_call_graph_json = true       # every index must ship call_graph.json; the job fails otherwise
 
 # Harness commits whose bundles/builds must not be used for runs (predate the frozen merge).
+# Pipeline commits runs must not use.
+revoked_pipeline_shas = ["cd84fad1c13d8e7783bff39389cfb195e0cbac5b"]
 revoked_harness_commits = [
   "2c22f5ddf2acf31675a112d96c3f73d548014901",
+  "cd84fad1c13d8e7783bff39389cfb195e0cbac5b",   # configured frozen_sha cd84fad
+  "ca03191ecd0bdaa8a74647b3b922383f3607f210",
+  "b23415c1757d7f725c213d1257d42bf8b6c537f1",
+  "bb5dbc1bad1449facac28a3aa42e89e0717900a3",
+  "9516d84e59b848a950fc35329af9d970880c918e",
+  "3bbc52f220addbc648d4802dab6b1c658d427612",   # holds the patched backend but a stale harness config
   "311f9069f33f3c0807ba18cc97cd734e85496525",
 ]
 

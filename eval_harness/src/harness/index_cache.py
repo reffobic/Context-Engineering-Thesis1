@@ -327,6 +327,60 @@ def import_one(tar_path: Path, data_dir: Path) -> dict:
     return {"status": "imported", "dir": str(final), "chroma_rebuild_s": round(rebuild_s, 2), "verify": v["checks"]}
 
 
+INDEXER_PATHS = ["backend/indexing", "backend/run_index.py", "requirements.txt"]
+
+
+def prove_indexer_identity(repo: Path, old_sha: str, new_sha: str) -> dict:
+    """Object hashes of everything the indexer uses must be equal at both commits, else re-keying is refused."""
+    import subprocess
+    out = {}
+    for p in INDEXER_PATHS:
+        h = [subprocess.run(["git", "rev-parse", f"{sha}:{p}"], cwd=repo, capture_output=True, text=True, check=True).stdout.strip()
+             for sha in (old_sha, new_sha)]
+        out[p] = h[0]
+        if h[0] != h[1]:
+            raise RuntimeError(f"{p} differs between {old_sha[:7]} and {new_sha[:7]}; not re-keying")
+    return out
+
+
+def rekey(data_dir: Path, repo: Path, old_sha: str, new_sha: str, icfg: dict, gver: str | None, dry_run: bool) -> dict:
+    """Rename indexes built at old_sha to the key of new_sha without rebuilding (indexer code proven identical)."""
+    proof = prove_indexer_identity(repo, old_sha, new_sha)
+    idx_root = data_dir / "cache" / "indexes"
+    plan, skipped = [], []
+    for d in sorted(idx_root.iterdir()):
+        if not d.is_dir() or d.name.endswith((".partial", ".unpack")):
+            continue
+        parts = json.loads((d / "key.json").read_text(encoding="utf-8"))
+        if parts["pipeline_sha"] == new_sha:
+            skipped.append(d.name)
+            continue
+        if parts["pipeline_sha"] != old_sha:
+            raise RuntimeError(f"{d.name} was built at {parts['pipeline_sha'][:7]}, expected {old_sha[:7]}")
+        if make_key(parts["repo"], parts["base_commit"], old_sha, icfg, gver)["key"] != parts["key"]:
+            raise RuntimeError(f"{d.name}: stored key does not match the current index settings; not re-keying")
+        new_parts = make_key(parts["repo"], parts["base_commit"], new_sha, icfg, gver)
+        plan.append({"old_dir": d.name, "old_key": parts["key"], "new_dir": index_dir(data_dir, new_parts).name,
+                     "new_key": new_parts["key"], "repo": parts["repo"], "base_commit": parts["base_commit"], "_parts": new_parts})
+    mapping = {"old_sha": old_sha, "new_sha": new_sha, "proof_object_hashes": proof, "n_renamed": len(plan),
+               "already_new": skipped, "entries": [{k: v for k, v in e.items() if k != "_parts"} for e in plan],
+               "created_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "dry_run": dry_run}
+    map_path = data_dir / "cache" / f"REKEY_{old_sha[:7]}_to_{new_sha[:7]}.json"
+    if dry_run:
+        return mapping
+    map_path.write_text(json.dumps(mapping, indent=1), encoding="utf-8", newline="\n")   # plan first, then act
+    for e in plan:
+        src, dst = idx_root / e["old_dir"], idx_root / e["new_dir"]
+        if dst.exists():
+            raise RuntimeError(f"{dst} already exists")
+        src.rename(dst)
+        (dst / "key.json").write_text(json.dumps(e["_parts"], indent=1), encoding="utf-8")
+        (dst / "DONE").write_text(e["new_key"], encoding="utf-8")
+        (dst / "rekey.json").write_text(json.dumps({k: v for k, v in e.items() if k != "_parts"} | {
+            "old_sha": old_sha, "new_sha": new_sha, "rebuilt": False}, indent=1), encoding="utf-8")
+    return mapping
+
+
 def _du(path: Path) -> int:
     return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
 
@@ -392,6 +446,11 @@ def main() -> int:
     for x in ("profile", "experiment", "pipeline-config", "index-config"):
         sm.add_argument(f"--{x}", type=Path, required=True)
     sm.add_argument("--dataset", action="append")
+    rk = sub.add_parser("rekey")
+    for x in ("profile", "pipeline-config", "index-config"):
+        rk.add_argument(f"--{x}", type=Path, required=True)
+    rk.add_argument("--old-sha", required=True)
+    rk.add_argument("--dry-run", action="store_true")
     v = sub.add_parser("verify")
     v.add_argument("--dir", type=Path, required=True)
     v.add_argument("--compare-with", type=Path, default=None)
@@ -402,6 +461,13 @@ def main() -> int:
         return 0
     profile = load_toml(a.profile)
     data_dir = Path(profile["data_dir"])
+    if a.cmd == "rekey":
+        pc, ic = load_toml(a.pipeline_config), load_toml(a.index_config)
+        m = rekey(data_dir, Path(__file__).resolve().parents[3], a.old_sha, pc["pipeline"]["frozen_sha"], ic,
+                  _graphify_version(), a.dry_run)
+        print(json.dumps({k: v for k, v in m.items() if k not in ("entries", "already_new")}, indent=1))
+        print(f"entries: {len(m['entries'])}; first: {m['entries'][0] if m['entries'] else None}")
+        return 0
     if a.cmd == "import":
         rc = 0
         for t in sorted(a.src.glob("*.tar")):
