@@ -129,6 +129,25 @@ def load_jobs(run_dirs: list[Path]) -> list[dict]:
     return jobs
 
 
+def apply_lc_v2(jobs: list[dict], data_dir: Path) -> list[dict]:
+    """Scorer v2: LC final_context lists get module / function ids from the retrieved chunk each LC chunk came from
+    (locmap.rescore_lc_final). Edits the loaded rows in memory only; the logs on disk are untouched. -> resolution records."""
+    from .locmap import Mapper, rescore_lc_final
+    out = []
+    for j in jobs:
+        for line in j["rows"]:
+            r = line.get("ranked")
+            if line.get("status") != "ok" or line.get("route") != "LC" or not r or not r.get("final_context"):
+                continue
+            mp = Mapper(data_dir / "cache" / "checkouts" / line["repo"].replace("/", "__") / line["base_commit"])
+            new, recs = rescore_lc_final(r["final_context"], r["retrieved_top5"], mp)
+            r["final_context_legacy"] = r["final_context"]
+            r["final_context"] = new
+            out += [{"job_id": j["job_id"], "arm": j["arm"], "dataset": j["dataset"], "ablation": j["ablation"],
+                     "task_id": line["task_id"], **x} for x in recs]
+    return out
+
+
 COMPAT_FIELDS = ["pipeline_frozen_sha", "harness_commit", "schema"]
 COMPAT_CONFIGS = ["experiment", "pipeline_config", "index_config", "run_config", "ablations_config"]
 
@@ -445,8 +464,15 @@ def main() -> int:
     ap.add_argument("--model", default="qwen3.5:9b")
     ap.add_argument("--dataset", default="swe-bench-lite")
     ap.add_argument("--ablation", default="full")
+    ap.add_argument("--lc-scorer", choices=["legacy", "v2"], default="legacy",
+                    help="legacy = LC chunks are file-only (module / function lists empty); v2 = module / function ids joined from the retrieved chunk")
     a = ap.parse_args()
     jobs = load_jobs([p.resolve() for p in a.runs])
+    if a.lc_scorer == "v2":
+        recs = apply_lc_v2(jobs, a.data_dir.resolve())
+        a.out.mkdir(parents=True, exist_ok=True)
+        cols = ["job_id", "arm", "dataset", "ablation", "task_id", "file", "name", "function", "module", "how"]
+        write_csv(a.out / "lc_resolution.csv", cols, [[r.get(c) if r.get(c) is not None else "" for c in cols] for r in recs])
     warnings = check_compat(jobs) if jobs else []
     data_dir = a.data_dir.resolve()
     if a.explain:

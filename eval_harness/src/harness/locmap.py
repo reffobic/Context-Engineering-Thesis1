@@ -117,3 +117,76 @@ class Mapper:
             if m["function"] not in functions:
                 functions.append(m["function"])
         return {"files": files, "modules": modules, "functions": functions, "unmapped": unmapped, "n_items": len(items)}
+
+
+# ── LC scorer v2 (scorer-lc-fix) ─────────────────────────────────────────────
+# _build_lc_chunks emits {text, path, symbol, language} with no start_line / chunk_type, so the line-based map_item
+# cannot place an LC chunk. v2 gives each LC chunk the identifier the line-based mapper produced for the retrieved chunk
+# it came from, by joining on (path, symbol) to the task's retrieved_top5 lists. The legacy behaviour stays available
+# (metrics --lc-scorer legacy, the default).
+
+def _split_id(fid: str) -> tuple[str, str]:
+    path, qual = fid.split(":", 1)
+    return path, qual
+
+
+def _leaf(qual: str) -> str:
+    return qual.split(".")[-1]
+
+
+def resolve_lc_item(path: str | None, name: str | None, reason: str, retrieved: dict, mapper: "Mapper | None") -> dict:
+    """-> {"function", "module", "how"}; how in join | join_unmapped | ast_retrieved | ast_unique | not_python | unresolved."""
+    none = {"function": None, "module": None}
+    if not path or reason in ("no_file", "not_python", "file_not_in_checkout", "syntax_error"):
+        return {**none, "how": reason or "no_file"}
+    funcs = [_split_id(f) for f in retrieved.get("functions") or [] if f.split(":", 1)[0] == path]
+    cand = [f"{p}:{q}" for p, q in funcs if _leaf(q) == name]
+    still_unmapped = any(u.get("file") == path and u.get("name") == name for u in retrieved.get("unmapped") or [])
+    if len(cand) == 1 and not still_unmapped:
+        q = _split_id(cand[0])[1]
+        return {"function": cand[0], "module": f"{path}:{q.split('.')[0]}", "how": "join"}
+    if not cand and still_unmapped:
+        return {**none, "how": "join_unmapped"}               # the originating retrieved chunk was itself unmappable
+    # ambiguous or missing: AST lookup in the checkout
+    if mapper is None:
+        return {**none, "how": "unresolved"}
+    defs = mapper.defs(path)
+    if isinstance(defs, str):
+        return {**none, "how": "unresolved"}
+    try:
+        tree = ast.parse((mapper.root / path).read_text(encoding="utf-8", errors="replace"))
+    except SyntaxError:
+        return {**none, "how": "unresolved"}
+    enc = set()
+    for n in ast.walk(tree):
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and n.name == name:
+            inside = [d for d in defs if d.start <= n.lineno <= d.end]
+            if inside:
+                d = min(inside, key=lambda x: x.end - x.start)
+                enc.add(d.qualname[:-len(".__init__")] if d.qualname.endswith(".__init__") else d.qualname)
+    retrieved_q = {q for _, q in funcs}
+    pick = enc & retrieved_q
+    if len(pick) == 1:
+        q = next(iter(pick))
+        return {"function": f"{path}:{q}", "module": f"{path}:{q.split('.')[0]}", "how": "ast_retrieved"}
+    if not pick and len(enc) == 1:
+        q = next(iter(enc))
+        return {"function": f"{path}:{q}", "module": f"{path}:{q.split('.')[0]}", "how": "ast_unique"}
+    return {**none, "how": "unresolved"}
+
+
+def rescore_lc_final(final: dict, retrieved: dict, mapper: "Mapper | None") -> tuple[dict, list[dict]]:
+    """New final_context lists for an LC task + one resolution record per chunk. Files are unchanged."""
+    if final["n_items"] != final["unmapped_n"] or final["modules"] or final["functions"]:
+        raise ValueError("final_context is not an all-unmapped LC list")
+    modules, functions, recs = [], [], []
+    for u in final["unmapped"]:
+        r = resolve_lc_item(u.get("file"), u.get("name"), u.get("reason") or "", retrieved, mapper)
+        recs.append({"file": u.get("file"), "name": u.get("name"), **r})
+        if r["function"]:
+            if r["module"] not in modules:
+                modules.append(r["module"])
+            if r["function"] not in functions:
+                functions.append(r["function"])
+    new = {**final, "modules": modules, "functions": functions}
+    return new, recs
