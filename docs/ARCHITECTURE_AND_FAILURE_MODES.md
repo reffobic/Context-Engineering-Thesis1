@@ -20,8 +20,8 @@
 
 | Component | File | Role |
 |---|---|---|
-| GASR multi-hop ladder | `backend/diamond/gasr_ladder.py` | Pure control flow `RAG -> GRAPH expand (hops, capped) -> LC`. All steps are injected callbacks (`assess_rag`, `assess_structure`, `expand_hop`, `re_prune`, `assess_after_expand`, `build_lc`) so it is unit-testable without Ollama. Returns `route`, `hops_used`, `context`, `assess_trace`, `expand_trace`. |
-| GAPA pre-router gate | `backend/diamond/preroute_gate.py` | `mode="PREROUTE"`. Replaces only `assess_rag`: Stage 1 query keywords, Stage 2 rule-based retrieval signals, else defers to the LLM sufficiency judge. **Known limitation:** retrieval and pruning still run unconditionally before the gate, so only the judge LLM call is saved. |
+| GASR multi-hop ladder | `backend/diamond/gasr_ladder.py` | Pure control flow `RAG -> GRAPH expand (hops, capped) -> LC`. Post-RAG decision is **one merged gate** (`assess_rag_gate`: sufficiency + `STRUCTURE`/`CONTEXT` need); the legacy `assess_rag` + `assess_structure` pair is still accepted and composed into one gate. Once `STRUCTURE` is chosen the need is sticky across hops. Other steps are injected callbacks (`expand_hop`, `re_prune`, `assess_after_expand`, `build_lc`), so it is unit-testable without Ollama. Returns `route`, `hops_used`, `context`, `assess_trace` (first entry `phase=rag_gate`), `expand_trace`. |
+| GAPA entry gate | `backend/diamond/preroute_gate.py` | `mode="GAPA"` (renamed from `PREROUTE`; the old name is now rejected with 422). In `server.py` the entry decision is `preroute_structured_gate`: a six-step structured prompt over raw retrieval **metadata** (no chunk text), one LLM call. The two-stage rule heuristic (`preroute_gate`, Stage 1 query keywords / Stage 2 score and dependency rules) and a generative variant still exist in the file; the module docstring still describes the older rule-based design. **Known limitation:** retrieval and pruning still run unconditionally before the gate, so pruning cost is not avoided. |
 | Sufficiency judge | `backend/diamond/sufficiency_assessor.py` | LLM (+ score shortcut) judging whether RAG context suffices. |
 | Graph backend | `backend/indexing/graphify_adapter.py` | Loads Graphify `graph.json`; `backend == "empty"` when none found. |
 
@@ -57,6 +57,11 @@ for `CONTEXT` needs or when expand yields nothing.
 ## 5. Tests
 
 - Tier 1: `tests/backend/test_indexing_robustness.py` (syntax-error fallback,
-  token-budget invariant, empty/whitespace files).
-- Tier 2: `tests/backend/test_gasr_ladder.py` (mocked ladder callbacks).
+  token-budget invariant, empty/whitespace files); `tests/backend/test_pruning.py`.
+- Tier 2: `tests/backend/test_gasr_ladder.py` (mocked ladder: legacy callbacks and the
+  merged `assess_rag_gate` path, sticky STRUCTURE need, `hard_cap=0`, unknown need,
+  missing graph); `tests/backend/test_api_contract.py` (422 on bad body/mode/pruning
+  method; `PREROUTE` rejected, `GAPA` is the valid name).
+- Selective-pruning tests need the cached `Salesforce/codegen-350M-multi` model and are
+  skipped when it is not in the local HuggingFace cache.
 - Live baseline: `scripts/live_gasr_ollama_tests.py` (requires running API + Ollama).

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 import sys
 
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
@@ -172,8 +173,11 @@ def test_find_best_window_empty():
 
 
 def test_heuristic_weights_default():
+    # Defaults are tuned (freeze-trial25-weights) and intentionally NOT normalised to 1.0;
+    # the final score is a plain weighted sum. Assert they are usable, not their sum.
     w = HeuristicWeights()
-    assert abs(sum(w.as_tuple()) - 1.0) < 0.01
+    assert len(w.as_tuple()) == 4
+    assert all(isinstance(x, float) and x > 0 for x in w.as_tuple())
 
 
 def test_heuristic_weights_custom():
@@ -188,13 +192,17 @@ def test_score_candidate_with_custom_weights():
         "final_score": 0.8,
         "metadata": {"function": "hello", "file": "greet.py"},
     }
-    default_score = score_candidate("hello function", item)
-    # High retrieval weight should increase score when retrieval score is high
+    # Compare two explicit weight sets (default weights are no longer a normalised baseline).
+    # With a high retrieval score (0.8), shifting weight onto retrieval raises the score.
+    low_ret = score_candidate(
+        "hello function", item,
+        weights=HeuristicWeights(retrieval=0.1, query_match=0.3, function=0.3, structure=0.3),
+    )
     high_ret = score_candidate(
         "hello function", item,
         weights=HeuristicWeights(retrieval=0.9, query_match=0.05, function=0.03, structure=0.02),
     )
-    assert high_ret > default_score
+    assert high_ret > low_ret
 
 
 # ── score_candidate ───────────────────────────────────────────
@@ -208,7 +216,8 @@ def test_score_candidate_returns_float():
     }
     s = score_candidate("hello function", item)
     assert isinstance(s, float)
-    assert 0.0 <= s <= 1.0
+    # Tuned weights are un-normalised, so the score is not capped at 1.0.
+    assert s >= 0.0 and s == s and s != float("inf")
 
 
 def test_score_candidate_higher_for_relevant():
@@ -493,7 +502,20 @@ try:
 except ImportError:
     HAS_TORCH = False
 
-requires_torch = pytest.mark.skipif(not HAS_TORCH, reason="torch/transformers not installed")
+def _codegen_model_cached() -> bool:
+    """True only if the model is fully in the local HF cache (no download in tests)."""
+    snaps = Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface")) / "hub" / \
+        "models--Salesforce--codegen-350M-multi" / "snapshots"
+    return snaps.is_dir() and any(
+        (s / "config.json").exists() and (list(s.glob("*.bin")) or list(s.glob("*.safetensors")))
+        for s in snaps.iterdir()
+    )
+
+
+requires_torch = pytest.mark.skipif(
+    not HAS_TORCH or not _codegen_model_cached(),
+    reason="torch/transformers or cached Salesforce/codegen-350M-multi not available",
+)
 
 
 @requires_torch

@@ -243,3 +243,143 @@ def test_missing_graph_falls_through_to_lc_with_diagnostics():
     assert result.route == "LC"
     assert result.expand_trace[0]["new_chunk_count"] == 0
     assert result.expand_trace[0]["graph_backend"] == "empty"
+
+
+# ── Merged-gate path (assess_rag_gate) — current main behaviour ──────────────
+
+
+def _gate_kwargs(gate, expand_hop, *, pruned, hard_cap=2, after=None, build_lc=None):
+    return dict(
+        seed_pool=pruned,
+        initial_pruned=pruned,
+        assess_rag_gate=gate,
+        expand_hop=expand_hop,
+        re_prune=lambda s, n: pruned + n,
+        assess_after_expand=after or (lambda: {"sufficient": True}),
+        build_lc=build_lc or (lambda: [{"text": "lc"}]),
+        hard_cap=hard_cap,
+    )
+
+
+def test_gate_sufficient_returns_rag_without_expand():
+    pruned = [{"text": "seed"}]
+    result = run_gasr_ladder(
+        **_gate_kwargs(
+            lambda: {"sufficient": True, "confidence": "high"},
+            lambda s, h: pytest.fail("must not expand when sufficient"),
+            pruned=pruned,
+            build_lc=lambda: pytest.fail("must not build LC when sufficient"),
+        )
+    )
+    assert result.route == "RAG"
+    assert result.hops_used == 0
+    assert result.assess_trace[0]["phase"] == "rag_gate"
+    assert result.assess_trace[0]["need"] is None
+
+
+def test_gate_structure_expands_and_records_trace():
+    pruned = [{"text": "seed"}]
+    neighbor = {"code": "def g(): pass", "metadata": {"file": "b.py"}, "source": "graph"}
+    result = run_gasr_ladder(
+        **_gate_kwargs(
+            lambda: {"sufficient": False, "need": "STRUCTURE", "confidence": "high"},
+            lambda s, h: {"chunks": [neighbor], "new_chunk_count": 1, "graph_backend": "graphify"},
+            pruned=pruned,
+            build_lc=lambda: pytest.fail("must not LC after neighbors were added"),
+        )
+    )
+    assert result.route == "GRAPH"
+    assert result.hops_used == 1
+    assert result.assess_trace[0]["can_expand"] is True
+    assert result.assess_trace[0]["need"] == "STRUCTURE"
+
+
+def test_gate_context_need_goes_lc_without_expand():
+    result = run_gasr_ladder(
+        **_gate_kwargs(
+            lambda: {"sufficient": False, "need": "CONTEXT"},
+            lambda s, h: pytest.fail("CONTEXT must not expand"),
+            pruned=[{"text": "seed"}],
+        )
+    )
+    assert result.route == "LC"
+    assert result.hops_used == 0
+    assert result.assess_trace[0]["can_expand"] is False
+
+
+def test_gate_unknown_need_is_normalised_to_unclear_and_goes_lc():
+    result = run_gasr_ladder(
+        **_gate_kwargs(
+            lambda: {"sufficient": False, "need": "banana"},
+            lambda s, h: pytest.fail("unknown need must not expand"),
+            pruned=[{"text": "seed"}],
+        )
+    )
+    assert result.route == "LC"
+    assert result.assess_trace[0]["need"] == "UNCLEAR"
+
+
+def test_gate_hard_cap_zero_never_expands():
+    result = run_gasr_ladder(
+        **_gate_kwargs(
+            lambda: {"sufficient": False, "need": "STRUCTURE"},
+            lambda s, h: pytest.fail("hard_cap=0 must not expand"),
+            pruned=[{"text": "seed"}],
+            hard_cap=0,
+        )
+    )
+    assert result.route == "LC"
+    assert result.assess_trace[0]["can_expand"] is False
+
+
+def test_gate_structure_need_is_sticky_across_hops():
+    """Gate is asked once; later hops must not re-ask STRUCTURE vs CONTEXT."""
+    calls = {"gate": 0, "expand": 0}
+
+    def gate():
+        calls["gate"] += 1
+        return {"sufficient": False, "need": "STRUCTURE"}
+
+    def expand(seeds, h):
+        calls["expand"] += 1
+        return {"chunks": [{"code": f"n{calls['expand']}"}], "new_chunk_count": 1}
+
+    result = run_gasr_ladder(
+        **_gate_kwargs(
+            gate,
+            expand,
+            pruned=[{"text": "seed"}],
+            after=lambda: {"sufficient": False},
+            hard_cap=2,
+        )
+    )
+    assert calls["gate"] == 1
+    assert calls["expand"] == 2
+    assert result.route == "GRAPH"
+    assert result.hops_used == 2
+
+
+def test_missing_graph_via_gate_falls_to_lc_with_diagnostics():
+    result = run_gasr_ladder(
+        **_gate_kwargs(
+            lambda: {"sufficient": False, "need": "STRUCTURE"},
+            lambda s, h: {"chunks": [], "new_chunk_count": 0, "graph_backend": "empty"},
+            pruned=[{"text": "seed"}],
+            after=lambda: pytest.fail("no post-expand assess on empty expand"),
+        )
+    )
+    assert result.route == "LC"
+    assert result.expand_trace[0]["new_chunk_count"] == 0
+    assert result.expand_trace[0]["graph_backend"] == "empty"
+
+
+def test_ladder_requires_gate_or_both_legacy_callbacks():
+    with pytest.raises(TypeError):
+        run_gasr_ladder(
+            seed_pool=[],
+            initial_pruned=[],
+            expand_hop=lambda s, h: {},
+            re_prune=lambda s, n: [],
+            assess_after_expand=lambda: {},
+            build_lc=lambda: [],
+        )
