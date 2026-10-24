@@ -59,17 +59,23 @@ logger = logging.getLogger("code_indexer")
 DEFAULT_MODEL      = "all-MiniLM-L6-v2"
 DEFAULT_DB_PATH    = "./chroma_db"
 DEFAULT_COLLECTION = "code_embeddings"
+DEFAULT_META_COLLECTION = "code_meta_embeddings"
 MAX_CHUNK_TOKENS   = 512
 CONTEXT_SEPARATOR  = "\n\n--- RAW CODE ---\n"
 DEFAULT_INDEX_MAX_FILES = int(os.getenv("INDEX_MAX_FILES", "600"))
 DEFAULT_EMBED_BATCH_SIZE = int(os.getenv("INDEX_EMBED_BATCH_SIZE", "16"))
 DEFAULT_CACHE_SAVE_INTERVAL = int(os.getenv("INDEX_CACHE_SAVE_INTERVAL", "50"))
 # Bump when embedding recipe changes (invalidates incremental file cache).
-INDEX_SCHEMA_VERSION = "contextual-hybrid-v1"
+INDEX_SCHEMA_VERSION = "contextual-dual-v1"
 EMBEDDING_CACHE_FILE = ".embedding_cache.json"
 USE_HYBRID_EMBEDDINGS = os.getenv("USE_HYBRID_EMBEDDINGS", "1").strip().lower() not in {
     "0", "false", "no", "off",
 }
+# Cap Anthropic-style situating text (~50–100 tokens) so MiniLM is not drowned.
+SITUATING_MAX_CHARS = int(os.getenv("INDEX_SITUATING_MAX_CHARS", "700"))
+CHUNK_ROLES = frozenset({"definition", "api", "config", "test", "docs", "other"})
+# Query-time dense blend: score = (1-α)·sim_code + α·sim_meta
+DENSE_ALPHA = float(os.getenv("DENSE_ALPHA", "0.40"))
 
 LANGUAGE_MAP: dict[str, list[str]] = {
     "python":     [".py"],
@@ -99,6 +105,11 @@ EXCLUDED_DIRS = {
 # ─── data model ───────────────────────────────────────────────────────────────
 @dataclass
 class CodeChunk:
+    """
+    Indexed unit. Structured fields below are the ContextMeta contract:
+    retrieval headers and Chroma metadatas are views of the same data so a
+    future RAG/GRAPH/LC prerouter can reuse them without a parallel schema.
+    """
     chunk_id:     str
     file_path:    str
     language:     str
@@ -111,6 +122,8 @@ class CodeChunk:
     file_hash:    str = ""
     context_header: str = ""
     file_summary:   str = ""
+    situating_text: str = ""  # chunk-specific NL (Anthropic-style)
+    chunk_role:     str = "other"  # definition|api|config|test|docs|other
     qualified_name: str = ""
     symbols:        list[str] = field(default_factory=list)
 
@@ -119,14 +132,33 @@ class CodeChunk:
         m.pop("code")
         m["dependencies"] = json.dumps(m["dependencies"])
         m["symbols"] = json.dumps(m["symbols"])
+        m["index_schema_version"] = INDEX_SCHEMA_VERSION
         return m
 
     def contextual_document(self) -> str:
-        """Text embedded/indexed for retrieval; raw code follows a stable marker."""
+        """BM25 / display text: NL header + raw code (Anthropic contextual shape)."""
         header = (self.context_header or "").strip()
         if not header:
             return self.code
         return f"{header}{CONTEXT_SEPARATOR}{self.code}"
+
+    def meta_document(self) -> str:
+        """NL-only text embedded as v_meta (no raw code)."""
+        header = (self.context_header or "").strip()
+        if header:
+            return header
+        situating = (self.situating_text or "").strip()
+        if situating:
+            return situating
+        return (
+            f"Path: {self.file_path}\n"
+            f"Chunk: {self.chunk_type} {self.qualified_name or self.name}\n"
+            f"Role: {self.chunk_role or 'other'}"
+        )
+
+    def code_document(self) -> str:
+        """Raw code embedded as v_code."""
+        return self.code or ""
 
 
 # ─── helpers ─────────────────────────────────────────────────────────────────
@@ -210,16 +242,130 @@ def _ollama_file_summary(rel_path: str, language: str, source: str, symbols: lis
         return None
 
 
+def _infer_chunk_role(chunk: CodeChunk) -> str:
+    """Light role tag for retrieval headers and a future mode prerouter."""
+    path = (chunk.file_path or "").lower().replace("\\", "/")
+    name = (chunk.name or "").lower()
+    if (
+        path.endswith((".md", ".rst", ".txt"))
+        or "/docs/" in f"/{path}/"
+        or path.startswith("docs/")
+        or "readme" in path
+    ):
+        return "docs"
+    if (
+        "/tests/" in f"/{path}/"
+        or path.startswith("tests/")
+        or path.endswith(("_test.py", ".test.js", ".test.ts", "_spec.py"))
+        or name.startswith("test_")
+        or name.endswith("_test")
+    ):
+        return "test"
+    if (
+        "config" in path
+        or "settings" in path
+        or path.endswith((".yaml", ".yml", ".toml", ".ini", ".env", ".json"))
+        or name in {"config", "settings", "configuration"}
+    ):
+        return "config"
+    if chunk.chunk_type == "route" or "/api/" in f"/{path}/" or path.endswith("/api.py"):
+        return "api"
+    if chunk.chunk_type in {"function", "class"} and chunk.name:
+        return "definition"
+    return "other"
+
+
+def _truncate_situating(text: str) -> str:
+    cleaned = " ".join((text or "").split())
+    if len(cleaned) <= SITUATING_MAX_CHARS:
+        return cleaned
+    return cleaned[: SITUATING_MAX_CHARS - 1].rstrip() + "…"
+
+
+def _heuristic_situating_text(chunk: CodeChunk, file_summary: str) -> str:
+    """
+    Chunk-specific NL context (Anthropic Contextual Retrieval spirit).
+    Differs across chunks in the same file via name / type / deps / span.
+    """
+    qualified = chunk.qualified_name or chunk.name or "(file block)"
+    deps = ", ".join(chunk.dependencies[:8]) if chunk.dependencies else "none listed"
+    role = chunk.chunk_role or "other"
+    purpose = {
+        "definition": "defines a named code unit",
+        "api": "exposes an API/route handler",
+        "config": "holds configuration or settings",
+        "test": "contains tests",
+        "docs": "is documentation",
+        "other": "is a source block",
+    }.get(role, "is a source block")
+    base = (
+        f"This chunk {purpose}: {chunk.chunk_type} {qualified} "
+        f"(lines {chunk.start_line}-{chunk.end_line}) in {chunk.file_path}. "
+        f"Role={role}. Uses dependencies: {deps}."
+    )
+    # Light file backdrop without replacing chunk-specific text.
+    backdrop = (file_summary or "").strip()
+    if backdrop:
+        base = f"{base} File context: {backdrop[:220]}"
+    return _truncate_situating(base)
+
+
+def _ollama_situating_text(chunk: CodeChunk, whole_document: str) -> Optional[str]:
+    """Optional Anthropic-style situating prompt (INDEX_CONTEXT_OLLAMA=1)."""
+    if os.getenv("INDEX_CONTEXT_OLLAMA", "0").strip().lower() not in {"1", "true", "yes"}:
+        return None
+
+    host = os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434").rstrip("/")
+    model = os.getenv("INDEX_CONTEXT_MODEL", os.getenv("OLLAMA_MODEL", "llama3.1"))
+    prompt = (
+        "<document>\n"
+        f"{whole_document[:8000]}\n"
+        "</document>\n"
+        "Here is the chunk we want to situate within the whole document\n"
+        "<chunk>\n"
+        f"{(chunk.code or '')[:4000]}\n"
+        "</chunk>\n"
+        "Please give a short succinct context to situate this chunk within the overall "
+        "document for improving search retrieval. Answer only with the succinct context."
+    )
+    body = json.dumps({"model": model, "prompt": prompt, "stream": False}).encode("utf-8")
+    req = urllib.request.Request(
+        f"{host}/api/generate",
+        data=body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=float(os.getenv("INDEX_CONTEXT_TIMEOUT", "20"))) as resp:
+            data = json.loads(resp.read().decode("utf-8", errors="replace"))
+            text = str(data.get("response") or "").strip()
+            return _truncate_situating(text) or None
+    except (urllib.error.URLError, TimeoutError, ValueError, json.JSONDecodeError) as exc:
+        logger.warning(
+            "Ollama situating failed for %s:%s; using heuristic: %s",
+            chunk.file_path,
+            chunk.name,
+            exc,
+        )
+        return None
+
+
 def _build_context_header(chunk: CodeChunk) -> str:
+    """NL header from ContextMeta fields (single source of truth for embed+BM25)."""
     symbol_text = ", ".join(chunk.symbols[:24]) if chunk.symbols else "none"
     qualified = chunk.qualified_name or chunk.name or "(file block)"
+    deps_text = ", ".join(chunk.dependencies[:12]) if chunk.dependencies else "none"
+    situating = (chunk.situating_text or "").strip() or "(none)"
     return "\n".join(
         [
             f"Path: {chunk.file_path}",
             f"Language: {chunk.language}",
             f"Chunk: {chunk.chunk_type} {qualified} lines {chunk.start_line}-{chunk.end_line}",
+            f"Role: {chunk.chunk_role or 'other'}",
+            f"Situating: {situating}",
             f"File summary: {chunk.file_summary}",
             f"File symbols: {symbol_text}",
+            f"Dependencies: {deps_text}",
         ]
     )
 
@@ -312,6 +458,12 @@ def read_and_chunk_file(file_path: Path, repo_root: Path) -> list[CodeChunk]:
         chunk.file_summary = file_summary
         chunk.qualified_name = f"{rel_path}::{chunk.name}" if chunk.name else rel_path
         chunk.symbols = file_symbols
+        chunk.chunk_role = _infer_chunk_role(chunk)
+        # Prefer optional Ollama situating; always fall back to chunk-specific heuristic.
+        chunk.situating_text = (
+            _ollama_situating_text(chunk, source)
+            or _heuristic_situating_text(chunk, file_summary)
+        )
         chunk.context_header = _build_context_header(chunk)
 
     logger.debug("Chunked %s → %d chunk(s)", rel_path, len(chunks))
@@ -499,6 +651,7 @@ class CodeIndexer:
         self,
         db_path:         str = DEFAULT_DB_PATH,
         collection_name: str = DEFAULT_COLLECTION,
+        meta_collection_name: str = DEFAULT_META_COLLECTION,
         model_name:      str = DEFAULT_MODEL,
         use_graphcodebert: bool = False,
         use_hybrid_embeddings: Optional[bool] = None,
@@ -524,6 +677,8 @@ class CodeIndexer:
         # FIX 4: store db_path on self so _cache_path() can use it instead of
         # the hardcoded DEFAULT_DB_PATH constant.
         self.db_path = db_path
+        self.collection_name = collection_name
+        self.meta_collection_name = meta_collection_name
 
         logger.info("Connecting to ChromaDB at: %s", db_path)
         self.client     = chromadb.PersistentClient(path=db_path)
@@ -531,7 +686,17 @@ class CodeIndexer:
             name     = collection_name,
             metadata = {"hnsw:space": "cosine"},
         )
-        logger.info("Collection '%s' ready (%d docs)", collection_name, self.collection.count())
+        self.meta_collection = self.client.get_or_create_collection(
+            name     = meta_collection_name,
+            metadata = {"hnsw:space": "cosine", "channel": "meta"},
+        )
+        logger.info(
+            "Collections ready: '%s' (%d docs), '%s' (%d docs)",
+            collection_name,
+            self.collection.count(),
+            meta_collection_name,
+            self.meta_collection.count(),
+        )
 
         self._hash_cache: dict[str, str] = self._load_hash_cache()
         self._embedding_cache: dict = self._load_embedding_cache()
@@ -541,7 +706,7 @@ class CodeIndexer:
                 semantic_model=self.model,
                 use_graphcodebert=use_graphcodebert,
             )
-            logger.info("Hybrid embeddings enabled (semantic + call-graph structural)")
+            logger.info("Hybrid embeddings enabled (semantic + call-graph structural) on v_code")
 
     # ── index repository ──────────────────────────────────────────────────────
     def index_repository(
@@ -567,6 +732,9 @@ class CodeIndexer:
             "include_dirs": include_dirs or [],
             "index_schema_version": INDEX_SCHEMA_VERSION,
             "hybrid_embeddings": bool(self.hybrid_manager),
+            "dual_collections": True,
+            "meta_collection": self.meta_collection_name,
+            "dense_alpha": DENSE_ALPHA,
             "graph_nodes": 0,
             "graph_edges": 0,
             "embeddings_cached": 0,
@@ -631,45 +799,72 @@ class CodeIndexer:
         return stats
 
     # ── embed + upsert ────────────────────────────────────────────────────────
-    def _upsert_chunks(self, chunks: list[CodeChunk]):
-        ids        = [c.chunk_id  for c in chunks]
-        documents  = [c.contextual_document() for c in chunks]
-        metadatas  = [c.to_metadata() for c in chunks]
+    def _cache_key(self, chunk_id: str, channel: str) -> str:
+        return f"{INDEX_SCHEMA_VERSION}:{channel}:{chunk_id}"
 
-        logger.info("Embedding %d chunk(s)...", len(chunks))
+    def _encode_code_vector(self, chunk: CodeChunk) -> list[float]:
+        """v_code: raw code (+ optional structural hybrid)."""
+        cache_key = self._cache_key(chunk.chunk_id, "code")
+        if cache_key in self._embedding_cache:
+            return self._embedding_cache[cache_key]
+        code = chunk.code_document()
+        if self.hybrid_manager is not None:
+            result = self.hybrid_manager.embed_code(
+                code=code,
+                file_path=chunk.file_path,
+                func_name=chunk.name,
+            )
+            vec_obj = result.get("combined")
+            if vec_obj is None:
+                vec_obj = self.model.encode([code])[0]
+        else:
+            vec_obj = self.model.encode([code])[0]
+        vec = vec_obj.tolist() if hasattr(vec_obj, "tolist") else list(vec_obj)
+        self._embedding_cache[cache_key] = vec
+        return vec
+
+    def _encode_meta_vector(self, chunk: CodeChunk) -> list[float]:
+        """v_meta: NL ContextMeta header / situating only."""
+        cache_key = self._cache_key(chunk.chunk_id, "meta")
+        if cache_key in self._embedding_cache:
+            return self._embedding_cache[cache_key]
+        meta_doc = chunk.meta_document()
+        vec_obj = self.model.encode([meta_doc])[0]
+        vec = vec_obj.tolist() if hasattr(vec_obj, "tolist") else list(vec_obj)
+        self._embedding_cache[cache_key] = vec
+        return vec
+
+    def _upsert_chunks(self, chunks: list[CodeChunk]):
+        """
+        Twin upsert keyed by the same chunk_id:
+          code_embeddings      → document=contextual (display/exact), embedding=v_code
+          code_meta_embeddings → document=meta NL only, embedding=v_meta
+        BM25 still indexes contextual_document separately.
+        """
+        ids = [c.chunk_id for c in chunks]
+        contextual_docs = [c.contextual_document() for c in chunks]
+        meta_docs = [c.meta_document() for c in chunks]
+        metadatas = [c.to_metadata() for c in chunks]
+
+        logger.info("Dual-embedding %d chunk(s) (v_code + v_meta)...", len(chunks))
         batch_size = max(1, DEFAULT_EMBED_BATCH_SIZE)
         for start in range(0, len(chunks), batch_size):
             end = start + batch_size
             batch_chunks = chunks[start:end]
-            batch_docs = documents[start:end]
-            if self.hybrid_manager is not None:
-                embeddings = []
-                for chunk, doc in zip(batch_chunks, batch_docs):
-                    if chunk.chunk_id in self._embedding_cache:
-                        embeddings.append(self._embedding_cache[chunk.chunk_id])
-                        continue
-                    result = self.hybrid_manager.embed_code(
-                        code=doc,  # contextual document for semantic channel
-                        file_path=chunk.file_path,
-                        func_name=chunk.name,
-                    )
-                    vec_obj = result.get("combined")
-                    if vec_obj is None:
-                        vec_obj = self.model.encode([doc])[0]
-                    vec = vec_obj.tolist() if hasattr(vec_obj, "tolist") else list(vec_obj)
-                    self._embedding_cache[chunk.chunk_id] = vec
-                    embeddings.append(vec)
-            else:
-                embeddings = self.model.encode(
-                    batch_docs,
-                    batch_size=batch_size,
-                    show_progress_bar=False,
-                ).tolist()
+            code_embeddings = [self._encode_code_vector(c) for c in batch_chunks]
+            meta_embeddings = [self._encode_meta_vector(c) for c in batch_chunks]
+
             self.collection.upsert(
-                ids        = ids[start:end],
-                documents  = batch_docs,
-                embeddings = embeddings,
-                metadatas  = metadatas[start:end],
+                ids=ids[start:end],
+                documents=contextual_docs[start:end],
+                embeddings=code_embeddings,
+                metadatas=metadatas[start:end],
+            )
+            self.meta_collection.upsert(
+                ids=ids[start:end],
+                documents=meta_docs[start:end],
+                embeddings=meta_embeddings,
+                metadatas=metadatas[start:end],
             )
 
     # ── query ─────────────────────────────────────────────────────────────────
@@ -781,6 +976,14 @@ class CodeIndexer:
                 "chunk_type": chunk.chunk_type,
                 "start_line": chunk.start_line,
                 "end_line": chunk.end_line,
+                "chunk_id": chunk.chunk_id,
+                "qualified_name": chunk.qualified_name,
+                "symbols": json.dumps(chunk.symbols),
+                "dependencies": json.dumps(chunk.dependencies),
+                "file_summary": chunk.file_summary,
+                "situating_text": chunk.situating_text,
+                "chunk_role": chunk.chunk_role,
+                "context_header": chunk.context_header,
             },
         }
 

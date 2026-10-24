@@ -16,7 +16,7 @@ question) is what's available tonight; grounding-in-evidence is not.
 
 Usage, from backend/:
     python3 ../scripts/score_answer_quality.py
-    python3 ../scripts/score_answer_quality.py --modes GASR PREROUTE  # faster, fewer judge calls
+    python3 ../scripts/score_answer_quality.py --modes GASR GAPA  # faster, fewer judge calls
     python3 ../scripts/score_answer_quality.py --limit 20             # smoke test first
 """
 
@@ -46,7 +46,7 @@ def latest_compare_run() -> Path:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--modes", nargs="*", default=None, help="Only score these modes, e.g. --modes GASR PREROUTE")
+    parser.add_argument("--modes", nargs="*", default=None, help="Only score these modes, e.g. --modes GASR GAPA")
     parser.add_argument("--limit", type=int, default=None, help="Only score the first N rows (smoke test)")
     args = parser.parse_args()
 

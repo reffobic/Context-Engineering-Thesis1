@@ -11,7 +11,7 @@ indexer = CodeIndexer(db_path=str(Path(__file__).resolve().parent / "chroma_db")
 stats = indexer.index_repository(
     repo_path=str(repo_root),
     languages=["python"],
-    max_files=3000,
+    max_files=None,
     incremental=True
 )
 print(stats)

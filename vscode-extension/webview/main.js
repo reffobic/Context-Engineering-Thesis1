@@ -105,7 +105,7 @@
             </button>
           </div>
           <select class="select-pill" id="modeSelect" title="Pipeline mode">
-            <option value="PREROUTE">PREROUTE (Fast Gate)</option>
+            <option value="GAPA">GAPA (Fast Gate)</option>
             <option value="GASR">GASR (Adaptive)</option>
             <option value="SELF_ROUTE">Auto-Route</option>
             <option value="RAG">RAG</option>
@@ -506,10 +506,10 @@
   }
 
   // ── GASR stage order ─────────────────────────────────────────────────
-  // Standard stages; graph_expand + re_prune are injected dynamically for GASR/PREROUTE
+  // Standard stages; graph_expand + re_prune are injected dynamically for GASR/GAPA
   const BASE_STAGE_ORDER   = ['retrieve', 'prune', 'assess', 'inject', 'generate'];
   const GASR_STAGE_ORDER   = ['retrieve', 'prune', 'assess', 'graph_expand', 're_prune', 'inject', 'generate'];
-  const PREROUTE_STAGE_ORDER = ['retrieve', 'assess', 'prune', 'graph_expand', 're_prune', 'inject', 'generate'];
+  const GAPA_STAGE_ORDER = ['retrieve', 'assess', 'prune', 'graph_expand', 're_prune', 'inject', 'generate'];
 
   // ── Streaming ─────────────────────────────────────────────────────────
   async function streamGenerate(prompt, fileContext = null) {
@@ -544,10 +544,10 @@
     const answerEl = msgEl.querySelector('.answer-text');
 
     const isGasr = state.selectedMode === 'GASR';
-    const isPreroute = state.selectedMode === 'PREROUTE';
+    const isPreroute = state.selectedMode === 'GAPA';
     let stageOrder = BASE_STAGE_ORDER;
     if (isGasr) stageOrder = GASR_STAGE_ORDER;
-    else if (isPreroute) stageOrder = PREROUTE_STAGE_ORDER;
+    else if (isPreroute) stageOrder = GAPA_STAGE_ORDER;
     const stageRowEls = {};
 
     pipelineEl.querySelector('.pipeline-body').innerHTML = '';
@@ -770,7 +770,7 @@
       if (summary.route) {
         let cls = 'badge-rag';
         if (summary.route === 'LC') { cls = 'badge-lc'; }
-        else if (summary.route === 'GASR' || summary.route === 'PREROUTE' || summary.hops_used > 0) { cls = 'badge-gasr'; }
+        else if (summary.route === 'GASR' || summary.route === 'GAPA' || summary.hops_used > 0) { cls = 'badge-gasr'; }
         badges.push(makeBadge(summary.route, cls));
         if (summary.hops_used !== undefined && summary.hops_used > 0) {
           badges.push(makeBadge(`${summary.hops_used} hop${summary.hops_used > 1 ? 's' : ''}`, 'badge-gasr'));
