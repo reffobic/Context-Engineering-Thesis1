@@ -367,7 +367,7 @@ def _stage2_generative(
             {"role": "user", "content": user_msg},
         ],
         "stream": False,
-        "keep_alive": "10m",  # hold the model resident — avoids reload cost between benchmark calls
+        "think": False, "keep_alive": "10m",  # hold the model resident — avoids reload cost between benchmark calls
         "options": {"temperature": 0.0, "num_ctx": 2048},  # smaller ctx — no chunk text
     }
 
@@ -580,7 +580,7 @@ def preroute_structured_gate(
             {"role": "user", "content": user_msg},
         ],
         "stream": False,
-        "keep_alive": "10m",  # hold the model resident — avoids reload cost between benchmark calls
+        "think": False, "keep_alive": "10m",  # hold the model resident — avoids reload cost between benchmark calls
         "options": {"temperature": 0.0, "num_ctx": 2048},
     }
 
