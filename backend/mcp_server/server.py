@@ -90,7 +90,7 @@ def _persist_eval_metrics(
 
 class GenerateRequest(BaseModel):
     prompt: str
-    mode: Literal["RAG", "LC", "SELF_ROUTE", "GASR", "GAPA"] = "SELF_ROUTE"
+    mode: Literal["RAG", "LC", "SELF_ROUTE", "GASR", "GAPA", "PREASSESS"] = "SELF_ROUTE"
     pruning_method: Literal["heuristic", "selective"] = "heuristic"
     assessor_model: Optional[str] = None  # Ollama model for sufficiency judge; None = use default
     model: Optional[str] = None           # Ollama model for generation; None = use default
@@ -109,7 +109,7 @@ class EvaluateRequest(BaseModel):
     judge_retrieval_relevancy: bool = False
     faithfulness: bool = False
     #: Ablation answer path: if set, also run full ``run_pipeline`` with this mode.
-    generate_mode: Optional[Literal["RAG", "LC", "SELF_ROUTE", "GASR", "GAPA"]] = None
+    generate_mode: Optional[Literal["RAG", "LC", "SELF_ROUTE", "GASR", "GAPA", "PREASSESS"]] = None
     #: Where to store metrics JSON (``results/{mode}/json/``). Retrieval path in code may still be hybrid until vector/graph backends exist.
     retrieval_mode: Literal["hybrid", "vector", "graph"] = "hybrid"
     #: If true (default), persist full evaluate response under ``results/{retrieval_mode}/json/``.
@@ -671,6 +671,13 @@ def run_pipeline(
         pipeline["hops_used"] = hops_used
         logging.info("GAPA finished route=%s hops=%s entry_gate_stage=%s", route, hops_used, entry_decision.get("stage"))
                                                         
+    elif mode == "PREASSESS":
+        from diamond.preroute_gate import preroute_structured_gate
+        d, ms = _time_stage(lambda: preroute_structured_gate(user_prompt, context))
+        route = "RAG" if d.get("sufficient") else "LC"
+        context_for_injection = pruned_context if route == "RAG" else _build_lc_chunks(context)
+        pipeline["stages"]["assess"] = _stage("PREASSESS assessment", ms, {**d, "route": route, "entry_gate_token_usage": d.get("token_usage"), "trace": [{"phase": "rag_gate", "hops": 0, **d}]})
+
     elif mode == "LC":
         logging.info("LC mode forced — using parent_context, skipping assessment")
         pipeline["stages"]["assess"] = _stage(

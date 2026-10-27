@@ -45,7 +45,7 @@ for row in data['results']:
         missing[mode] = missing.get(mode, 0) + 1
 
 print("--- Token usage by mode (assess/gate call only) ---")
-for mode in ('GASR', 'SELF_ROUTE', 'GAPA'):
+for mode in ('GASR', 'SELF_ROUTE', 'GAPA', 'PREASSESS'):
     rows = by_mode.get(mode, [])
     if not rows:
         print(f"{mode:<12} NO TOKEN DATA CAPTURED ({missing.get(mode, 0)} rows) "

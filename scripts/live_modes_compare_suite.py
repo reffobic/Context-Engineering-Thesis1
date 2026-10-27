@@ -39,7 +39,7 @@ from live_gasr_ollama_tests import (  # noqa: E402
     list_ollama_models,
 )
 
-MODES: list[str] = ["RAG", "LC", "GASR", "SELF_ROUTE", "GAPA"]
+MODES: list[str] = ["RAG", "LC", "GASR", "SELF_ROUTE", "GAPA", "PREASSESS"]
 
 # Larger prompt bank — each group × 4 modes.
 COMPARE_GROUPS: list[dict[str, Any]] = [
