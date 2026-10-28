@@ -1,0 +1,6 @@
+dataset,call2_label,n_tasks,to_RAG,to_GRAPH,to_LC
+swe-bench-lite,(no call 2),2,2,0,0
+swe-bench-lite,STRUCTURE,25,0,25,0
+loc-bench,(no call 2),8,8,0,0
+loc-bench,CONTEXT,1,0,0,1
+loc-bench,STRUCTURE,47,0,42,5

@@ -1,0 +1,15 @@
+dataset,arm,n_tasks,total_tokens,routing_overhead,injected_tokens,quality_per_cost,pct_RAG,pct_GRAPH,pct_LC,gate_error_rate,n_failed,failed_kinds,preassess_fallbacks
+swe-bench-lite,ALWAYS_GRAPH,27,3187,0,3187,0.085,0.0,100.0,0.0,,0,,
+swe-bench-lite,ALWAYS_RAG,27,3248,0,3248,0.083,100.0,0.0,0.0,,0,,
+swe-bench-lite,ALWAYS_LC,27,16363,0,16363,0.015,0.0,0.0,100.0,,0,,
+swe-bench-lite,GASR,27,15453,4762,10691,0.020,3.7,40.7,55.6,0.000,0,,
+swe-bench-lite,GAPA,27,11049,7854,3195,0.036,7.4,92.6,0.0,0.000,0,,
+swe-bench-lite,SELF_ROUTE,27,15450,2535,12915,0.026,29.6,0.0,70.4,0.000,0,,
+swe-bench-lite,PREASSESS,27,16344,1402,14943,0.028,7.4,0.0,92.6,0.000,0,,
+loc-bench,ALWAYS_GRAPH,56,3459,0,3459,0.082,0.0,100.0,0.0,,0,,
+loc-bench,ALWAYS_RAG,56,3435,0,3435,0.089,100.0,0.0,0.0,,0,,
+loc-bench,ALWAYS_LC,56,16859,0,16859,0.016,0.0,0.0,100.0,,0,,
+loc-bench,GASR,56,15482,4347,11135,0.032,21.4,21.4,57.1,0.000,0,,
+loc-bench,GAPA,56,13527,8370,5157,0.035,14.3,75.0,10.7,0.005,1,gate=1,
+loc-bench,SELF_ROUTE,56,17050,2807,14243,0.029,17.9,0.0,82.1,0.036,2,gate=2,
+loc-bench,PREASSESS,56,16620,1710,14910,0.032,14.3,0.0,85.7,0.018,1,gate=1,1

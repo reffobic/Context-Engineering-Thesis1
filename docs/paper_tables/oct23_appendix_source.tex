@@ -1,0 +1,146 @@
+\section{Result Tables}\label{app:results}
+
+% ---- Tables M1a / M1b (context quality by stage) ----
+\newcommand{\m}[1]{\multicolumn{1}{c}{#1}}
+\newcommand{\qualityrows}{%
+Always-GRAPH & After retrieval &&&&&&&&\\
+ & After graph expansion &&&&&&&&\\
+ & After pruning &&&&&&&&\\\midrule
+GASR & After retrieval &&&&&&&&\\
+ & After graph expansion &&&&&&&&\\
+ & After pruning &&&&&&&&\\\midrule
+GAPA & After retrieval &&&&&&&&\\
+ & After graph expansion &&&&&&&&\\
+ & After pruning &&&&&&&&\\}
+\newcommand{\qualityhead}{%
+\toprule
+ & & \multicolumn{3}{c}{File Acc@} & \multicolumn{2}{c}{Module Acc@} & \multicolumn{2}{c}{Function Acc@} & File\\
+\cmidrule(lr){3-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+Arm & Stage & \m{1} & \m{3} & \m{5} & \m{5} & \m{10} & \m{5} & \m{10} & Recall@5\\\midrule}
+
+\begin{table}[!ht]\scriptsize\centering\setlength{\tabcolsep}{3pt}
+\caption{M1a. Context quality by stage, SWE-Bench-Lite (27-task sample). LLM: Qwen3.5 9B.}\label{tab:m1a}
+\resizebox{\columnwidth}{!}{\begin{tabular}{@{}l l ccc cc cc c@{}}\toprule
+& & \multicolumn{3}{c}{File Acc@} & \multicolumn{2}{c}{Module Acc@} & \multicolumn{2}{c}{Function Acc@} & File\\
+\cmidrule(lr){3-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+Arm & Stage & 1 & 3 & 5 & 5 & 10 & 5 & 10 & Recall@5\\\midrule
+Always-GRAPH & After retrieval       & 0.296 & 0.519 & 0.667 & 0.481 & 0.556 & 0.259 & 0.370 & 0.667\\
+             & After graph expansion & 0.333 & 0.481 & 0.519 & 0.407 & 0.444 & 0.259 & 0.296 & 0.519\\
+             & After pruning         & 0.148 & 0.481 & 0.519 & 0.407 & 0.407 & 0.259 & 0.259 & 0.519\\\midrule
+GASR         & After retrieval       & 0.296 & 0.519 & 0.667 & 0.481 & 0.556 & 0.259 & 0.370 & 0.667\\
+             & After graph expansion & 0.333 & 0.519 & 0.630 & 0.481 & 0.519 & 0.259 & 0.333 & 0.630\\
+             & After pruning         & 0.259 & 0.481 & 0.519 & 0.407 & 0.407 & 0.259 & 0.259 & 0.519\\\midrule
+GAPA         & After retrieval       & 0.296 & 0.519 & 0.667 & 0.481 & 0.556 & 0.259 & 0.370 & 0.667\\
+             & After graph expansion & 0.333 & 0.481 & 0.519 & 0.407 & 0.444 & 0.259 & 0.296 & 0.519\\
+             & After pruning         & 0.111 & 0.481 & 0.519 & 0.407 & 0.407 & 0.259 & 0.259 & 0.519\\\bottomrule
+\end{tabular}}
+\end{table}
+
+\begin{table}[!ht]\scriptsize\centering\setlength{\tabcolsep}{3pt}
+\caption{M1b. Context quality by stage, Loc-Bench (56-task sample). LLM: Qwen3.5 9B.}\label{tab:m1b}
+\resizebox{\columnwidth}{!}{\begin{tabular}{@{}l l ccc cc cc c@{}}\toprule
+& & \multicolumn{3}{c}{File Acc@} & \multicolumn{2}{c}{Module Acc@} & \multicolumn{2}{c}{Function Acc@} & File\\
+\cmidrule(lr){3-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+Arm & Stage & 1 & 3 & 5 & 5 & 10 & 5 & 10 & Recall@5\\\midrule
+Always-GRAPH & After retrieval       & 0.375 & 0.589 & 0.661 & 0.571 & 0.643 & 0.304 & 0.429 & 0.683\\
+             & After graph expansion & 0.464 & 0.589 & 0.607 & 0.482 & 0.500 & 0.250 & 0.268 & 0.629\\
+             & After pruning         & 0.232 & 0.554 & 0.554 & 0.464 & 0.464 & 0.232 & 0.232 & 0.567\\\midrule
+GASR         & After retrieval       & 0.357 & 0.589 & 0.661 & 0.571 & 0.643 & 0.304 & 0.429 & 0.683\\
+             & After graph expansion & 0.375 & 0.607 & 0.661 & 0.554 & 0.589 & 0.286 & 0.375 & 0.683\\
+             & After pruning         & 0.393 & 0.571 & 0.571 & 0.482 & 0.482 & 0.268 & 0.268 & 0.594\\\midrule
+GAPA         & After retrieval       & 0.357 & 0.571 & 0.643 & 0.554 & 0.625 & 0.304 & 0.411 & 0.665\\
+             & After graph expansion & 0.446 & 0.571 & 0.589 & 0.464 & 0.482 & 0.250 & 0.268 & 0.612\\
+             & After pruning         & 0.321 & 0.536 & 0.536 & 0.446 & 0.446 & 0.232 & 0.232 & 0.549\\\bottomrule
+\end{tabular}}
+\par\vspace{2pt}\scriptsize Note: for GASR and GAPA, ``after graph expansion'' differs from ``after retrieval'' only on tasks routed to GRAPH; on all other tasks the two rows hold the same list.
+\end{table}
+
+
+
+% ---- Table M1c (cost and routing) ----
+\begin{table}[!ht]\scriptsize\centering\setlength{\tabcolsep}{3pt}
+\caption{M1c. Cost and routing, measured after injection. LLM: Qwen3.5 9B. SWE-Bench-Lite: 27-task sample; Loc-Bench: 56-task sample. Total tokens $=$ routing overhead $+$ injected tokens. ``--'' means the metric does not apply: Always-GRAPH makes no routing decision. A task whose gate or judge reply cannot be parsed counts as failed for quality (1 GAPA task, Loc-Bench) but keeps its measured tokens; no task failed for any other reason. Quality per cost uses the LC scoring rule of Section~\ref{Eval}.}\label{tab:m1c}
+\resizebox{\columnwidth}{!}{\begin{tabular}{@{}l l c c c c c c c c@{}}\toprule
+Dataset & Arm & \makecell{Total tokens\\per task} & \makecell{Routing\\overhead} & \makecell{Injected\\tokens} & \makecell{Quality\\per cost} & \%RAG & \%GRAPH & \%LC & \makecell{Gate\\error rate}\\\midrule
+SWE-Bench-Lite & Always-GRAPH & 3{,}122  & 0       & 3{,}122  & 0.087 & --   & 100  & --   & --\\
+               & GASR         & 15{,}389 & 4{,}762 & 10{,}627 & 0.021 & 3.7  & 40.7 & 55.6 & 0.000\\
+               & GAPA         & 10{,}984 & 7{,}854 & 3{,}131  & 0.037 & 7.4  & 92.6 & 0.0  & 0.000\\\midrule
+Loc-Bench      & Always-GRAPH & 3{,}395  & 0       & 3{,}395  & 0.084 & --   & 100  & --   & --\\
+               & GASR         & 15{,}418 & 4{,}347 & 11{,}071 & 0.032 & 21.4 & 21.4 & 57.1 & 0.000\\
+               & GAPA         & 13{,}463 & 8{,}370 & 5{,}092  & 0.035 & 14.3 & 75.0 & 10.7 & 0.005\\\bottomrule
+\end{tabular}}
+\end{table}
+
+% ---- Table M1d (token cost by component) ----
+\begin{table}[!ht]\scriptsize\centering\setlength{\tabcolsep}{3pt}
+\caption{M1d. Token cost per task by component (mean over tasks, Qwen3.5 9B). Gate $=$ entry gate call(s); judge $=$ post-expansion sufficiency judge. Answer output is shown for reference and is not part of the total. Counts are model-server counts; the harness runs no tokenizer.}\label{tab:m1d}
+\resizebox{\columnwidth}{!}{\begin{tabular}{@{}l l c c c c c c c c c@{}}\toprule
+Dataset & Arm & \makecell{Gate\\in} & \makecell{Gate\\out} & \makecell{Judge\\in} & \makecell{Judge\\out} & \makecell{Answer\\prompt} & Total & \makecell{Gate\\calls} & \makecell{Judge\\calls} & \makecell{Answer out\\(excluded)}\\\midrule
+SWE-Bench-Lite & Always-GRAPH & 0       & 0   & 0       & 0   & 3{,}122  & 3{,}122  & 0    & 0    & 560\\
+               & GASR         & 2{,}640 & 99  & 1{,}971 & 52  & 10{,}627 & 15{,}389 & 1.00 & 0.67 & 548\\
+               & GAPA         & 3{,}678 & 128 & 3{,}929 & 119 & 3{,}131  & 10{,}984 & 1.93 & 1.56 & 645\\\midrule
+Loc-Bench      & Always-GRAPH & 0       & 0   & 0       & 0   & 3{,}395  & 3{,}395  & 0    & 0    & 593\\
+               & GASR         & 2{,}917 & 89  & 1{,}310 & 31  & 11{,}071 & 15{,}418 & 1.00 & 0.41 & 537\\
+               & GAPA         & 4{,}096 & 123 & 4{,}049 & 103 & 5{,}092  & 13{,}463 & 1.86 & 1.41 & 582\\\bottomrule
+\end{tabular}}
+\end{table}
+
+% ---- Table M1e (answer prompt by final route) ----
+\begin{table}[!ht]\scriptsize\centering\setlength{\tabcolsep}{3pt}
+\caption{M1e. Answer-prompt tokens per task by final route (task count, mean tokens). The LC answer prompts account for 59.2\% (SWE-Bench-Lite) and 62.7\% (Loc-Bench) of GASR's total tokens.}\label{tab:m1e}
+\begin{tabular}{@{}l l c c c@{}}\toprule
+Dataset & Arm & RAG & GRAPH & LC\\\midrule
+SWE-Bench-Lite & Always-GRAPH & --          & 27, 3{,}122 & --\\
+               & GASR         & 1, 3{,}116  & 11, 3{,}459 & 15, 16{,}385\\
+               & GAPA         & 2, 2{,}990  & 25, 3{,}142 & 0\\\midrule
+Loc-Bench      & Always-GRAPH & --          & 56, 3{,}395 & --\\
+               & GASR         & 12, 2{,}738 & 12, 3{,}788 & 32, 16{,}926\\
+               & GAPA         & 8, 2{,}961  & 42, 3{,}464 & 6, 19{,}331\\\bottomrule
+\end{tabular}
+\end{table}
+
+\clearpage
+% ---- Tables M2a / M2b ----
+\begin{table*}[t]\scriptsize\centering\setlength{\tabcolsep}{3pt}
+\caption{M2a. Comparison with external baselines, SWE-Bench-Lite (274 tasks). Our arms are scored on the ranked list after graph expansion (before pruning), so they are comparable with baselines that only rank code. LLM for our arms: [TBD].}\label{tab:m2a}
+\begin{tabular}{@{}p{.18\textwidth}p{.15\textwidth}p{.2\textwidth}ccc cc cc@{}}\toprule
+Method & Type & Source of numbers & \multicolumn{3}{c}{File Acc@} & \multicolumn{2}{c}{Module Acc@} & \multicolumn{2}{c}{Function Acc@}\\
+\cmidrule(lr){4-6}\cmidrule(lr){7-8}\cmidrule(lr){9-10}
+ & & & \m{1} & \m{3} & \m{5} & \m{5} & \m{10} & \m{5} & \m{10}\\\midrule
+BM25 & Keyword retrieval & Copied from LocAgent Table 4 &&&&&&&\\
+CodeRankEmbed & Code embedding retrieval & Copied from LocAgent Table 4 &&&&&&&\\
+LocAgent + fine-tuned Qwen2.5-Coder-7B & Graph-based localisation agent & Our run; paper reference: file Acc@5 = 88.32 &&&&&&&\\
+GASR (ours) & Gated graph, chunk-text gate & Our run &&&&&&&\\
+GAPA (ours) & Gated graph, metadata gate & Our run &&&&&&&\\\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[t]\scriptsize\centering\setlength{\tabcolsep}{3pt}
+\caption{M2b. Comparison with external baselines, Loc-Bench (560 tasks). Our arms are scored on the ranked list after graph expansion (before pruning). LLM for our arms: [TBD].}\label{tab:m2b}
+\begin{tabular}{@{}p{.18\textwidth}p{.15\textwidth}p{.2\textwidth}ccc cc cc@{}}\toprule
+Method & Type & Source of numbers & \multicolumn{3}{c}{File Acc@} & \multicolumn{2}{c}{Module Acc@} & \multicolumn{2}{c}{Function Acc@}\\
+\cmidrule(lr){4-6}\cmidrule(lr){7-8}\cmidrule(lr){9-10}
+ & & & \m{1} & \m{3} & \m{5} & \m{5} & \m{10} & \m{5} & \m{10}\\\midrule
+BM25 & Keyword retrieval & Our run (not reported by LocAgent) &&&&&&&\\
+CodeRankEmbed & Code embedding retrieval & Copied from LocAgent Table 7 & not reported & not reported & & not reported & & not reported &\\
+LocAgent + fine-tuned Qwen2.5-Coder-7B & Graph-based localisation agent & Our run; paper reference: file Acc@5 = 78.57 &&&&&&&\\
+GASR (ours) & Gated graph, chunk-text gate & Our run &&&&&&&\\
+GAPA (ours) & Gated graph, metadata gate & Our run &&&&&&&\\\bottomrule
+\end{tabular}\\[2pt]
+\parbox{0.95\textwidth}{\scriptsize On Loc-Bench, LocAgent reports different $k$ values from ours. Only file Acc@5, module Acc@10 and function Acc@10 overlap, so those are the only cells the copied CodeRankEmbed row can fill. For the full row, run CodeRankEmbed ourselves.}
+\end{table*}
+
+% ---- Table M3 (component ablation) ----
+\begin{table*}[t]\scriptsize\centering\setlength{\tabcolsep}{3pt}
+\caption{M3. Component ablation of GAPA. Dataset: SWE-Bench-Lite (27-task sample). LLM: Qwen3.5 9B. Measured on the final context (after pruning and injection). Settings described in Section~\ref{sec:ablation}}\label{tab:m3}
+\begin{tabular}{@{}p{.2\textwidth}ccccccccc@{}}\toprule
+Setting & \makecell{File\\Acc@5} & \makecell{Function\\Acc@10} & \makecell{File\\Recall@5} & \makecell{Total tokens\\per task} & \makecell{Quality\\per cost} & \%GRAPH & \makecell{Gate\\error rate} & \makecell{$\Delta$ Func.\\Acc@10 vs full} & \makecell{$\Delta$ Tokens\\vs full}\\\midrule
+GAPA (full) & 0.519 & 0.259 & 0.519 & 10{,}984 & 0.037 & 92.6 & 0.000 & -- & --\\
+Without graph expansion & 0.519 & 0.259 & 0.519 & 18{,}684 & 0.027 & -- & 0.000 & 0.000 & +7{,}700\\
+``Contains'' edges only & 0.519 & 0.296 & 0.519 & 11{,}136 & 0.040 & 85.2 & 0.000 & +0.037 & +151\\
+Without pruning & \multicolumn{9}{c}{not run}\\
+Without keyword channel & \multicolumn{9}{c}{not run}\\
+Gate without retrieval-score signals & \multicolumn{9}{c}{not run}\\
+Gate without dependency signal & \multicolumn{9}{c}{not run}\\\bottomrule
+\end{tabular}
+\end{table*}

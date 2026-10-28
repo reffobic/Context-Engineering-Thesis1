@@ -1,0 +1,447 @@
+Cross-check of analysis numbers against data/reports/nov3_83 table CSVs: 446 OK, 0 FAIL
+OK   cost[primary] swe-bench-lite ALWAYS_GRAPH total: analysis=3187 report=3187.0
+OK   cost[primary] swe-bench-lite ALWAYS_GRAPH qpc: analysis=0.085 report=0.085
+OK   cost[primary] swe-bench-lite ALWAYS_GRAPH %RAG: analysis=0.0 report=0.0
+OK   cost[primary] swe-bench-lite ALWAYS_GRAPH %GRAPH: analysis=100.0 report=100.0
+OK   cost[primary] swe-bench-lite ALWAYS_GRAPH %LC: analysis=0.0 report=0.0
+OK   cost[primary] swe-bench-lite ALWAYS_RAG total: analysis=3248 report=3248.0
+OK   cost[primary] swe-bench-lite ALWAYS_RAG qpc: analysis=0.083 report=0.083
+OK   cost[primary] swe-bench-lite ALWAYS_RAG %RAG: analysis=100.0 report=100.0
+OK   cost[primary] swe-bench-lite ALWAYS_RAG %GRAPH: analysis=0.0 report=0.0
+OK   cost[primary] swe-bench-lite ALWAYS_RAG %LC: analysis=0.0 report=0.0
+OK   cost[primary] swe-bench-lite ALWAYS_LC total: analysis=16363 report=16363.0
+OK   cost[primary] swe-bench-lite ALWAYS_LC qpc: analysis=0.015 report=0.015
+OK   cost[primary] swe-bench-lite ALWAYS_LC %RAG: analysis=0.0 report=0.0
+OK   cost[primary] swe-bench-lite ALWAYS_LC %GRAPH: analysis=0.0 report=0.0
+OK   cost[primary] swe-bench-lite ALWAYS_LC %LC: analysis=100.0 report=100.0
+OK   cost[primary] swe-bench-lite GASR total: analysis=15453 report=15453.0
+OK   cost[primary] swe-bench-lite GASR qpc: analysis=0.02 report=0.02
+OK   cost[primary] swe-bench-lite GASR %RAG: analysis=3.7 report=3.7
+OK   cost[primary] swe-bench-lite GASR %GRAPH: analysis=40.7 report=40.7
+OK   cost[primary] swe-bench-lite GASR %LC: analysis=55.6 report=55.6
+OK   cost[primary] swe-bench-lite GASR gate_err: analysis=0.0 report=0.0
+OK   cost[primary] swe-bench-lite GAPA total: analysis=11049 report=11049.0
+OK   cost[primary] swe-bench-lite GAPA qpc: analysis=0.036 report=0.036
+OK   cost[primary] swe-bench-lite GAPA %RAG: analysis=7.4 report=7.4
+OK   cost[primary] swe-bench-lite GAPA %GRAPH: analysis=92.6 report=92.6
+OK   cost[primary] swe-bench-lite GAPA %LC: analysis=0.0 report=0.0
+OK   cost[primary] swe-bench-lite GAPA gate_err: analysis=0.0 report=0.0
+OK   cost[primary] swe-bench-lite SELF_ROUTE total: analysis=15450 report=15450.0
+OK   cost[primary] swe-bench-lite SELF_ROUTE qpc: analysis=0.026 report=0.026
+OK   cost[primary] swe-bench-lite SELF_ROUTE %RAG: analysis=29.6 report=29.6
+OK   cost[primary] swe-bench-lite SELF_ROUTE %GRAPH: analysis=0.0 report=0.0
+OK   cost[primary] swe-bench-lite SELF_ROUTE %LC: analysis=70.4 report=70.4
+OK   cost[primary] swe-bench-lite SELF_ROUTE gate_err: analysis=0.0 report=0.0
+OK   cost[primary] swe-bench-lite PREASSESS total: analysis=16344 report=16344.0
+OK   cost[primary] swe-bench-lite PREASSESS qpc: analysis=0.028 report=0.028
+OK   cost[primary] swe-bench-lite PREASSESS %RAG: analysis=7.4 report=7.4
+OK   cost[primary] swe-bench-lite PREASSESS %GRAPH: analysis=0.0 report=0.0
+OK   cost[primary] swe-bench-lite PREASSESS %LC: analysis=92.6 report=92.6
+OK   cost[primary] swe-bench-lite PREASSESS gate_err: analysis=0.0 report=0.0
+OK   cost[primary] loc-bench ALWAYS_GRAPH total: analysis=3459 report=3459.0
+OK   cost[primary] loc-bench ALWAYS_GRAPH qpc: analysis=0.082 report=0.082
+OK   cost[primary] loc-bench ALWAYS_GRAPH %RAG: analysis=0.0 report=0.0
+OK   cost[primary] loc-bench ALWAYS_GRAPH %GRAPH: analysis=100.0 report=100.0
+OK   cost[primary] loc-bench ALWAYS_GRAPH %LC: analysis=0.0 report=0.0
+OK   cost[primary] loc-bench ALWAYS_RAG total: analysis=3435 report=3435.0
+OK   cost[primary] loc-bench ALWAYS_RAG qpc: analysis=0.089 report=0.089
+OK   cost[primary] loc-bench ALWAYS_RAG %RAG: analysis=100.0 report=100.0
+OK   cost[primary] loc-bench ALWAYS_RAG %GRAPH: analysis=0.0 report=0.0
+OK   cost[primary] loc-bench ALWAYS_RAG %LC: analysis=0.0 report=0.0
+OK   cost[primary] loc-bench ALWAYS_LC total: analysis=16859 report=16859.0
+OK   cost[primary] loc-bench ALWAYS_LC qpc: analysis=0.016 report=0.016
+OK   cost[primary] loc-bench ALWAYS_LC %RAG: analysis=0.0 report=0.0
+OK   cost[primary] loc-bench ALWAYS_LC %GRAPH: analysis=0.0 report=0.0
+OK   cost[primary] loc-bench ALWAYS_LC %LC: analysis=100.0 report=100.0
+OK   cost[primary] loc-bench GASR total: analysis=15482 report=15482.0
+OK   cost[primary] loc-bench GASR qpc: analysis=0.032 report=0.032
+OK   cost[primary] loc-bench GASR %RAG: analysis=21.4 report=21.4
+OK   cost[primary] loc-bench GASR %GRAPH: analysis=21.4 report=21.4
+OK   cost[primary] loc-bench GASR %LC: analysis=57.1 report=57.1
+OK   cost[primary] loc-bench GASR gate_err: analysis=0.0 report=0.0
+OK   cost[primary] loc-bench GAPA total: analysis=13527 report=13527.0
+OK   cost[primary] loc-bench GAPA qpc: analysis=0.035 report=0.035
+OK   cost[primary] loc-bench GAPA %RAG: analysis=14.3 report=14.3
+OK   cost[primary] loc-bench GAPA %GRAPH: analysis=75.0 report=75.0
+OK   cost[primary] loc-bench GAPA %LC: analysis=10.7 report=10.7
+OK   cost[primary] loc-bench GAPA gate_err: analysis=0.005 report=0.005
+OK   cost[primary] loc-bench SELF_ROUTE total: analysis=17050 report=17050.0
+OK   cost[primary] loc-bench SELF_ROUTE qpc: analysis=0.029 report=0.029
+OK   cost[primary] loc-bench SELF_ROUTE %RAG: analysis=17.9 report=17.9
+OK   cost[primary] loc-bench SELF_ROUTE %GRAPH: analysis=0.0 report=0.0
+OK   cost[primary] loc-bench SELF_ROUTE %LC: analysis=82.1 report=82.1
+OK   cost[primary] loc-bench SELF_ROUTE gate_err: analysis=0.036 report=0.036
+OK   cost[primary] loc-bench PREASSESS total: analysis=16620 report=16620.0
+OK   cost[primary] loc-bench PREASSESS qpc: analysis=0.032 report=0.032
+OK   cost[primary] loc-bench PREASSESS %RAG: analysis=14.3 report=14.3
+OK   cost[primary] loc-bench PREASSESS %GRAPH: analysis=0.0 report=0.0
+OK   cost[primary] loc-bench PREASSESS %LC: analysis=85.7 report=85.7
+OK   cost[primary] loc-bench PREASSESS gate_err: analysis=0.018 report=0.018
+OK   cost[sens] swe-bench-lite ALWAYS_GRAPH total: analysis=3187 report=3187.0
+OK   cost[sens] swe-bench-lite ALWAYS_GRAPH qpc: analysis=0.085 report=0.085
+OK   cost[sens] swe-bench-lite ALWAYS_GRAPH %RAG: analysis=0.0 report=0.0
+OK   cost[sens] swe-bench-lite ALWAYS_GRAPH %GRAPH: analysis=100.0 report=100.0
+OK   cost[sens] swe-bench-lite ALWAYS_GRAPH %LC: analysis=0.0 report=0.0
+OK   cost[sens] swe-bench-lite ALWAYS_RAG total: analysis=3248 report=3248.0
+OK   cost[sens] swe-bench-lite ALWAYS_RAG qpc: analysis=0.083 report=0.083
+OK   cost[sens] swe-bench-lite ALWAYS_RAG %RAG: analysis=100.0 report=100.0
+OK   cost[sens] swe-bench-lite ALWAYS_RAG %GRAPH: analysis=0.0 report=0.0
+OK   cost[sens] swe-bench-lite ALWAYS_RAG %LC: analysis=0.0 report=0.0
+OK   cost[sens] swe-bench-lite ALWAYS_LC total: analysis=16363 report=16363.0
+OK   cost[sens] swe-bench-lite ALWAYS_LC qpc: analysis=0.015 report=0.015
+OK   cost[sens] swe-bench-lite ALWAYS_LC %RAG: analysis=0.0 report=0.0
+OK   cost[sens] swe-bench-lite ALWAYS_LC %GRAPH: analysis=0.0 report=0.0
+OK   cost[sens] swe-bench-lite ALWAYS_LC %LC: analysis=100.0 report=100.0
+OK   cost[sens] swe-bench-lite GASR total: analysis=15453 report=15453.0
+OK   cost[sens] swe-bench-lite GASR qpc: analysis=0.02 report=0.02
+OK   cost[sens] swe-bench-lite GASR %RAG: analysis=3.7 report=3.7
+OK   cost[sens] swe-bench-lite GASR %GRAPH: analysis=40.7 report=40.7
+OK   cost[sens] swe-bench-lite GASR %LC: analysis=55.6 report=55.6
+OK   cost[sens] swe-bench-lite GASR gate_err: analysis=0.0 report=0.0
+OK   cost[sens] swe-bench-lite GAPA total: analysis=11049 report=11049.0
+OK   cost[sens] swe-bench-lite GAPA qpc: analysis=0.036 report=0.036
+OK   cost[sens] swe-bench-lite GAPA %RAG: analysis=7.4 report=7.4
+OK   cost[sens] swe-bench-lite GAPA %GRAPH: analysis=92.6 report=92.6
+OK   cost[sens] swe-bench-lite GAPA %LC: analysis=0.0 report=0.0
+OK   cost[sens] swe-bench-lite GAPA gate_err: analysis=0.0 report=0.0
+OK   cost[sens] swe-bench-lite SELF_ROUTE total: analysis=15450 report=15450.0
+OK   cost[sens] swe-bench-lite SELF_ROUTE qpc: analysis=0.026 report=0.026
+OK   cost[sens] swe-bench-lite SELF_ROUTE %RAG: analysis=29.6 report=29.6
+OK   cost[sens] swe-bench-lite SELF_ROUTE %GRAPH: analysis=0.0 report=0.0
+OK   cost[sens] swe-bench-lite SELF_ROUTE %LC: analysis=70.4 report=70.4
+OK   cost[sens] swe-bench-lite SELF_ROUTE gate_err: analysis=0.0 report=0.0
+OK   cost[sens] swe-bench-lite PREASSESS total: analysis=16344 report=16344.0
+OK   cost[sens] swe-bench-lite PREASSESS qpc: analysis=0.028 report=0.028
+OK   cost[sens] swe-bench-lite PREASSESS %RAG: analysis=7.4 report=7.4
+OK   cost[sens] swe-bench-lite PREASSESS %GRAPH: analysis=0.0 report=0.0
+OK   cost[sens] swe-bench-lite PREASSESS %LC: analysis=92.6 report=92.6
+OK   cost[sens] swe-bench-lite PREASSESS gate_err: analysis=0.0 report=0.0
+OK   cost[sens] loc-bench ALWAYS_GRAPH total: analysis=3459 report=3459.0
+OK   cost[sens] loc-bench ALWAYS_GRAPH qpc: analysis=0.082 report=0.082
+OK   cost[sens] loc-bench ALWAYS_GRAPH %RAG: analysis=0.0 report=0.0
+OK   cost[sens] loc-bench ALWAYS_GRAPH %GRAPH: analysis=100.0 report=100.0
+OK   cost[sens] loc-bench ALWAYS_GRAPH %LC: analysis=0.0 report=0.0
+OK   cost[sens] loc-bench ALWAYS_RAG total: analysis=3435 report=3435.0
+OK   cost[sens] loc-bench ALWAYS_RAG qpc: analysis=0.089 report=0.089
+OK   cost[sens] loc-bench ALWAYS_RAG %RAG: analysis=100.0 report=100.0
+OK   cost[sens] loc-bench ALWAYS_RAG %GRAPH: analysis=0.0 report=0.0
+OK   cost[sens] loc-bench ALWAYS_RAG %LC: analysis=0.0 report=0.0
+OK   cost[sens] loc-bench ALWAYS_LC total: analysis=16859 report=16859.0
+OK   cost[sens] loc-bench ALWAYS_LC qpc: analysis=0.016 report=0.016
+OK   cost[sens] loc-bench ALWAYS_LC %RAG: analysis=0.0 report=0.0
+OK   cost[sens] loc-bench ALWAYS_LC %GRAPH: analysis=0.0 report=0.0
+OK   cost[sens] loc-bench ALWAYS_LC %LC: analysis=100.0 report=100.0
+OK   cost[sens] loc-bench GASR total: analysis=15482 report=15482.0
+OK   cost[sens] loc-bench GASR qpc: analysis=0.032 report=0.032
+OK   cost[sens] loc-bench GASR %RAG: analysis=21.4 report=21.4
+OK   cost[sens] loc-bench GASR %GRAPH: analysis=21.4 report=21.4
+OK   cost[sens] loc-bench GASR %LC: analysis=57.1 report=57.1
+OK   cost[sens] loc-bench GASR gate_err: analysis=0.0 report=0.0
+OK   cost[sens] loc-bench GAPA total: analysis=13527 report=13527.0
+OK   cost[sens] loc-bench GAPA qpc: analysis=0.035 report=0.035
+OK   cost[sens] loc-bench GAPA %RAG: analysis=14.3 report=14.3
+OK   cost[sens] loc-bench GAPA %GRAPH: analysis=75.0 report=75.0
+OK   cost[sens] loc-bench GAPA %LC: analysis=10.7 report=10.7
+OK   cost[sens] loc-bench GAPA gate_err: analysis=0.005 report=0.005
+OK   cost[sens] loc-bench SELF_ROUTE total: analysis=17050 report=17050.0
+OK   cost[sens] loc-bench SELF_ROUTE qpc: analysis=0.031 report=0.031
+OK   cost[sens] loc-bench SELF_ROUTE %RAG: analysis=17.9 report=17.9
+OK   cost[sens] loc-bench SELF_ROUTE %GRAPH: analysis=0.0 report=0.0
+OK   cost[sens] loc-bench SELF_ROUTE %LC: analysis=82.1 report=82.1
+OK   cost[sens] loc-bench SELF_ROUTE gate_err: analysis=0.036 report=0.036
+OK   cost[sens] loc-bench PREASSESS total: analysis=16620 report=16620.0
+OK   cost[sens] loc-bench PREASSESS qpc: analysis=0.032 report=0.032
+OK   cost[sens] loc-bench PREASSESS %RAG: analysis=14.3 report=14.3
+OK   cost[sens] loc-bench PREASSESS %GRAPH: analysis=0.0 report=0.0
+OK   cost[sens] loc-bench PREASSESS %LC: analysis=85.7 report=85.7
+OK   cost[sens] loc-bench PREASSESS gate_err: analysis=0.018 report=0.018
+OK   gapa total call2 swe-bench-lite: analysis=25 report=25
+OK   gapa total call2 loc-bench: analysis=48 report=48
+OK   stage swe-bench-lite ALWAYS_GRAPH after_retrieval file_acc@1: analysis=0.296 report=0.296
+OK   stage swe-bench-lite ALWAYS_GRAPH after_retrieval file_acc@3: analysis=0.519 report=0.519
+OK   stage swe-bench-lite ALWAYS_GRAPH after_retrieval file_acc@5: analysis=0.667 report=0.667
+OK   stage swe-bench-lite ALWAYS_GRAPH after_retrieval module_acc@5: analysis=0.481 report=0.481
+OK   stage swe-bench-lite ALWAYS_GRAPH after_retrieval module_acc@10: analysis=0.556 report=0.556
+OK   stage swe-bench-lite ALWAYS_GRAPH after_retrieval function_acc@5: analysis=0.259 report=0.259
+OK   stage swe-bench-lite ALWAYS_GRAPH after_retrieval function_acc@10: analysis=0.37 report=0.37
+OK   stage swe-bench-lite ALWAYS_GRAPH after_retrieval file_recall@5: analysis=0.667 report=0.667
+OK   stage swe-bench-lite ALWAYS_GRAPH after_expansion file_acc@1: analysis=0.333 report=0.333
+OK   stage swe-bench-lite ALWAYS_GRAPH after_expansion file_acc@3: analysis=0.481 report=0.481
+OK   stage swe-bench-lite ALWAYS_GRAPH after_expansion file_acc@5: analysis=0.519 report=0.519
+OK   stage swe-bench-lite ALWAYS_GRAPH after_expansion module_acc@5: analysis=0.407 report=0.407
+OK   stage swe-bench-lite ALWAYS_GRAPH after_expansion module_acc@10: analysis=0.444 report=0.444
+OK   stage swe-bench-lite ALWAYS_GRAPH after_expansion function_acc@5: analysis=0.259 report=0.259
+OK   stage swe-bench-lite ALWAYS_GRAPH after_expansion function_acc@10: analysis=0.296 report=0.296
+OK   stage swe-bench-lite ALWAYS_GRAPH after_expansion file_recall@5: analysis=0.519 report=0.519
+OK   stage swe-bench-lite ALWAYS_GRAPH final_context file_acc@1: analysis=0.148 report=0.148
+OK   stage swe-bench-lite ALWAYS_GRAPH final_context file_acc@3: analysis=0.481 report=0.481
+OK   stage swe-bench-lite ALWAYS_GRAPH final_context file_acc@5: analysis=0.519 report=0.519
+OK   stage swe-bench-lite ALWAYS_GRAPH final_context module_acc@5: analysis=0.407 report=0.407
+OK   stage swe-bench-lite ALWAYS_GRAPH final_context module_acc@10: analysis=0.407 report=0.407
+OK   stage swe-bench-lite ALWAYS_GRAPH final_context function_acc@5: analysis=0.259 report=0.259
+OK   stage swe-bench-lite ALWAYS_GRAPH final_context function_acc@10: analysis=0.259 report=0.259
+OK   stage swe-bench-lite ALWAYS_GRAPH final_context file_recall@5: analysis=0.519 report=0.519
+OK   stage swe-bench-lite GASR after_retrieval file_acc@1: analysis=0.296 report=0.296
+OK   stage swe-bench-lite GASR after_retrieval file_acc@3: analysis=0.519 report=0.519
+OK   stage swe-bench-lite GASR after_retrieval file_acc@5: analysis=0.667 report=0.667
+OK   stage swe-bench-lite GASR after_retrieval module_acc@5: analysis=0.481 report=0.481
+OK   stage swe-bench-lite GASR after_retrieval module_acc@10: analysis=0.556 report=0.556
+OK   stage swe-bench-lite GASR after_retrieval function_acc@5: analysis=0.259 report=0.259
+OK   stage swe-bench-lite GASR after_retrieval function_acc@10: analysis=0.37 report=0.37
+OK   stage swe-bench-lite GASR after_retrieval file_recall@5: analysis=0.667 report=0.667
+OK   stage swe-bench-lite GASR after_expansion file_acc@1: analysis=0.333 report=0.333
+OK   stage swe-bench-lite GASR after_expansion file_acc@3: analysis=0.519 report=0.519
+OK   stage swe-bench-lite GASR after_expansion file_acc@5: analysis=0.63 report=0.63
+OK   stage swe-bench-lite GASR after_expansion module_acc@5: analysis=0.481 report=0.481
+OK   stage swe-bench-lite GASR after_expansion module_acc@10: analysis=0.519 report=0.519
+OK   stage swe-bench-lite GASR after_expansion function_acc@5: analysis=0.259 report=0.259
+OK   stage swe-bench-lite GASR after_expansion function_acc@10: analysis=0.333 report=0.333
+OK   stage swe-bench-lite GASR after_expansion file_recall@5: analysis=0.63 report=0.63
+OK   stage swe-bench-lite GASR final_context file_acc@1: analysis=0.259 report=0.259
+OK   stage swe-bench-lite GASR final_context file_acc@3: analysis=0.481 report=0.481
+OK   stage swe-bench-lite GASR final_context file_acc@5: analysis=0.519 report=0.519
+OK   stage swe-bench-lite GASR final_context module_acc@5: analysis=0.407 report=0.407
+OK   stage swe-bench-lite GASR final_context module_acc@10: analysis=0.407 report=0.407
+OK   stage swe-bench-lite GASR final_context function_acc@5: analysis=0.259 report=0.259
+OK   stage swe-bench-lite GASR final_context function_acc@10: analysis=0.259 report=0.259
+OK   stage swe-bench-lite GASR final_context file_recall@5: analysis=0.519 report=0.519
+OK   stage swe-bench-lite GAPA after_retrieval file_acc@1: analysis=0.296 report=0.296
+OK   stage swe-bench-lite GAPA after_retrieval file_acc@3: analysis=0.519 report=0.519
+OK   stage swe-bench-lite GAPA after_retrieval file_acc@5: analysis=0.667 report=0.667
+OK   stage swe-bench-lite GAPA after_retrieval module_acc@5: analysis=0.481 report=0.481
+OK   stage swe-bench-lite GAPA after_retrieval module_acc@10: analysis=0.556 report=0.556
+OK   stage swe-bench-lite GAPA after_retrieval function_acc@5: analysis=0.259 report=0.259
+OK   stage swe-bench-lite GAPA after_retrieval function_acc@10: analysis=0.37 report=0.37
+OK   stage swe-bench-lite GAPA after_retrieval file_recall@5: analysis=0.667 report=0.667
+OK   stage swe-bench-lite GAPA after_expansion file_acc@1: analysis=0.333 report=0.333
+OK   stage swe-bench-lite GAPA after_expansion file_acc@3: analysis=0.481 report=0.481
+OK   stage swe-bench-lite GAPA after_expansion file_acc@5: analysis=0.519 report=0.519
+OK   stage swe-bench-lite GAPA after_expansion module_acc@5: analysis=0.407 report=0.407
+OK   stage swe-bench-lite GAPA after_expansion module_acc@10: analysis=0.444 report=0.444
+OK   stage swe-bench-lite GAPA after_expansion function_acc@5: analysis=0.259 report=0.259
+OK   stage swe-bench-lite GAPA after_expansion function_acc@10: analysis=0.296 report=0.296
+OK   stage swe-bench-lite GAPA after_expansion file_recall@5: analysis=0.519 report=0.519
+OK   stage swe-bench-lite GAPA final_context file_acc@1: analysis=0.111 report=0.111
+OK   stage swe-bench-lite GAPA final_context file_acc@3: analysis=0.481 report=0.481
+OK   stage swe-bench-lite GAPA final_context file_acc@5: analysis=0.519 report=0.519
+OK   stage swe-bench-lite GAPA final_context module_acc@5: analysis=0.407 report=0.407
+OK   stage swe-bench-lite GAPA final_context module_acc@10: analysis=0.407 report=0.407
+OK   stage swe-bench-lite GAPA final_context function_acc@5: analysis=0.259 report=0.259
+OK   stage swe-bench-lite GAPA final_context function_acc@10: analysis=0.259 report=0.259
+OK   stage swe-bench-lite GAPA final_context file_recall@5: analysis=0.519 report=0.519
+OK   stage swe-bench-lite ALWAYS_RAG after_retrieval file_acc@1: analysis=0.296 report=0.296
+OK   stage swe-bench-lite ALWAYS_RAG after_retrieval file_acc@3: analysis=0.519 report=0.519
+OK   stage swe-bench-lite ALWAYS_RAG after_retrieval file_acc@5: analysis=0.667 report=0.667
+OK   stage swe-bench-lite ALWAYS_RAG after_retrieval module_acc@5: analysis=0.481 report=0.481
+OK   stage swe-bench-lite ALWAYS_RAG after_retrieval module_acc@10: analysis=0.556 report=0.556
+OK   stage swe-bench-lite ALWAYS_RAG after_retrieval function_acc@5: analysis=0.259 report=0.259
+OK   stage swe-bench-lite ALWAYS_RAG after_retrieval function_acc@10: analysis=0.37 report=0.37
+OK   stage swe-bench-lite ALWAYS_RAG after_retrieval file_recall@5: analysis=0.667 report=0.667
+OK   stage swe-bench-lite ALWAYS_RAG after_expansion file_acc@1: analysis=0.296 report=0.296
+OK   stage swe-bench-lite ALWAYS_RAG after_expansion file_acc@3: analysis=0.519 report=0.519
+OK   stage swe-bench-lite ALWAYS_RAG after_expansion file_acc@5: analysis=0.667 report=0.667
+OK   stage swe-bench-lite ALWAYS_RAG after_expansion module_acc@5: analysis=0.481 report=0.481
+OK   stage swe-bench-lite ALWAYS_RAG after_expansion module_acc@10: analysis=0.556 report=0.556
+OK   stage swe-bench-lite ALWAYS_RAG after_expansion function_acc@5: analysis=0.259 report=0.259
+OK   stage swe-bench-lite ALWAYS_RAG after_expansion function_acc@10: analysis=0.37 report=0.37
+OK   stage swe-bench-lite ALWAYS_RAG after_expansion file_recall@5: analysis=0.667 report=0.667
+OK   stage swe-bench-lite ALWAYS_RAG final_context file_acc@1: analysis=0.296 report=0.296
+OK   stage swe-bench-lite ALWAYS_RAG final_context file_acc@3: analysis=0.481 report=0.481
+OK   stage swe-bench-lite ALWAYS_RAG final_context file_acc@5: analysis=0.519 report=0.519
+OK   stage swe-bench-lite ALWAYS_RAG final_context module_acc@5: analysis=0.407 report=0.407
+OK   stage swe-bench-lite ALWAYS_RAG final_context module_acc@10: analysis=0.407 report=0.407
+OK   stage swe-bench-lite ALWAYS_RAG final_context function_acc@5: analysis=0.259 report=0.259
+OK   stage swe-bench-lite ALWAYS_RAG final_context function_acc@10: analysis=0.259 report=0.259
+OK   stage swe-bench-lite ALWAYS_RAG final_context file_recall@5: analysis=0.519 report=0.519
+OK   stage swe-bench-lite ALWAYS_LC after_retrieval file_acc@1: analysis=0.296 report=0.296
+OK   stage swe-bench-lite ALWAYS_LC after_retrieval file_acc@3: analysis=0.519 report=0.519
+OK   stage swe-bench-lite ALWAYS_LC after_retrieval file_acc@5: analysis=0.667 report=0.667
+OK   stage swe-bench-lite ALWAYS_LC after_retrieval module_acc@5: analysis=0.481 report=0.481
+OK   stage swe-bench-lite ALWAYS_LC after_retrieval module_acc@10: analysis=0.556 report=0.556
+OK   stage swe-bench-lite ALWAYS_LC after_retrieval function_acc@5: analysis=0.259 report=0.259
+OK   stage swe-bench-lite ALWAYS_LC after_retrieval function_acc@10: analysis=0.37 report=0.37
+OK   stage swe-bench-lite ALWAYS_LC after_retrieval file_recall@5: analysis=0.667 report=0.667
+OK   stage swe-bench-lite ALWAYS_LC after_expansion file_acc@1: analysis=0.296 report=0.296
+OK   stage swe-bench-lite ALWAYS_LC after_expansion file_acc@3: analysis=0.519 report=0.519
+OK   stage swe-bench-lite ALWAYS_LC after_expansion file_acc@5: analysis=0.667 report=0.667
+OK   stage swe-bench-lite ALWAYS_LC after_expansion module_acc@5: analysis=0.481 report=0.481
+OK   stage swe-bench-lite ALWAYS_LC after_expansion module_acc@10: analysis=0.556 report=0.556
+OK   stage swe-bench-lite ALWAYS_LC after_expansion function_acc@5: analysis=0.259 report=0.259
+OK   stage swe-bench-lite ALWAYS_LC after_expansion function_acc@10: analysis=0.37 report=0.37
+OK   stage swe-bench-lite ALWAYS_LC after_expansion file_recall@5: analysis=0.667 report=0.667
+OK   stage swe-bench-lite ALWAYS_LC final_context file_acc@1: analysis=0.296 report=0.296
+OK   stage swe-bench-lite ALWAYS_LC final_context file_acc@3: analysis=0.481 report=0.481
+OK   stage swe-bench-lite ALWAYS_LC final_context file_acc@5: analysis=0.519 report=0.519
+OK   stage swe-bench-lite ALWAYS_LC final_context module_acc@5: analysis=0.407 report=0.407
+OK   stage swe-bench-lite ALWAYS_LC final_context module_acc@10: analysis=0.407 report=0.407
+OK   stage swe-bench-lite ALWAYS_LC final_context function_acc@5: analysis=0.259 report=0.259
+OK   stage swe-bench-lite ALWAYS_LC final_context function_acc@10: analysis=0.259 report=0.259
+OK   stage swe-bench-lite ALWAYS_LC final_context file_recall@5: analysis=0.519 report=0.519
+OK   stage swe-bench-lite PREASSESS after_retrieval file_acc@1: analysis=0.296 report=0.296
+OK   stage swe-bench-lite PREASSESS after_retrieval file_acc@3: analysis=0.519 report=0.519
+OK   stage swe-bench-lite PREASSESS after_retrieval file_acc@5: analysis=0.667 report=0.667
+OK   stage swe-bench-lite PREASSESS after_retrieval module_acc@5: analysis=0.481 report=0.481
+OK   stage swe-bench-lite PREASSESS after_retrieval module_acc@10: analysis=0.556 report=0.556
+OK   stage swe-bench-lite PREASSESS after_retrieval function_acc@5: analysis=0.259 report=0.259
+OK   stage swe-bench-lite PREASSESS after_retrieval function_acc@10: analysis=0.37 report=0.37
+OK   stage swe-bench-lite PREASSESS after_retrieval file_recall@5: analysis=0.667 report=0.667
+OK   stage swe-bench-lite PREASSESS after_expansion file_acc@1: analysis=0.296 report=0.296
+OK   stage swe-bench-lite PREASSESS after_expansion file_acc@3: analysis=0.519 report=0.519
+OK   stage swe-bench-lite PREASSESS after_expansion file_acc@5: analysis=0.667 report=0.667
+OK   stage swe-bench-lite PREASSESS after_expansion module_acc@5: analysis=0.481 report=0.481
+OK   stage swe-bench-lite PREASSESS after_expansion module_acc@10: analysis=0.556 report=0.556
+OK   stage swe-bench-lite PREASSESS after_expansion function_acc@5: analysis=0.259 report=0.259
+OK   stage swe-bench-lite PREASSESS after_expansion function_acc@10: analysis=0.37 report=0.37
+OK   stage swe-bench-lite PREASSESS after_expansion file_recall@5: analysis=0.667 report=0.667
+OK   stage swe-bench-lite PREASSESS final_context file_acc@1: analysis=0.296 report=0.296
+OK   stage swe-bench-lite PREASSESS final_context file_acc@3: analysis=0.481 report=0.481
+OK   stage swe-bench-lite PREASSESS final_context file_acc@5: analysis=0.519 report=0.519
+OK   stage swe-bench-lite PREASSESS final_context module_acc@5: analysis=0.407 report=0.407
+OK   stage swe-bench-lite PREASSESS final_context module_acc@10: analysis=0.407 report=0.407
+OK   stage swe-bench-lite PREASSESS final_context function_acc@5: analysis=0.259 report=0.259
+OK   stage swe-bench-lite PREASSESS final_context function_acc@10: analysis=0.259 report=0.259
+OK   stage swe-bench-lite PREASSESS final_context file_recall@5: analysis=0.519 report=0.519
+OK   stage loc-bench ALWAYS_GRAPH after_retrieval file_acc@1: analysis=0.375 report=0.375
+OK   stage loc-bench ALWAYS_GRAPH after_retrieval file_acc@3: analysis=0.589 report=0.589
+OK   stage loc-bench ALWAYS_GRAPH after_retrieval file_acc@5: analysis=0.661 report=0.661
+OK   stage loc-bench ALWAYS_GRAPH after_retrieval module_acc@5: analysis=0.571 report=0.571
+OK   stage loc-bench ALWAYS_GRAPH after_retrieval module_acc@10: analysis=0.643 report=0.643
+OK   stage loc-bench ALWAYS_GRAPH after_retrieval function_acc@5: analysis=0.304 report=0.304
+OK   stage loc-bench ALWAYS_GRAPH after_retrieval function_acc@10: analysis=0.429 report=0.429
+OK   stage loc-bench ALWAYS_GRAPH after_retrieval file_recall@5: analysis=0.683 report=0.683
+OK   stage loc-bench ALWAYS_GRAPH after_expansion file_acc@1: analysis=0.464 report=0.464
+OK   stage loc-bench ALWAYS_GRAPH after_expansion file_acc@3: analysis=0.589 report=0.589
+OK   stage loc-bench ALWAYS_GRAPH after_expansion file_acc@5: analysis=0.607 report=0.607
+OK   stage loc-bench ALWAYS_GRAPH after_expansion module_acc@5: analysis=0.482 report=0.482
+OK   stage loc-bench ALWAYS_GRAPH after_expansion module_acc@10: analysis=0.5 report=0.5
+OK   stage loc-bench ALWAYS_GRAPH after_expansion function_acc@5: analysis=0.25 report=0.25
+OK   stage loc-bench ALWAYS_GRAPH after_expansion function_acc@10: analysis=0.268 report=0.268
+OK   stage loc-bench ALWAYS_GRAPH after_expansion file_recall@5: analysis=0.629 report=0.629
+OK   stage loc-bench ALWAYS_GRAPH final_context file_acc@1: analysis=0.232 report=0.232
+OK   stage loc-bench ALWAYS_GRAPH final_context file_acc@3: analysis=0.554 report=0.554
+OK   stage loc-bench ALWAYS_GRAPH final_context file_acc@5: analysis=0.554 report=0.554
+OK   stage loc-bench ALWAYS_GRAPH final_context module_acc@5: analysis=0.464 report=0.464
+OK   stage loc-bench ALWAYS_GRAPH final_context module_acc@10: analysis=0.464 report=0.464
+OK   stage loc-bench ALWAYS_GRAPH final_context function_acc@5: analysis=0.232 report=0.232
+OK   stage loc-bench ALWAYS_GRAPH final_context function_acc@10: analysis=0.232 report=0.232
+OK   stage loc-bench ALWAYS_GRAPH final_context file_recall@5: analysis=0.567 report=0.567
+OK   stage loc-bench GASR after_retrieval file_acc@1: analysis=0.375 report=0.375
+OK   stage loc-bench GASR after_retrieval file_acc@3: analysis=0.589 report=0.589
+OK   stage loc-bench GASR after_retrieval file_acc@5: analysis=0.661 report=0.661
+OK   stage loc-bench GASR after_retrieval module_acc@5: analysis=0.571 report=0.571
+OK   stage loc-bench GASR after_retrieval module_acc@10: analysis=0.643 report=0.643
+OK   stage loc-bench GASR after_retrieval function_acc@5: analysis=0.304 report=0.304
+OK   stage loc-bench GASR after_retrieval function_acc@10: analysis=0.429 report=0.429
+OK   stage loc-bench GASR after_retrieval file_recall@5: analysis=0.683 report=0.683
+OK   stage loc-bench GASR after_expansion file_acc@1: analysis=0.393 report=0.393
+OK   stage loc-bench GASR after_expansion file_acc@3: analysis=0.607 report=0.607
+OK   stage loc-bench GASR after_expansion file_acc@5: analysis=0.661 report=0.661
+OK   stage loc-bench GASR after_expansion module_acc@5: analysis=0.554 report=0.554
+OK   stage loc-bench GASR after_expansion module_acc@10: analysis=0.589 report=0.589
+OK   stage loc-bench GASR after_expansion function_acc@5: analysis=0.286 report=0.286
+OK   stage loc-bench GASR after_expansion function_acc@10: analysis=0.375 report=0.375
+OK   stage loc-bench GASR after_expansion file_recall@5: analysis=0.683 report=0.683
+OK   stage loc-bench GASR final_context file_acc@1: analysis=0.393 report=0.393
+OK   stage loc-bench GASR final_context file_acc@3: analysis=0.571 report=0.571
+OK   stage loc-bench GASR final_context file_acc@5: analysis=0.571 report=0.571
+OK   stage loc-bench GASR final_context module_acc@5: analysis=0.482 report=0.482
+OK   stage loc-bench GASR final_context module_acc@10: analysis=0.482 report=0.482
+OK   stage loc-bench GASR final_context function_acc@5: analysis=0.268 report=0.268
+OK   stage loc-bench GASR final_context function_acc@10: analysis=0.268 report=0.268
+OK   stage loc-bench GASR final_context file_recall@5: analysis=0.594 report=0.594
+OK   stage loc-bench GAPA after_retrieval file_acc@1: analysis=0.357 report=0.357
+OK   stage loc-bench GAPA after_retrieval file_acc@3: analysis=0.571 report=0.571
+OK   stage loc-bench GAPA after_retrieval file_acc@5: analysis=0.643 report=0.643
+OK   stage loc-bench GAPA after_retrieval module_acc@5: analysis=0.554 report=0.554
+OK   stage loc-bench GAPA after_retrieval module_acc@10: analysis=0.625 report=0.625
+OK   stage loc-bench GAPA after_retrieval function_acc@5: analysis=0.304 report=0.304
+OK   stage loc-bench GAPA after_retrieval function_acc@10: analysis=0.411 report=0.411
+OK   stage loc-bench GAPA after_retrieval file_recall@5: analysis=0.665 report=0.665
+OK   stage loc-bench GAPA after_expansion file_acc@1: analysis=0.446 report=0.446
+OK   stage loc-bench GAPA after_expansion file_acc@3: analysis=0.571 report=0.571
+OK   stage loc-bench GAPA after_expansion file_acc@5: analysis=0.589 report=0.589
+OK   stage loc-bench GAPA after_expansion module_acc@5: analysis=0.464 report=0.464
+OK   stage loc-bench GAPA after_expansion module_acc@10: analysis=0.482 report=0.482
+OK   stage loc-bench GAPA after_expansion function_acc@5: analysis=0.25 report=0.25
+OK   stage loc-bench GAPA after_expansion function_acc@10: analysis=0.268 report=0.268
+OK   stage loc-bench GAPA after_expansion file_recall@5: analysis=0.612 report=0.612
+OK   stage loc-bench GAPA final_context file_acc@1: analysis=0.321 report=0.321
+OK   stage loc-bench GAPA final_context file_acc@3: analysis=0.536 report=0.536
+OK   stage loc-bench GAPA final_context file_acc@5: analysis=0.536 report=0.536
+OK   stage loc-bench GAPA final_context module_acc@5: analysis=0.446 report=0.446
+OK   stage loc-bench GAPA final_context module_acc@10: analysis=0.446 report=0.446
+OK   stage loc-bench GAPA final_context function_acc@5: analysis=0.232 report=0.232
+OK   stage loc-bench GAPA final_context function_acc@10: analysis=0.232 report=0.232
+OK   stage loc-bench GAPA final_context file_recall@5: analysis=0.549 report=0.549
+OK   stage loc-bench ALWAYS_RAG after_retrieval file_acc@1: analysis=0.375 report=0.375
+OK   stage loc-bench ALWAYS_RAG after_retrieval file_acc@3: analysis=0.589 report=0.589
+OK   stage loc-bench ALWAYS_RAG after_retrieval file_acc@5: analysis=0.661 report=0.661
+OK   stage loc-bench ALWAYS_RAG after_retrieval module_acc@5: analysis=0.571 report=0.571
+OK   stage loc-bench ALWAYS_RAG after_retrieval module_acc@10: analysis=0.643 report=0.643
+OK   stage loc-bench ALWAYS_RAG after_retrieval function_acc@5: analysis=0.304 report=0.304
+OK   stage loc-bench ALWAYS_RAG after_retrieval function_acc@10: analysis=0.429 report=0.429
+OK   stage loc-bench ALWAYS_RAG after_retrieval file_recall@5: analysis=0.683 report=0.683
+OK   stage loc-bench ALWAYS_RAG after_expansion file_acc@1: analysis=0.375 report=0.375
+OK   stage loc-bench ALWAYS_RAG after_expansion file_acc@3: analysis=0.589 report=0.589
+OK   stage loc-bench ALWAYS_RAG after_expansion file_acc@5: analysis=0.661 report=0.661
+OK   stage loc-bench ALWAYS_RAG after_expansion module_acc@5: analysis=0.571 report=0.571
+OK   stage loc-bench ALWAYS_RAG after_expansion module_acc@10: analysis=0.643 report=0.643
+OK   stage loc-bench ALWAYS_RAG after_expansion function_acc@5: analysis=0.304 report=0.304
+OK   stage loc-bench ALWAYS_RAG after_expansion function_acc@10: analysis=0.429 report=0.429
+OK   stage loc-bench ALWAYS_RAG after_expansion file_recall@5: analysis=0.683 report=0.683
+OK   stage loc-bench ALWAYS_RAG final_context file_acc@1: analysis=0.464 report=0.464
+OK   stage loc-bench ALWAYS_RAG final_context file_acc@3: analysis=0.571 report=0.571
+OK   stage loc-bench ALWAYS_RAG final_context file_acc@5: analysis=0.571 report=0.571
+OK   stage loc-bench ALWAYS_RAG final_context module_acc@5: analysis=0.482 report=0.482
+OK   stage loc-bench ALWAYS_RAG final_context module_acc@10: analysis=0.482 report=0.482
+OK   stage loc-bench ALWAYS_RAG final_context function_acc@5: analysis=0.25 report=0.25
+OK   stage loc-bench ALWAYS_RAG final_context function_acc@10: analysis=0.25 report=0.25
+OK   stage loc-bench ALWAYS_RAG final_context file_recall@5: analysis=0.594 report=0.594
+OK   stage loc-bench ALWAYS_LC after_retrieval file_acc@1: analysis=0.375 report=0.375
+OK   stage loc-bench ALWAYS_LC after_retrieval file_acc@3: analysis=0.589 report=0.589
+OK   stage loc-bench ALWAYS_LC after_retrieval file_acc@5: analysis=0.661 report=0.661
+OK   stage loc-bench ALWAYS_LC after_retrieval module_acc@5: analysis=0.571 report=0.571
+OK   stage loc-bench ALWAYS_LC after_retrieval module_acc@10: analysis=0.643 report=0.643
+OK   stage loc-bench ALWAYS_LC after_retrieval function_acc@5: analysis=0.304 report=0.304
+OK   stage loc-bench ALWAYS_LC after_retrieval function_acc@10: analysis=0.429 report=0.429
+OK   stage loc-bench ALWAYS_LC after_retrieval file_recall@5: analysis=0.683 report=0.683
+OK   stage loc-bench ALWAYS_LC after_expansion file_acc@1: analysis=0.375 report=0.375
+OK   stage loc-bench ALWAYS_LC after_expansion file_acc@3: analysis=0.589 report=0.589
+OK   stage loc-bench ALWAYS_LC after_expansion file_acc@5: analysis=0.661 report=0.661
+OK   stage loc-bench ALWAYS_LC after_expansion module_acc@5: analysis=0.571 report=0.571
+OK   stage loc-bench ALWAYS_LC after_expansion module_acc@10: analysis=0.643 report=0.643
+OK   stage loc-bench ALWAYS_LC after_expansion function_acc@5: analysis=0.304 report=0.304
+OK   stage loc-bench ALWAYS_LC after_expansion function_acc@10: analysis=0.429 report=0.429
+OK   stage loc-bench ALWAYS_LC after_expansion file_recall@5: analysis=0.683 report=0.683
+OK   stage loc-bench ALWAYS_LC final_context file_acc@1: analysis=0.375 report=0.375
+OK   stage loc-bench ALWAYS_LC final_context file_acc@3: analysis=0.554 report=0.554
+OK   stage loc-bench ALWAYS_LC final_context file_acc@5: analysis=0.571 report=0.571
+OK   stage loc-bench ALWAYS_LC final_context module_acc@5: analysis=0.5 report=0.5
+OK   stage loc-bench ALWAYS_LC final_context module_acc@10: analysis=0.482 report=0.482
+OK   stage loc-bench ALWAYS_LC final_context function_acc@5: analysis=0.286 report=0.286
+OK   stage loc-bench ALWAYS_LC final_context function_acc@10: analysis=0.268 report=0.268
+OK   stage loc-bench ALWAYS_LC final_context file_recall@5: analysis=0.594 report=0.594
+OK   stage loc-bench PREASSESS after_retrieval file_acc@1: analysis=0.357 report=0.357
+OK   stage loc-bench PREASSESS after_retrieval file_acc@3: analysis=0.571 report=0.571
+OK   stage loc-bench PREASSESS after_retrieval file_acc@5: analysis=0.643 report=0.643
+OK   stage loc-bench PREASSESS after_retrieval module_acc@5: analysis=0.554 report=0.554
+OK   stage loc-bench PREASSESS after_retrieval module_acc@10: analysis=0.625 report=0.625
+OK   stage loc-bench PREASSESS after_retrieval function_acc@5: analysis=0.304 report=0.304
+OK   stage loc-bench PREASSESS after_retrieval function_acc@10: analysis=0.411 report=0.411
+OK   stage loc-bench PREASSESS after_retrieval file_recall@5: analysis=0.665 report=0.665
+OK   stage loc-bench PREASSESS after_expansion file_acc@1: analysis=0.357 report=0.357
+OK   stage loc-bench PREASSESS after_expansion file_acc@3: analysis=0.571 report=0.571
+OK   stage loc-bench PREASSESS after_expansion file_acc@5: analysis=0.643 report=0.643
+OK   stage loc-bench PREASSESS after_expansion module_acc@5: analysis=0.554 report=0.554
+OK   stage loc-bench PREASSESS after_expansion module_acc@10: analysis=0.625 report=0.625
+OK   stage loc-bench PREASSESS after_expansion function_acc@5: analysis=0.304 report=0.304
+OK   stage loc-bench PREASSESS after_expansion function_acc@10: analysis=0.411 report=0.411
+OK   stage loc-bench PREASSESS after_expansion file_recall@5: analysis=0.665 report=0.665
+OK   stage loc-bench PREASSESS final_context file_acc@1: analysis=0.357 report=0.357
+OK   stage loc-bench PREASSESS final_context file_acc@3: analysis=0.536 report=0.536
+OK   stage loc-bench PREASSESS final_context file_acc@5: analysis=0.554 report=0.554
+OK   stage loc-bench PREASSESS final_context module_acc@5: analysis=0.482 report=0.482
+OK   stage loc-bench PREASSESS final_context module_acc@10: analysis=0.464 report=0.464
+OK   stage loc-bench PREASSESS final_context function_acc@5: analysis=0.286 report=0.286
+OK   stage loc-bench PREASSESS final_context function_acc@10: analysis=0.268 report=0.268
+OK   stage loc-bench PREASSESS final_context file_recall@5: analysis=0.576 report=0.576
