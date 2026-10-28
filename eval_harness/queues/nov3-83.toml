@@ -1,0 +1,140 @@
+# Nov 3 queue for ubuntu-4080: qwen3.5:9b, both datasets (27 + 56 = 83 tasks) for every arm, location instruction ON,
+# stop sequence OFF (the prose is kept). Same pipeline SHA and the same index cache as the Oct 23 runs; a missing index
+# fails the job's preflight (indexes are never built by a run), which stops the queue.
+# Job ids start with "nov3-" so that they never match the Oct 23 pattern NN-<name> used by tests/regress_reports.py.
+# After the second job (GAPA loc-bench) the queue holds (STOPPED marker): the GAPA jobs are compared with Oct 23 first.
+# Run from a clean worktree by harness.queue.
+
+[queue]
+enabled = true
+frozen_sha = "2350c0b2e064e4fd808e941731366e6cc71a9551"
+hard_stop = "2026-10-29T08:00:00"
+hard_stop_tz = "Africa/Cairo"
+safety_factor = 1.25
+
+[[job]]
+id = "nov3-01-qwen3.5-9b-GAPA-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "swe-bench-lite"
+tasks = 27
+estimated_minutes = 10
+answer_locations_instruction = true
+
+[[job]]
+id = "nov3-02-qwen3.5-9b-GAPA-loc-bench"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "loc-bench"
+tasks = 56
+estimated_minutes = 19
+answer_locations_instruction = true
+hold_after = "compare the two GAPA jobs with Oct 23 (route, hops, gates, query_sha256, router tokens, final-context ids) before the other arms"
+
+[[job]]
+id = "nov3-03-qwen3.5-9b-ALWAYS_LC-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "ALWAYS_LC"
+dataset = "swe-bench-lite"
+tasks = 27
+estimated_minutes = 11
+answer_locations_instruction = true
+
+[[job]]
+id = "nov3-04-qwen3.5-9b-ALWAYS_LC-loc-bench"
+model = "qwen3.5:9b"
+arm = "ALWAYS_LC"
+dataset = "loc-bench"
+tasks = 56
+estimated_minutes = 20
+answer_locations_instruction = true
+
+[[job]]
+id = "nov3-05-qwen3.5-9b-ALWAYS_RAG-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "ALWAYS_RAG"
+dataset = "swe-bench-lite"
+tasks = 27
+estimated_minutes = 9
+answer_locations_instruction = true
+
+[[job]]
+id = "nov3-06-qwen3.5-9b-ALWAYS_RAG-loc-bench"
+model = "qwen3.5:9b"
+arm = "ALWAYS_RAG"
+dataset = "loc-bench"
+tasks = 56
+estimated_minutes = 17
+answer_locations_instruction = true
+
+[[job]]
+id = "nov3-07-qwen3.5-9b-PREASSESS-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "PREASSESS"
+dataset = "swe-bench-lite"
+tasks = 27
+estimated_minutes = 11
+answer_locations_instruction = true
+
+[[job]]
+id = "nov3-08-qwen3.5-9b-PREASSESS-loc-bench"
+model = "qwen3.5:9b"
+arm = "PREASSESS"
+dataset = "loc-bench"
+tasks = 56
+estimated_minutes = 20
+answer_locations_instruction = true
+
+[[job]]
+id = "nov3-09-qwen3.5-9b-GASR-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GASR"
+dataset = "swe-bench-lite"
+tasks = 27
+estimated_minutes = 10
+answer_locations_instruction = true
+
+[[job]]
+id = "nov3-10-qwen3.5-9b-GASR-loc-bench"
+model = "qwen3.5:9b"
+arm = "GASR"
+dataset = "loc-bench"
+tasks = 56
+estimated_minutes = 19
+answer_locations_instruction = true
+
+[[job]]
+id = "nov3-11-qwen3.5-9b-ALWAYS_GRAPH-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "ALWAYS_GRAPH"
+dataset = "swe-bench-lite"
+tasks = 27
+estimated_minutes = 9
+answer_locations_instruction = true
+
+[[job]]
+id = "nov3-12-qwen3.5-9b-ALWAYS_GRAPH-loc-bench"
+model = "qwen3.5:9b"
+arm = "ALWAYS_GRAPH"
+dataset = "loc-bench"
+tasks = 56
+estimated_minutes = 17
+answer_locations_instruction = true
+
+[[job]]
+id = "nov3-13-qwen3.5-9b-SELF_ROUTE-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "SELF_ROUTE"
+dataset = "swe-bench-lite"
+tasks = 27
+estimated_minutes = 11
+answer_locations_instruction = true
+
+[[job]]
+id = "nov3-14-qwen3.5-9b-SELF_ROUTE-loc-bench"
+model = "qwen3.5:9b"
+arm = "SELF_ROUTE"
+dataset = "loc-bench"
+tasks = 56
+estimated_minutes = 19
+answer_locations_instruction = true

@@ -33,6 +33,9 @@ STAGES = [("after_retrieval", "After retrieval"), ("after_expansion", "After gra
 LEVELS = [("file", "files", (1, 3, 5)), ("module", "modules", (5, 10)), ("function", "functions", (5, 10))]
 ARM_ORDER = ["ALWAYS_GRAPH", "GASR", "GAPA", "SELF_ROUTE"]
 ARM_LABEL = {"ALWAYS_GRAPH": "Always-GRAPH", "GASR": "GASR", "GAPA": "GAPA", "SELF_ROUTE": "Self-Route"}
+QUALITY_ARMS = ["ALWAYS_GRAPH", "GASR", "GAPA"]                      # Tables IV / V
+COST_ARMS = ["ALWAYS_GRAPH", "GASR", "GAPA", "SELF_ROUTE"]            # Table VI
+NEW_ARMS = {"ALWAYS_RAG": "Always-RAG", "ALWAYS_LC": "Always-LC", "PREASSESS": "Pre-assess"}
 HARD = ("timeout", "oom", "error", "preflight_failed")
 
 
@@ -368,7 +371,7 @@ def build_tables(jobs: list[dict], data_dir: Path, out: Path, warnings: list[str
         for tname, ds in (("table_iv_context_quality_swe-bench-lite", "swe-bench-lite"), ("table_v_context_quality_loc-bench", "loc-bench")):
             for variant, A in (("", aggs), ("_sensitivity", aggs_sens)):
                 rows = []
-                for arm in ["ALWAYS_GRAPH", "GASR", "GAPA"]:
+                for arm in QUALITY_ARMS:
                     st_ = cell_state(model, ds, arm)
                     for st, lab in STAGES:
                         if st_:
@@ -381,7 +384,7 @@ def build_tables(jobs: list[dict], data_dir: Path, out: Path, warnings: list[str
         for variant, A in (("", aggs), ("_sensitivity", aggs_sens)):
             rows = []
             for ds in ("swe-bench-lite", "loc-bench"):
-                for arm in ["ALWAYS_GRAPH", "GASR", "GAPA", "SELF_ROUTE"]:
+                for arm in COST_ARMS:
                     st_ = cell_state(model, ds, arm)
                     if st_:
                         rows.append([ds, ARM_LABEL[arm], st_, "", "", "", "", "", "", "", ""])
@@ -486,7 +489,14 @@ def main() -> int:
     ap.add_argument("--ablation", default="full")
     ap.add_argument("--lc-scorer", choices=["legacy", "v2"], default="legacy",
                     help="legacy = LC chunks are file-only (module / function lists empty); v2 = module / function ids joined from the retrieved chunk")
+    ap.add_argument("--with-new-arms", action="store_true",
+                    help="also tabulate ALWAYS_RAG / ALWAYS_LC / PREASSESS (default: arm order and tables as for Oct 23)")
     a = ap.parse_args()
+    if a.with_new_arms:
+        ARM_ORDER.extend(x for x in NEW_ARMS if x not in ARM_ORDER)
+        ARM_LABEL.update(NEW_ARMS)
+        QUALITY_ARMS.extend(NEW_ARMS)
+        COST_ARMS.extend(NEW_ARMS)
     jobs = load_jobs([p.resolve() for p in a.runs])
     if a.lc_scorer == "v2":
         recs = apply_lc_v2(jobs, a.data_dir.resolve())

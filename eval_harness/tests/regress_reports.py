@@ -67,14 +67,16 @@ def main() -> int:
     ap.add_argument("--runs", type=Path, default=None)
     a = ap.parse_args()
     data = a.data_dir.resolve()
-    runs = (a.runs or data / "runs" / "2350c0b").resolve()
+    runs_root = (a.runs or data / "runs" / "2350c0b").resolve()
+    # only the Oct 23 jobs (NN-<name>, with a job.json); later jobs (nov3-*) share this folder and must not enter the comparison
+    runs = [d for d in sorted(runs_root.glob("[0-9][0-9]-*")) if (d / "job.json").is_file()]
     env = dict(os.environ, PYTHONPATH=str(HARNESS / "src"))
     failed = 0
     for label, extra, ref_name in CASES:
         ref = data / "reports" / ref_name
         with tempfile.TemporaryDirectory(prefix="regress_reports_") as tmp:
             out = Path(tmp) / "out"
-            cmd = [a.python, "-m", "harness.metrics", "--runs", str(runs), "--data-dir", str(data), "--out", str(out), *extra]
+            cmd = [a.python, "-m", "harness.metrics", "--runs", *map(str, runs), "--data-dir", str(data), "--out", str(out), *extra]
             p = subprocess.run(cmd, capture_output=True, text=True, env=env, cwd=HARNESS)
             print(f"[{label}] {' '.join(cmd[2:])} -> exit {p.returncode}")
             if p.returncode != 0 or not out.is_dir():
@@ -89,7 +91,7 @@ def main() -> int:
             failed += bool(diffs)
     sys.path.insert(0, str(HARNESS / "src"))
     from harness.metrics import load_jobs, no_usage_calls                       # gate_no_usage must stay 0 on the Oct 23 jobs
-    jobs = load_jobs([runs])
+    jobs = load_jobs(runs)
     n_nu = sum(len(no_usage_calls(r)) for j in jobs for r in j["rows"])
     n_tasks = sum(len(j["rows"]) for j in jobs)
     print(f"[gate_no_usage] {len(jobs)} jobs, {n_tasks} tasks, calls with missing or zero usage: {n_nu}" + ("" if n_nu == 0 else "  <-- must be 0"))

@@ -157,6 +157,10 @@ class Queue:
                "--index-config", str(c / "index.toml"), "--run-config", str(c / "run.toml"), "--ablations-config", str(c / "ablations.toml")]
         if job.get("ablation"):
             cmd += ["--ablation", job["ablation"]]
+        if job.get("answer_locations_instruction"):                  # opt-in, default off (extras.toml)
+            cmd.append("--answer-locations-instruction")
+        for s in job.get("answer_stop") or []:
+            cmd += ["--answer-stop", s]
         return cmd
 
     def remaining_minutes(self, job: dict) -> float:
@@ -244,6 +248,9 @@ class Queue:
                     self.notify.send(f"job complete: {job['id']}", f"{len(rows)} tasks" + (f"; ABNORMAL: {ab}" if ab else ""))
                     if ab:
                         self.stop(f"abnormal result in {job['id']}: {ab}")
+                        break
+                    if job.get("hold_after"):                        # checkpoint: stop cleanly, a person resumes (delete the marker, rerun)
+                        self.stop(f"hold after {job['id']}: {job['hold_after']}")
                         break
                     continue
                 reason = {-15: "hard stop", 3: "5 consecutive failed tasks / unrecoverable", 2: "preflight failed"}.get(code, f"exit code {code}")
