@@ -31,9 +31,13 @@ def main() -> int:
     if os.environ.get("HARNESS_OLLAMA_REDIRECT_PORT"):                    # tests only
         tgt = f"127.0.0.1:{os.environ['HARNESS_OLLAMA_REDIRECT_PORT']}"
         redirect = {"localhost:11434": tgt, "127.0.0.1:11434": tgt}
-    OllamaShim(load_toml(Path(spec["experiment"])), rec, redirect).install()
+    OllamaShim(load_toml(Path(spec["experiment"])), rec, redirect, answer_stop=spec.get("answer_stop")).install()
 
     import mcp_server.server as server
+    if spec.get("answer_suffix"):                         # opt-in: appended to the task at answer-prompt build only
+        reg0 = sys.modules.get("tool_registry") or sys.modules.get("mcp_server.tool_registry")
+        _inject, _suffix = reg0.tools["inject_context"], spec["answer_suffix"]
+        reg0.tools["inject_context"] = lambda user_prompt, chunks, *a, **k: _inject(user_prompt + "\n\n" + _suffix, chunks, *a, **k)
     ins = Instrument(rec, expected_structure_rerank=spec["expect_structure_rerank"])
     ins.install(server)
     Path(spec["ready"]).write_text(json.dumps({"startup_s": round(time.perf_counter() - t_boot, 3), "pid": os.getpid(),
@@ -44,8 +48,8 @@ def main() -> int:
     ins.begin_task()
     try:
         if spec["arm_impl"] == "harness":
-            from harness.arms import run_always_graph
-            result = run_always_graph(server, spec["prompt"], spec["hops"], spec["pruning_method"])
+            from harness.arms import run_harness_arm
+            result = run_harness_arm(server, spec["arm"], spec["prompt"], spec["hops"], spec["pruning_method"])
         else:
             result = server.run_pipeline(spec["prompt"], mode=spec["mode"], pruning_method=spec["pruning_method"])
     except Exception:

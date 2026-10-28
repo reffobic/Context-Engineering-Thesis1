@@ -91,14 +91,25 @@ def tokens_of(line: dict) -> dict | None:
     return {"router_input": router_in, "router_output": router_out, "injected": inj, "total": router_in + router_out + inj}
 
 
+def no_usage_calls(line: dict | None) -> list[dict]:
+    """Ollama calls of a task with missing or zero usage counters (prompt_eval_count / eval_count None or 0).
+    Token sums treat these as 0 (`or 0`), so such a call would silently undercount tokens; the class below makes it visible."""
+    return [{"role": c.get("role"), "seq": c.get("seq"), "prompt_eval_count": c.get("prompt_eval_count"), "eval_count": c.get("eval_count")}
+            for c in (line or {}).get("ollama_calls") or []
+            if not c.get("prompt_eval_count") or not c.get("eval_count")]
+
+
 def failed_kind(line: dict | None) -> str | None:
-    """None = ok; 'hard' = timeout/OOM/error/preflight; 'gate' = gate or judge parse failure; 'answer' = Ollama error as answer."""
+    """None = ok; 'hard' = timeout/OOM/error/preflight; 'gate' = gate or judge parse failure; 'gate_no_usage' = a call with
+    missing or zero usage counters; 'answer' = Ollama error as answer."""
     if line is None:
         return "missing"
     if line["status"] in HARD:
         return "hard"
     if line.get("gate_error"):
         return "gate"
+    if no_usage_calls(line):
+        return "gate_no_usage"
     if line.get("answer_error"):
         return "answer"
     return None
@@ -218,7 +229,7 @@ def per_task_rows(job: dict, gold: dict[str, dict], sample_ids: list[str]) -> li
         sc = score_line(line, g) if line is not None else {}
         zero = {k: 0.0 for k in score_line({"ranked": None}, g)}
         primary = sc if fk is None else zero
-        sens = sc if fk in (None, "gate", "answer") and line is not None else zero      # parse failures keep their fallback output
+        sens = sc if fk in (None, "gate", "gate_no_usage", "answer") and line is not None else zero      # parse failures keep their fallback output
         tok = tokens_of(line) if line else None
         row = {"task_id": tid, "model": job["model"], "dataset": job["dataset"], "arm": job["arm"], "ablation": job["ablation"],
                "status": line["status"] if line else "missing", "failed_kind": fk or "", "route": (line or {}).get("route") or "",
@@ -261,6 +272,9 @@ def aggregate(rows: list[dict], prefix: str = "primary") -> dict:
     agg["gate_error_rate"] = sum(r["n_gate_call_failures"] for r in gated) / calls if calls else None
     agg["gate_error_rate_tasks"] = sum(1 for r in gated if r["gate_error"]) / len(gated) if gated else None
     agg["n_routed"] = len(routed)
+    n_nu = sum(1 for r in rows if r["failed_kind"] == "gate_no_usage")
+    if n_nu:                                                          # no output at all when the count is zero
+        agg["n_gate_no_usage"] = n_nu
     agg["latency_task_total_mean_s"] = mean([r["lat_s.task_total"] for r in rows])
     return agg
 

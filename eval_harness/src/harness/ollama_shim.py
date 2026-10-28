@@ -53,8 +53,9 @@ class Recorder:
 
 class OllamaShim:
     def __init__(self, cfg: dict, recorder: Recorder, redirect: dict[str, str] | None = None,
-                 ollama_ports: tuple[int, ...] = (11434,)) -> None:
+                 ollama_ports: tuple[int, ...] = (11434,), answer_stop: list[str] | None = None) -> None:
         self.cfg, self.rec, self.redirect = cfg, recorder, redirect or {}
+        self.answer_stop = list(answer_stop or [])                # opt-in (extras.toml / --answer-stop); empty = requests unchanged
         self.ports = ollama_ports
         self._orig_post = None
         self._orig_urlopen = None
@@ -92,6 +93,9 @@ class OllamaShim:
         if "keep_alive" not in b:
             b["keep_alive"] = o["keep_alive"]
             changed["keep_alive"] = o["keep_alive"]
+        if self.answer_stop and ROLE.get() == "answer" and "stop" not in opts:
+            opts["stop"] = list(self.answer_stop)
+            changed["stop"] = opts["stop"]
         return b, changed
 
     def _record(self, url: str, orig: dict, sent: dict, changed: dict, resp: dict | None,

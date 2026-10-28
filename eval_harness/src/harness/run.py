@@ -123,9 +123,17 @@ class Job:
         self.out = a.out
         self.client = OllamaClient(self.rcfg["run"]["ollama_base_url"], 120)
         self.arm = a.arm
-        if self.arm not in self.rcfg["arms"]:
+        # harness-built extra arms and opt-in answer flags (configs/extras.toml; all off / absent = Oct 23 behaviour)
+        self.extras = load_toml(a.extras_config) if a.extras_config.is_file() else {}
+        self.arms = {k: v for k, v in self.rcfg["arms"].items() if isinstance(v, str)} | dict(self.extras.get("arms", {}))
+        fl = self.extras.get("flags", {})
+        self.answer_stop = list(a.answer_stop or fl.get("answer_stop") or [])
+        self.answer_suffix = (self.extras.get("text", {}).get("answer_locations_instruction")
+                              if (a.answer_locations_instruction or fl.get("answer_locations_instruction")) else None)
+        self.extras_used = bool(self.arm in self.extras.get("arms", {}) or self.answer_stop or self.answer_suffix)
+        if self.arm not in self.arms:
             raise JobAbort(f"unknown arm {self.arm}")
-        self.arm_impl = "harness" if self.rcfg["arms"][self.arm] == "HARNESS" else "pipeline"
+        self.arm_impl = "harness" if self.arms[self.arm] == "HARNESS" else "pipeline"
         # Table VIII ablation setting: every switch gets an explicit "0"/"1"; only GAPA may carry one
         self.abl_cfg = load_toml(a.ablations_config)
         settings = self.abl_cfg["settings"]
@@ -208,6 +216,8 @@ class Job:
         env_rec = effective_record(self.pcfg, env_probe)
         cfgs = {n: config_hash(Path(getattr(a, n))) for n in ("experiment", "pipeline_config", "index_config", "run_config",
                                                               "ablations_config")}
+        if self.extras_used:                                         # recorded only when something of extras.toml is in effect
+            cfgs["extras"] = config_hash(a.extras_config)
         combined = hashlib.sha256(json.dumps({**cfgs, "ablation": self.ablation}, sort_keys=True).encode()).hexdigest()[:16]
         self.header = {
             "schema": SCHEMA, "smoke": a.smoke, "machine_id": self.profile["machine_id"],
@@ -217,7 +227,8 @@ class Job:
             "harness_commit": self.ident["harness_commit"], "harness_clean": self.ident["clean"],
             "pipeline_frozen_sha": p["frozen_sha"], "pipeline_base_commit": p["base_commit"],
             "pipeline_seed_alignment_commit": p["seed_alignment_commit"],
-            "ablation": self.ablation, "record_results": bool(self.record_auth), "record_authorised_for": self.record_auth,
+            "ablation": self.ablation, **({"extras": {"answer_stop": self.answer_stop, "answer_suffix": self.answer_suffix}}
+                                         if self.extras_used else {}), "record_results": bool(self.record_auth), "record_authorised_for": self.record_auth,
             "env": env_rec,
             "python_packages": environment_info(), "num_ctx": self.exp["ollama"]["num_ctx"]}
         self.job_info = {"arm": self.arm, "arm_impl": self.arm_impl, "dataset": a.dataset, "model": a.model,
@@ -369,11 +380,13 @@ def run_task(job: Job, task: dict, force_timeout: bool) -> dict:
         return {**line, "status": "preflight_failed", "failure": {"type": "preflight_failed", "detail": str(exc)},
                 "counted_as_failed": True, "overhead_s": overhead}
 
-    spec = {"pipeline_root": str(job.root), "arm": job.arm, "arm_impl": job.arm_impl, "mode": job.rcfg["arms"][job.arm],
+    spec = {"pipeline_root": str(job.root), "arm": job.arm, "arm_impl": job.arm_impl, "mode": job.arms[job.arm],
             "prompt": task["query"], "hops": job.rcfg["arms"]["always_graph"]["hops"], "pruning_method": rc["pruning_method"],
             "experiment": str(a.experiment), "forbid": [str(p) for r in {job.repo, job.data.parents[1]} for p in forbidden_chroma_paths(r)],
             "ready": str(scratch / "ready.json"), "out": str(scratch / "out.json"),
-            "expect_structure_rerank": job.pcfg["pipeline"]["structure_rerank_expected"]}
+            "expect_structure_rerank": job.pcfg["pipeline"]["structure_rerank_expected"],
+            **({"answer_suffix": job.answer_suffix} if job.answer_suffix else {}),
+            **({"answer_stop": job.answer_stop} if job.answer_stop else {})}
     (scratch / "spec.json").write_text(json.dumps(spec), encoding="utf-8")
     env = build_env(job.pcfg, a.model, job.exp, extra={
         **job.abl_env, "PYTHONPATH": str(Path(__file__).resolve().parents[1]), "CHROMA_PATH": str(scratch / "chroma"),
@@ -459,12 +472,16 @@ def main() -> int:
     ap.add_argument("--run-config", type=Path, required=True)
     ap.add_argument("--ablation", default="full", help="Table VIII setting from configs/ablations.toml (GAPA only)")
     ap.add_argument("--ablations-config", type=Path, default=Path(__file__).resolve().parents[2] / "configs" / "ablations.toml")
+    ap.add_argument("--extras-config", type=Path, default=Path(__file__).resolve().parents[2] / "configs" / "extras.toml",
+                    help="harness-built arms and opt-in answer flags (all default off)")
+    ap.add_argument("--answer-locations-instruction", action="store_true", help="append the LOCATIONS instruction to the task at answer-prompt build only")
+    ap.add_argument("--answer-stop", action="append", default=[], help="stop sequence for the answer call only (repeatable)")
     ap.add_argument("--smoke", action="store_true", help="not a result run: allowed while record_results is false")
     ap.add_argument("--allow-dirty", action="store_true", help="development only")
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--inject-timeout", action="append", default=[], help="smoke test: force a timeout for this task id")
     a = ap.parse_args()
-    for n in ("profile", "sample", "out", "experiment", "pipeline_config", "index_config", "run_config", "ablations_config"):
+    for n in ("profile", "sample", "out", "experiment", "pipeline_config", "index_config", "run_config", "ablations_config", "extras_config"):
         setattr(a, n, getattr(a, n).resolve())             # the worker changes directory; every path must be absolute
     a.out.mkdir(parents=True, exist_ok=True)
 

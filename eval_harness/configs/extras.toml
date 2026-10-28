@@ -1,0 +1,17 @@
+# Harness-built arms and opt-in answer-call flags. NOT part of the Oct 23 config hashes: every value here defaults
+# to "off", and the file's hash is recorded in a log line only when a new arm or a flag is actually used, so default
+# requests and log headers stay as they were on 2350c0b / 9c8ff12.
+
+[arms]
+# arm name -> "HARNESS": composed by harness.arms from the pipeline's stage functions (arm_impl="harness")
+ALWAYS_RAG = "HARNESS"      # retrieve -> flat prune -> RAG injection, no gate
+ALWAYS_LC = "HARNESS"       # retrieve -> LC injection of the parent files, no gate
+PREASSESS = "HARNESS"       # retrieve -> flat prune -> GAPA call-1 metadata gate -> RAG if sufficient, else LC
+
+[flags]
+answer_locations_instruction = false
+answer_stop = []            # stop sequences for the answer call only, e.g. ["END_LOCATIONS"]; [] = none
+
+[text]
+# Appended (after a blank line) to the task at answer-prompt build only when answer_locations_instruction is on.
+answer_locations_instruction = "Begin your answer with a section titled LOCATIONS. List, one per line and most likely first, each file that should be edited to resolve this issue, written as path, or as path::Class.method where a function applies. Then write the line END_LOCATIONS and continue with a short explanation of the fix."
