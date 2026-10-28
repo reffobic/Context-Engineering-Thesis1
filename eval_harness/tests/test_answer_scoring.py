@@ -8,7 +8,7 @@ GOLD = {"files": ["pkg/a.py", "pkg/b.py"], "modules": ["pkg/a.py:Foo"], "functio
 def test_plain_with_marker():
     t = "LOCATIONS\npkg/a.py::Foo.run\npkg/b.py\nEND_LOCATIONS\nThe fix is to change run()."
     info, lists = answer_lists(t)
-    assert info["marker"] and not info["truncated"]
+    assert info["marker"]
     assert lists["files"] == ["pkg/a.py", "pkg/b.py"]
     assert lists["functions"] == ["pkg/a.py:Foo.run"] and lists["modules"] == ["pkg/a.py:Foo"]
 
@@ -23,15 +23,21 @@ def test_bullets_backticks_numbering_bold_and_reasons():
 def test_missing_marker_stops_at_first_non_path_line_and_is_not_truncated():
     t = "LOCATIONS\npkg/a.py\npkg/b.py\n\nThe issue is caused by a missing check.\nsrc/not_listed.py"
     info, lists = answer_lists(t)
-    assert not info["marker"] and not info["truncated"]
+    assert not info["marker"]
     assert lists["files"] == ["pkg/a.py", "pkg/b.py"]
 
 
-def test_truncated_answer_without_marker_keeps_items_and_is_flagged():
+def test_missing_marker_at_end_of_text_keeps_items():
     info, lists = answer_lists("LOCATIONS\npkg/a.py::Foo.run\npkg/b.py")
-    assert info["truncated"] and not info["marker"]
-    assert lists["files"] == ["pkg/a.py", "pkg/b.py"]
+    assert not info["marker"] and lists["files"] == ["pkg/a.py", "pkg/b.py"]
     assert score_answer("LOCATIONS\npkg/a.py::Foo.run\npkg/b.py", GOLD)["answer.file_acc@3"] == 1.0
+
+
+def test_truncated_means_done_reason_length_only():
+    t = "LOCATIONS\npkg/a.py\npkg/b.py"                                  # no marker, as after a stop-sequence hit
+    assert score_answer(t, GOLD, "stop")["truncated"] is False               # a stop-sequence hit is not truncation
+    assert score_answer(t, GOLD, "length")["truncated"] is True
+    assert score_answer(t, GOLD)["truncated"] is False and score_answer(t, GOLD, None)["truncated"] is False
 
 
 def test_duplicates_keep_first_rank():

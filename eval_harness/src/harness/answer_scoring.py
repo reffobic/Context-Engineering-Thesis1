@@ -12,7 +12,8 @@ The answer is expected to start with the LOCATIONS section that the opt-in `answ
 
 Parsing: the section starts at the first line that is only the word LOCATIONS (case-insensitive; markdown hashes, bold,
 backticks and a trailing colon are tolerated). It ends at a line END_LOCATIONS; if the marker is absent it ends at the
-first non-blank line that is not a path (and, if the text ends first, the answer is flagged `truncated`). Bullets,
+first non-blank line that is not a path. `truncated` is not a parser notion: it is true only when the answer call's
+done_reason is "length" (num_predict reached); a stop-sequence hit (done_reason "stop") is not truncation. Bullets,
 numbering, backticks, quotes and trailing punctuation are stripped; "path - reason" keeps the path. Line order is the rank.
 
 Normalisation follows locmap (LocAgent naming): file = path with "/" separators and no leading "./"; function =
@@ -66,25 +67,23 @@ def parse_item(line: str) -> str | None:
 
 
 def parse_locations(text: str | None) -> dict:
-    """-> {"section": bool, "marker": bool, "truncated": bool, "items": [raw "path[::qual]"...]} (rank = order)."""
+    """-> {"section": bool, "marker": bool, "items": [raw "path[::qual]"...]} (rank = order)."""
     lines = (text or "").splitlines()
     start = next((i for i, ln in enumerate(lines) if _HEADER.match(ln.strip())), None)
     if start is None:
-        return {"section": False, "marker": False, "truncated": False, "items": []}
+        return {"section": False, "marker": False, "items": []}
     items, marker = [], False
-    ended = False
     for ln in lines[start + 1:]:
         if _END.match(ln.strip()):
-            marker, ended = True, True
+            marker = True
             break
         if not ln.strip():
             continue
         it = parse_item(ln)
         if it is None:
-            ended = True
             break
         items.append(it)
-    return {"section": True, "marker": marker, "truncated": not ended, "items": items}
+    return {"section": True, "marker": marker, "items": items}
 
 
 def normalise(raw: str) -> dict:
@@ -111,13 +110,14 @@ def answer_lists(text: str | None) -> tuple[dict, dict]:
     return info, lists
 
 
-def score_answer(text: str | None, gold: dict) -> dict:
-    """Per-task result: status, failure class, lists and the `answer.<level>_acc@k` / `answer.file_recall@5` metrics."""
+def score_answer(text: str | None, gold: dict, done_reason: str | None = None) -> dict:
+    """Per-task result: status, failure class, lists and the `answer.<level>_acc@k` / `answer.file_recall@5` metrics.
+    `truncated` = the answer call stopped on num_predict (done_reason == "length")."""
     info, lists = answer_lists(text)
     ok = bool(lists["files"])
     status = "ok" if ok else ("no_valid_items" if info["section"] else "no_section")
     out: dict = {"status": status, "failure_class": "" if ok else FAIL_CLASS, "marker": info["marker"],
-                 "truncated": info["truncated"], "n_items": len(info["items"]), "lists": lists}
+                 "truncated": done_reason == "length", "n_items": len(info["items"]), "lists": lists}
     for lvl, key, ks in LEVELS:
         for k in ks:
             out[f"answer.{lvl}_acc@{k}"] = acc_at(lists[key], gold[key], k) if ok else 0.0
@@ -150,7 +150,7 @@ def score_job(job: dict, gold: dict[str, dict], data_dir: Path,
     rows = []
     for line in job["rows"]:
         g = gold[line["task_id"]]
-        s = score_answer(line.get("answer"), g)
+        s = score_answer(line.get("answer"), g, (line.get("answer_call") or {}).get("done_reason"))
         files = s["lists"]["files"]
         ctx_files = set(((line.get("ranked") or {}).get("final_context") or {}).get("files") or [])
         gf = set(g["files"])
