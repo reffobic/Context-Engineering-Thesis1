@@ -238,6 +238,8 @@ def per_task_rows(job: dict, gold: dict[str, dict], sample_ids: list[str]) -> li
                "n_gate_calls": sum(1 for c in (line or {}).get("ollama_calls") or [] if c["role"] != "answer"),
                "n_gate_call_failures": len((line or {}).get("gate_error_events") or []),
                "n_gold_files": len(g["files"]), "n_gold_functions": len(g["functions"])}
+        if (line or {}).get("preassess_fallback"):                     # column exists only if some PREASSESS task fell back
+            row["preassess_fallback"] = line["preassess_fallback"]
         row.update({f"primary.{k}": v for k, v in primary.items()})
         row.update({f"sens.{k}": v for k, v in sens.items()})
         row.update({f"tok.{k}": v for k, v in (tok or {}).items()})
@@ -273,6 +275,10 @@ def aggregate(rows: list[dict], prefix: str = "primary") -> dict:
     agg["gate_error_rate_tasks"] = sum(1 for r in gated if r["gate_error"]) / len(gated) if gated else None
     agg["n_routed"] = len(routed)
     n_nu = sum(1 for r in rows if r["failed_kind"] == "gate_no_usage")
+    for kind in ("unavailable", "parse"):                             # PREASSESS gate fallbacks to LC; nothing when zero
+        n_k = sum(1 for r in rows if r.get("preassess_fallback") == kind)
+        if n_k:
+            agg[f"n_preassess_fallback_{kind}"] = n_k
     if n_nu:                                                          # no output at all when the count is zero
         agg["n_gate_no_usage"] = n_nu
     agg["latency_task_total_mean_s"] = mean([r["lat_s.task_total"] for r in rows])

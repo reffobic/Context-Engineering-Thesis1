@@ -37,3 +37,16 @@ def test_oct23_jobs_have_zero_calls_without_usage():
                 tasks += 1
                 n += len(M.no_usage_calls(json.loads(ln)))
     assert tasks == 386 and n == 0
+
+
+def _pa(reason):
+    return {"pipeline": {"mode": "PREASSESS", "stages": {"assess": {"summary": {"trace": [{"phase": "rag_gate", "reason": reason}]}}}}}
+
+
+def test_preassess_fallback_kinds_and_silence():
+    from harness.instrument import preassess_fallback
+    assert preassess_fallback(_pa("Structured judge unavailable (ReadTimeout); defaulting to LC."))["kind"] == "unavailable"
+    assert preassess_fallback(_pa("Structured judge unavailable (RuntimeError('boom')); defaulting to LC."))["kind"] == "unavailable"
+    assert preassess_fallback(_pa("Could not parse structured judge response; defaulting to LC."))["kind"] == "parse"
+    assert preassess_fallback(_pa("The retrieved chunk is enough."))is None
+    assert preassess_fallback({"pipeline": {"mode": "GAPA"}}) is None and preassess_fallback(None) is None

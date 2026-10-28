@@ -435,7 +435,8 @@ def run_task(job: Job, task: dict, force_timeout: bool) -> dict:
             "any_truncation_suspected": rec["any_truncation_suspected"], "token_reconciliation": rec["token_reconciliation"],
             "ollama_calls": [{k: v for k, v in c.items()} for c in rec["ollama_calls"]],
             "ranked": build_lists(job, task, out["lists_raw"]) if out["status"] == "ok" else None,
-            "pipeline_error": out.get("error")})
+            "pipeline_error": out.get("error"),
+            **({"preassess_fallback": rec["preassess_fallback"]} if rec.get("preassess_fallback") else {})})
         line["counted_as_failed"] = status != "ok" or gate_err or ans_err
         if status == "ok":
             try:

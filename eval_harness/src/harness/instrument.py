@@ -313,6 +313,12 @@ class Instrument:
             "gate_error_events": [{"name": e["name"], "reason": e.get("reason")} for e in ev if e.get("gate_error")],
             "answer_error": any(e.get("answer_error") for e in ev),
         }
+        pf = preassess_fallback(result)
+        if pf:                                                       # PREASSESS only; absent otherwise
+            rec["preassess_fallback"] = pf["kind"]
+            if not rec["gate_error"]:                                # the harness catch-all: the wrapper saw an exception, not a reason
+                rec["gate_error"] = True
+                rec["gate_error_events"] = (rec["gate_error_events"] or []) + [{"name": "gapa_gate_call1", "reason": pf["reason"]}]
         rec["token_reconciliation"] = reconcile(calls, result, rec["gate_error"])
         return rec
 
@@ -392,6 +398,20 @@ def check_structure_rerank(rec: dict) -> None:
     if r["expected"] and not r["applied"]:
         raise JobFailure(f"structure re-rank did not apply (flag={r['flag']}, called={r['called']}, "
                          f"raised={r['raised']}, call_graph_json_exists={r['call_graph_json_exists']})")
+
+
+def preassess_fallback(result: dict | None) -> dict | None:
+    """PREASSESS gate fallback to LC: {"kind": "unavailable" | "parse", "reason"}; None if the gate answered.
+    "unavailable" = the call failed ("... unavailable (<exception>)": request error, or the arm's catch-all);
+    "parse" = a reply came back but was not valid JSON."""
+    pipe = (result or {}).get("pipeline") or {}
+    if pipe.get("mode") != "PREASSESS":
+        return None
+    trace = ((((pipe.get("stages") or {}).get("assess") or {}).get("summary") or {}).get("trace")) or [{}]
+    reason = str(trace[0].get("reason") or "")
+    if not GATE_FALLBACK.search(reason):
+        return None
+    return {"kind": "parse" if "Could not parse" in reason else "unavailable", "reason": reason}
 
 
 def trace_tokens(result: dict | None) -> dict:
