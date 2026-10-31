@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import time
 import uuid
 from dataclasses import asdict
@@ -94,6 +95,8 @@ class GenerateRequest(BaseModel):
     pruning_method: Literal["heuristic", "selective"] = "heuristic"
     assessor_model: Optional[str] = None  # Ollama model for sufficiency judge; None = use default
     model: Optional[str] = None           # Ollama model for generation; None = use default
+    #: When false, force hybrid ``retrieve_context`` even for lookup prompts (A/B cost ablation).
+    use_lightweight_tools: bool = True
 
 class EvaluateRequest(BaseModel):
     """
@@ -231,6 +234,129 @@ def _retrieval_summary(items: list[dict]) -> dict:
     }
 
 
+def _lightweight_request(user_prompt: str) -> Optional[tuple[str, dict[str, Any]]]:
+    """Return a lightweight tool call only for explicit lookup requests."""
+    prompt = user_prompt.strip()
+    symbol_patterns = (
+        r"\bwhere\s+(?:is|are)\s+(?:class\s+|function\s+)?`?([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)?)`?\s+defined\b",
+        r"\bdefinition\s+of\s+`?([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)?)`?",
+        r"\bfind\s+(?:the\s+)?(?:class|function|definition\s+of)\s+`?([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)?)`?",
+    )
+    for pattern in symbol_patterns:
+        match = re.search(pattern, prompt, re.IGNORECASE)
+        if match:
+            return "find_symbol", {"symbol": match.group(1)}
+
+    reference_patterns = (
+        r"\b(?:references?|usages?|calls?|imports?)\s+(?:to|of)\s+`?([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)?)`?",
+        r"\bwhere\s+(?:is|are)\s+`?([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)?)`?\s+(?:used|called|referenced|imported)\b",
+        r"\bhow\s+is\s+`?([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)?)`?\s+(?:used|called|referenced|imported)\b",
+        r"\bwho\s+(?:uses|calls|imports|references)\s+`?([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)?)`?",
+    )
+    for pattern in reference_patterns:
+        match = re.search(pattern, prompt, re.IGNORECASE)
+        if match:
+            return "find_references", {"symbol": match.group(1)}
+
+    if re.search(r"\b(?:list|show|find|what|which)\b.{0,35}\bfiles?\b", prompt, re.IGNORECASE):
+        extension_match = re.search(r"(?<!\w)(\.[A-Za-z0-9]+)\b", prompt)
+        # Prefer path-like tokens (slash or known repo roots) over bare words like "directory".
+        directory = ""
+        for match in re.finditer(
+            r"\b(?:in|under|within)\s+(?:the\s+)?([\w./\\-]+)",
+            prompt,
+            re.IGNORECASE,
+        ):
+            candidate = match.group(1).strip("/\\.")
+            lowered = candidate.lower()
+            if "/" in candidate or "\\" in candidate or lowered.startswith(
+                ("superset", "tests", "backend", "src", "scripts")
+            ):
+                directory = candidate
+                break
+            if lowered not in {
+                "directory",
+                "folder",
+                "repo",
+                "repository",
+                "project",
+                "codebase",
+                "tree",
+                "index",
+            }:
+                directory = candidate
+        return "list_files", {
+            "directory": directory,
+            "extension": extension_match.group(1) if extension_match else "",
+        }
+
+    return None
+
+
+def _lightweight_context(tool_name: str, result: Any) -> list[dict]:
+    """Adapt lookup output to the retrieval chunk contract used downstream."""
+    entries: list[tuple[str, str, str, Any]] = []
+    if tool_name == "list_files":
+        paths = [str(path) for path in (result or [])]
+        # One compact listing chunk so prune cannot drop individual paths.
+        listing = "\n".join(paths) if paths else "No indexed files matched the requested filters."
+        entries = [(listing, "(file listing)", "list_files", None)]
+        empty_text = "No indexed files matched the requested filters."
+    elif tool_name == "find_symbol":
+        for match in result or []:
+            location = f"{match.get('file', '')}:{match.get('start_line', '?')}"
+            if match.get("end_line") is not None:
+                location += f"-{match['end_line']}"
+            detail = f"{match.get('symbol') or match.get('qualified_name')} ({match.get('chunk_type')}) at {location}"
+            if match.get("qualified_name"):
+                detail += f"\nQualified name: {match['qualified_name']}"
+            entries.append((detail, match.get("file", ""), match.get("symbol", ""), match.get("start_line")))
+        empty_text = "No exact indexed definition matched the requested symbol."
+    else:
+        for match in result or []:
+            location = f"{match.get('file', '')}:{match.get('start_line', '?')}"
+            if match.get("end_line") is not None:
+                location += f"-{match['end_line']}"
+            detail = f"Reference in {match.get('function') or match.get('chunk_type') or 'code'} at {location}"
+            if match.get("snippet"):
+                detail += f"\n{match['snippet']}"
+            entries.append((detail, match.get("file", ""), match.get("function", ""), match.get("start_line")))
+        empty_text = "No indexed text references matched the requested symbol."
+
+    if not entries:
+        entries = [(empty_text, "(lookup results)", tool_name, None)]
+
+    return [
+        {
+            "code": text,
+            "metadata": {
+                "file": path or "(lookup results)",
+                "function": symbol,
+                "start_line": start_line,
+                "language": "text",
+            },
+            "hybrid_score": 1.0,
+            "final_score": 1.0,
+        }
+        for text, path, symbol, start_line in entries
+    ]
+
+
+def _retrieve_for_prompt(
+    user_prompt: str,
+    *,
+    use_lightweight_tools: bool = True,
+) -> tuple[list[dict], Optional[str]]:
+    """Retrieve hybrid chunks, or route lookup prompts to lightweight tools when enabled."""
+    if use_lightweight_tools:
+        lightweight = _lightweight_request(user_prompt)
+        if lightweight is not None:
+            tool_name, arguments = lightweight
+            result = call_tool(tool_name, **arguments)
+            return _lightweight_context(tool_name, result), tool_name
+    return call_tool("retrieve_context", user_prompt), None
+
+
 def _pruning_summary(chunks: list[dict], stats: Any, token_budget: int) -> dict:
     stats_dict = asdict(stats)
     kept_tokens = stats_dict.get("kept_est_tokens", 0)
@@ -289,6 +415,7 @@ def run_pipeline(
     user_prompt: str,
     mode: str = "SELF_ROUTE",
     pruning_method: str = "heuristic",
+    use_lightweight_tools: bool = True,
 ) -> dict:
     import os
 
@@ -302,14 +429,22 @@ def run_pipeline(
         "tokens_injected_est": 0,
         "route": None,
         "hops_used": 0,
+        "use_lightweight_tools": use_lightweight_tools,
     }
 
     logging.info("Retrieval started")
-    context, duration_ms = _time_stage(lambda: call_tool("retrieve_context", user_prompt))
+    (context, lightweight_tool), duration_ms = _time_stage(
+        lambda: _retrieve_for_prompt(
+            user_prompt, use_lightweight_tools=use_lightweight_tools
+        )
+    )
+    retrieval_summary = _retrieval_summary(context)
+    if lightweight_tool:
+        retrieval_summary["lightweight_tool"] = lightweight_tool
     pipeline["stages"]["retrieve"] = _stage(
         "Retrieve context",
         duration_ms,
-        _retrieval_summary(context),
+        retrieval_summary,
         context,
     )
 
@@ -797,7 +932,12 @@ def index(
 
 @app.post("/generate")
 def generate(req: GenerateRequest):
-    return run_pipeline(req.prompt, mode=req.mode, pruning_method=req.pruning_method)
+    return run_pipeline(
+        req.prompt,
+        mode=req.mode,
+        pruning_method=req.pruning_method,
+        use_lightweight_tools=req.use_lightweight_tools,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -875,8 +1015,12 @@ def _run_pipeline_streaming(
         # ── Stage 1: Retrieve ──────────────────────────────────────────────
         yield _sse({"event": "stage_start", "stage": "retrieve", "label": "Retrieve context"})
         try:
-            context, duration_ms = _time_stage(lambda: call_tool("retrieve_context", user_prompt))
+            (context, lightweight_tool), duration_ms = _time_stage(
+                lambda: _retrieve_for_prompt(user_prompt)
+            )
             summary = _retrieval_summary(context)
+            if lightweight_tool:
+                summary["lightweight_tool"] = lightweight_tool
             yield _sse({"event": "stage", "stage": "retrieve", "status": "complete",
                         "label": "Retrieve context", "duration_ms": duration_ms, "summary": summary})
         except Exception as exc:
