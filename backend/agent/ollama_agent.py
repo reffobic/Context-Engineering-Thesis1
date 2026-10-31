@@ -928,26 +928,6 @@ class OllamaAgent:
         ]
         return sum(similarities) / len(similarities)
 
-    def accept_cached_followup_draft(self, task: str, draft: str) -> str:
-        """Store a confident cached-context draft as the completed assistant turn."""
-        task = self._clean_topic(task)
-        if not self._is_assistant_referential_followup(task):
-            raise ValueError("Only assistant-referential follow-ups can use a cached draft.")
-        response = draft.strip()
-        if not response:
-            raise ValueError("A cached follow-up draft must not be empty.")
-
-        self.messages.append({"role": "user", "content": task})
-        self.messages.append({"role": "assistant", "content": response})
-        self._trim_messages()
-        self._save_messages()
-        print(
-            f"[Memory] Short-term turns={sum(1 for m in self.messages if m.get('role')=='user')} "
-            f"(messages={len(self.messages)}, saved={self._history_path.name})"
-        )
-        self._remember_chat_turn(task, response)
-        return response
-
     def cache_code_context(
         self,
         chunks: List[ContextChunk],

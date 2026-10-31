@@ -170,13 +170,19 @@ def test_high_logprob_but_unsupported_draft_continues_to_retrieval(
     assert "contradicts the cached source" in decision["reason"]
 
 
-def test_accepting_cached_draft_persists_followup(agent: OllamaAgent) -> None:
-    response = agent.accept_cached_followup_draft(
-        "What does it do?",
-        "It validates the request, then dispatches it.",
-    )
+def test_cached_followup_answer_uses_normal_response_generation(agent: OllamaAgent) -> None:
+    captured: list[list[dict[str, str]]] = []
 
-    assert response == "It validates the request, then dispatches it."
+    def chat(messages: list[dict[str, str]] | None = None) -> str:
+        assert messages is not None
+        captured.append(messages)
+        return "A complete answer generated with the normal response budget."
+
+    agent._chat = chat  # type: ignore[method-assign]
+    response = agent.generate_response("What does it do?")
+
+    assert response == "A complete answer generated with the normal response budget."
+    assert "Previous assistant reply:\nIt validates the request and dispatches it." in captured[0][1]["content"]
     assert agent.messages[-2:] == [
         {"role": "user", "content": "What does it do?"},
         {"role": "assistant", "content": response},

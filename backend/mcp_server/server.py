@@ -351,11 +351,11 @@ def run_pipeline(
                     "reason": skip_reason,
                 },
             )
+            # The confidence draft only decides whether cached context is
+            # sufficient; generate the user-facing answer with the normal
+            # response budget so the draft limit cannot truncate the answer.
             result, duration_ms = _time_stage(
-                lambda: _memory_agent.accept_cached_followup_draft(
-                    user_prompt,
-                    str(cache_decision["draft"]),
-                )
+                lambda: _memory_agent.generate_response(user_prompt)
             )
             pipeline["stages"]["generate"] = _stage(
                 "Generate answer",
