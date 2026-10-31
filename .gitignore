@@ -30,3 +30,9 @@ docs/*.docx
 docs/*.png
 docs/_build_*.py
 docs/_tmp_*.py
+
+# Agent / IDE configurations
+.agents/
+.antigravity
+.cursor
+
