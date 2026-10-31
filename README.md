@@ -44,15 +44,20 @@ flowchart LR
   end
   subgraph online [Request path]
     Q[User prompt]
+    G[Cached follow-up confidence gate]
     R[Retrieve chunks]
     P[Prune chunks]
+    A[Assess RAG vs LC]
     I[Inject prompts]
     L[Ollama LLM]
-    Q --> R --> P --> I --> L
+    Q --> G
+    G -- confident --> L
+    G -- uncertain or not a follow-up --> R --> P --> A --> I --> L
   end
   CH --> R
 ```
 
+- In `SELF_ROUTE`, a regex prefilter first identifies assistant-referential follow-ups. Only those questions receive a short draft prompt containing the previous assistant reply and cached code context. Ollama token logprob margins are used when supported; otherwise three drafts are compared for consistency. A confident draft skips retrieval and becomes the answer; an uncertain draft continues through retrieval, pruning, and the RAG-vs-LC assessor. Meta-memory and normal coding questions bypass the confidence model call.
 - **Indexing** embeds code chunks and stores them in **ChromaDB** (cosine space, collection `code_embeddings` by default).
 - **Retrieval** uses **hybrid** signals (dense vectors, BM25-style keywording, path/symbol hooks, then ranking) implemented in `backend/retrieval/retrieval_tool.py`. It is not “pure dense vector only,” but the dominant signal is still embedding similarity over the same index.
 - **Pruning** is structure-aware and token-budget–driven (`backend/pruning/file.py`), wired into `run_pipeline` and the tools.

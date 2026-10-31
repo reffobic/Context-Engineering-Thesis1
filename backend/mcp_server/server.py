@@ -281,6 +281,7 @@ def run_pipeline(
 
     # Resolve pronouns / "again" against chat history *before* retrieval.
     original_prompt = user_prompt
+    _memory_agent = None
     try:
         from agent.agent_endpoint import agent as _memory_agent
 
@@ -301,8 +302,87 @@ def run_pipeline(
         "retrieval_mode": rm,
         "route_mode": route_mode,
         "stages": {},
-        "stage_order": ["retrieve", "prune", "assess", "inject", "generate"],
+        "stage_order": (
+            ["cache_confidence"] if route_mode == "SELF_ROUTE" else []
+        ) + ["retrieve", "prune", "assess", "inject", "generate"],
     }
+
+    # Only assistant-referential follow-ups are eligible for the cached-context
+    # path. The agent's regex prefilter avoids spending a model call on normal
+    # coding requests and meta-memory questions.
+    cache_decision: Optional[dict[str, Any]] = None
+    if route_mode == "SELF_ROUTE" and _memory_agent is not None:
+        cache_decision, duration_ms = _time_stage(
+            lambda: _memory_agent.assess_cached_followup(user_prompt)
+        )
+        pipeline["stages"]["cache_confidence"] = _stage(
+            "Cached-context confidence",
+            duration_ms,
+            {
+                key: cache_decision.get(key)
+                for key in ("candidate", "confident", "method", "score", "reason")
+            },
+        )
+        if cache_decision.get("confident"):
+            skip_reason = str(cache_decision["reason"])
+            logging.info(
+                "Cached-context gate passed (method=%s, score=%s); skipping retrieval",
+                cache_decision.get("method"),
+                cache_decision.get("score"),
+            )
+            for key, name in (
+                ("retrieve", "Retrieve context"),
+                ("prune", "Pruning"),
+                ("inject", "Build final prompt"),
+            ):
+                pipeline["stages"][key] = {
+                    "name": name,
+                    "status": "skipped",
+                    "duration_ms": 0,
+                    "summary": {"reason": skip_reason},
+                }
+            pipeline["stages"]["assess"] = _stage(
+                "Sufficiency assessment",
+                0,
+                {
+                    "route": "SKIP",
+                    "sufficient": True,
+                    "confidence": "high",
+                    "reason": skip_reason,
+                },
+            )
+            result, duration_ms = _time_stage(
+                lambda: _memory_agent.accept_cached_followup_draft(
+                    user_prompt,
+                    str(cache_decision["draft"]),
+                )
+            )
+            pipeline["stages"]["generate"] = _stage(
+                "Generate answer",
+                duration_ms,
+                {
+                    "output_type": type(result).__name__,
+                    "output_chars": len(result),
+                    "preview": _preview_text(result),
+                },
+                result,
+            )
+            return {"output": result, "pipeline": pipeline}
+    elif route_mode == "SELF_ROUTE":
+        logging.warning(
+            "Cached-context confidence gate unavailable; continuing with retrieval"
+        )
+        pipeline["stages"]["cache_confidence"] = _stage(
+            "Cached-context confidence",
+            0,
+            {
+                "candidate": False,
+                "confident": False,
+                "method": "unavailable",
+                "score": None,
+                "reason": "Agent unavailable; continuing with retrieval.",
+            },
+        )
 
     logging.info("Retrieval started (retrieval_mode=%s)", rm)
     context, duration_ms = _time_stage(
@@ -411,6 +491,18 @@ def run_pipeline(
         context_for_injection = pruned_context
     # ─────────────────────────────────────────────────────────────────────────
 
+    use_retrieved_followup_context = bool(
+        cache_decision
+        and cache_decision.get("candidate")
+        and not cache_decision.get("confident")
+    )
+    if _memory_agent is not None:
+        _memory_agent.cache_code_context(
+            context_for_injection,
+            user_task=user_prompt,
+            force=use_retrieved_followup_context,
+        )
+
     logging.info("Injection started")
     final_prompt, duration_ms = _time_stage(
         lambda: call_tool("inject_context", user_prompt, context_for_injection)
@@ -423,7 +515,12 @@ def run_pipeline(
     )
 
     logging.info("Generating response")
-    result, duration_ms = _time_stage(lambda: call_tool("ollama_generate", final_prompt))
+    generate_payload: Any = final_prompt
+    if use_retrieved_followup_context and isinstance(final_prompt, dict):
+        generate_payload = {**final_prompt, "force_retrieval": True}
+    result, duration_ms = _time_stage(
+        lambda: call_tool("ollama_generate", generate_payload)
+    )
     pipeline["stages"]["generate"] = _stage(
         "Generate answer",
         duration_ms,

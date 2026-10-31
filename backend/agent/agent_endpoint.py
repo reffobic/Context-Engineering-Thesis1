@@ -16,8 +16,13 @@ def ollama_generate(payload: Union[str, dict[str, Any]]) -> str:
     if isinstance(payload, dict):
         system = payload.get("system")
         user = payload.get("user")
+        force_retrieval = bool(payload.get("force_retrieval", False))
         if isinstance(user, str) and user:
-            return agent.generate_response(user, system=system if isinstance(system, str) else None)
+            return agent.generate_response(
+                user,
+                system=system if isinstance(system, str) else None,
+                force_retrieval=force_retrieval,
+            )
     if isinstance(payload, str):
         return agent.generate_response(payload)
     return agent.generate_response(str(payload))

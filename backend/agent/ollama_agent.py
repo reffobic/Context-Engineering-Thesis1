@@ -23,6 +23,7 @@ from __future__ import annotations
 import json
 import os
 import re
+from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any, List, Optional
 from urllib.error import HTTPError, URLError
@@ -52,6 +53,9 @@ from injection.prompt_builder import (
 # Local embedder dims for all-MiniLM-L6-v2
 _MEM0_EMBEDDING_DIMS = 384
 _MEM0_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+_FOLLOWUP_LOGPROB_MARGIN_THRESHOLD = 1.0
+_FOLLOWUP_SAMPLE_SIMILARITY_THRESHOLD = 0.78
+_FOLLOWUP_DRAFT_TOKENS = 192
 
 # Process-wide singleton so short-term history survives across callers
 # (agent_endpoint, generate_response shortcut, tests) within one server process.
@@ -687,6 +691,220 @@ class OllamaAgent:
         ])
         return "\n".join(parts)
 
+    def assess_cached_followup(self, task: str) -> dict[str, Any]:
+        """
+        Draft an answer from cached conversation/code context and assess whether
+        that context is sufficient to skip fresh retrieval.
+        """
+        task = self._clean_topic(task)
+        if self._is_meta_memory_question(task) or not self._is_assistant_referential_followup(task):
+            return {
+                "candidate": False,
+                "confident": False,
+                "method": "regex_prefilter",
+                "score": None,
+                "reason": "The question did not pass the assistant-follow-up prefilter.",
+            }
+
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "Answer this follow-up using only the previous assistant reply "
+                    "and cached code context in the user message. Be concise. If "
+                    "those sources do not contain the answer, say what is missing."
+                ),
+            },
+            {
+                "role": "user",
+                "content": self._build_assistant_followup_prompt(task),
+            },
+        ]
+        raw: dict[str, Any]
+        try:
+            raw = self._request_followup_draft(messages, logprobs=True, temperature=0.2)
+        except RuntimeError as exc:
+            message = str(exc).lower()
+            unsupported = (
+                "ollama http error 400" in message
+                and ("logprobs" in message or "top_logprobs" in message)
+            )
+            if not unsupported:
+                raise
+            raw = self._request_followup_draft(
+                messages,
+                logprobs=False,
+                temperature=0.2,
+            )
+
+        draft = self._followup_draft_content(raw)
+        margin = self._logprob_margin(raw)
+        if margin is not None:
+            confident = margin >= _FOLLOWUP_LOGPROB_MARGIN_THRESHOLD
+            return {
+                "candidate": True,
+                "confident": confident,
+                "method": "logprob_margin",
+                "score": round(margin, 4),
+                "reason": (
+                    "Cached-context draft passed the logprob margin threshold."
+                    if confident
+                    else "Cached-context draft was below the logprob margin threshold."
+                ),
+                "draft": draft,
+            }
+
+        samples = [draft]
+        for _ in range(2):
+            samples.append(
+                self._followup_draft_content(
+                    self._request_followup_draft(
+                        messages,
+                        logprobs=False,
+                        temperature=0.7,
+                    )
+                )
+            )
+        consistency = self._sample_consistency(samples)
+        confident = consistency >= _FOLLOWUP_SAMPLE_SIMILARITY_THRESHOLD
+        return {
+            "candidate": True,
+            "confident": confident,
+            "method": "multi_sample_similarity",
+            "score": round(consistency, 4),
+            "reason": (
+                "Cached-context drafts were consistent."
+                if confident
+                else "Cached-context drafts varied; fresh retrieval is needed."
+            ),
+            "draft": draft,
+        }
+
+    def _request_followup_draft(
+        self,
+        messages: List[dict[str, str]],
+        *,
+        logprobs: bool,
+        temperature: float,
+    ) -> dict[str, Any]:
+        body: dict[str, Any] = {
+            "model": self.model,
+            "messages": messages,
+            "stream": False,
+            "think": self.think,
+            "options": {
+                "num_predict": _FOLLOWUP_DRAFT_TOKENS,
+                "temperature": temperature,
+            },
+        }
+        if logprobs:
+            body["logprobs"] = True
+            body["top_logprobs"] = 5
+        return self._post_json_raw(f"{self.base_url}/api/chat", body)
+
+    @staticmethod
+    def _followup_draft_content(raw: dict[str, Any]) -> str:
+        message = raw.get("message") or {}
+        draft = str(message.get("content") or "").strip()
+        if not draft:
+            raise RuntimeError(f"Ollama returned no follow-up draft content: {raw}")
+        return draft
+
+    @staticmethod
+    def _logprob_margin(raw: dict[str, Any]) -> Optional[float]:
+        message = raw.get("message") or {}
+        token_scores = message.get("logprobs") or raw.get("logprobs")
+        if not isinstance(token_scores, list):
+            return None
+
+        margins: list[float] = []
+        for token_score in token_scores:
+            if not isinstance(token_score, dict):
+                continue
+            chosen_token = token_score.get("token")
+            try:
+                chosen_score = float(token_score["logprob"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            alternatives = token_score.get("top_logprobs") or []
+            other_scores = []
+            for alternative in alternatives:
+                if not isinstance(alternative, dict):
+                    continue
+                if alternative.get("token") == chosen_token:
+                    continue
+                try:
+                    other_scores.append(float(alternative["logprob"]))
+                except (KeyError, TypeError, ValueError):
+                    continue
+            if other_scores:
+                margins.append(chosen_score - max(other_scores))
+        return sum(margins) / len(margins) if margins else None
+
+    @staticmethod
+    def _sample_consistency(samples: List[str]) -> float:
+        if len(samples) < 2 or any(not sample.strip() for sample in samples):
+            return 0.0
+        normalized = [re.sub(r"\s+", " ", sample.strip().lower()) for sample in samples]
+        similarities = [
+            SequenceMatcher(None, normalized[i], normalized[j]).ratio()
+            for i in range(len(normalized))
+            for j in range(i + 1, len(normalized))
+        ]
+        return sum(similarities) / len(similarities)
+
+    def accept_cached_followup_draft(self, task: str, draft: str) -> str:
+        """Store a confident cached-context draft as the completed assistant turn."""
+        task = self._clean_topic(task)
+        if not self._is_assistant_referential_followup(task):
+            raise ValueError("Only assistant-referential follow-ups can use a cached draft.")
+        response = draft.strip()
+        if not response:
+            raise ValueError("A cached follow-up draft must not be empty.")
+
+        self.messages.append({"role": "user", "content": task})
+        self.messages.append({"role": "assistant", "content": response})
+        self._trim_messages()
+        self._save_messages()
+        print(
+            f"[Memory] Short-term turns={sum(1 for m in self.messages if m.get('role')=='user')} "
+            f"(messages={len(self.messages)}, saved={self._history_path.name})"
+        )
+        self._remember_chat_turn(task, response)
+        return response
+
+    def cache_code_context(
+        self,
+        chunks: List[ContextChunk],
+        *,
+        user_task: str,
+        force: bool = False,
+        extra_dependencies: Optional[str] = None,
+    ) -> None:
+        """Persist the latest retrieved chunks for a later assistant follow-up."""
+        if self._is_meta_memory_question(user_task) or (
+            not force and self._is_assistant_referential_followup(user_task)
+        ):
+            return
+
+        context_parts: List[str] = []
+        for chunk in chunks:
+            if isinstance(chunk, dict):
+                path = str(chunk.get("path", ""))
+                symbol = str(chunk.get("symbol", ""))
+                chunk_text = str(chunk.get("text", ""))
+                if chunk_text:
+                    header = f"[{path}::{symbol}]" if symbol else f"[{path}]"
+                    context_parts.append(f"{header}\n{chunk_text}")
+            elif chunk:
+                context_parts.append(str(chunk))
+        if extra_dependencies:
+            context_parts.append(f"[Extra dependencies]\n{extra_dependencies}")
+
+        if context_parts:
+            self._last_code_context = "\n\n".join(context_parts)
+            self._save_last_code_context(self._last_code_context)
+
     def _build_meta_memory_prompt(self, task: str) -> str:
         """
         Build a RAG-free prompt for conversation-memory questions.
@@ -837,6 +1055,8 @@ class OllamaAgent:
         self,
         prompt: str,
         system: Optional[str] = None,
+        *,
+        force_retrieval: bool = False,
     ) -> str:
         """
         Generate a response using Ollama.
@@ -863,7 +1083,10 @@ class OllamaAgent:
         task = self._clean_topic(task)
 
         meta = self._is_meta_memory_question(task)
-        assistant_ref = self._is_assistant_referential_followup(task)
+        assistant_ref = (
+            not force_retrieval
+            and self._is_assistant_referential_followup(task)
+        )
 
         if meta or assistant_ref:
             if assistant_ref:
@@ -1110,31 +1333,12 @@ class OllamaAgent:
         """
 
         # Keep the previous retrieval result available for conversational
-        # follow-ups.  Do not put it into the normal chat history because that
-        # would repeatedly inflate the context window.
-        context_parts: List[str] = []
-        for chunk in chunks:
-            if isinstance(chunk, dict):
-                path = str(chunk.get("path", ""))
-                symbol = str(chunk.get("symbol", ""))
-                chunk_text = str(chunk.get("text", ""))
-                if chunk_text:
-                    header = f"[{path}::{symbol}]" if symbol else f"[{path}]"
-                    context_parts.append(f"{header}\n{chunk_text}")
-            elif chunk:
-                context_parts.append(str(chunk))
-
-        if extra_dependencies:
-            context_parts.append(f"[Extra dependencies]\n{extra_dependencies}")
-
-        # Do not overwrite the previous turn's code context when this request
-        # is itself a conversational follow-up.  The upstream retriever may
-        # have produced unrelated chunks for an underspecified query such as
-        # "what are its dependencies?", but those chunks must not replace the
-        # context belonging to "its".
-        if context_parts and not self._is_assistant_referential_followup(user_task):
-            self._last_code_context = "\n\n".join(context_parts)
-            self._save_last_code_context(self._last_code_context)
+        # follow-ups without inflating the normal chat history.
+        self.cache_code_context(
+            chunks,
+            user_task=user_task,
+            extra_dependencies=extra_dependencies,
+        )
 
         builder = prompt_builder or PromptBuilder(
             system_prompt=(system_prompt or DEFAULT_SYSTEM_PROMPT)
