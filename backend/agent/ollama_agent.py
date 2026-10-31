@@ -741,44 +741,114 @@ class OllamaAgent:
         margin = self._logprob_margin(raw)
         if margin is not None:
             confident = margin >= _FOLLOWUP_LOGPROB_MARGIN_THRESHOLD
-            return {
-                "candidate": True,
-                "confident": confident,
-                "method": "logprob_margin",
-                "score": round(margin, 4),
-                "reason": (
-                    "Cached-context draft passed the logprob margin threshold."
-                    if confident
-                    else "Cached-context draft was below the logprob margin threshold."
-                ),
-                "draft": draft,
-            }
-
-        samples = [draft]
-        for _ in range(2):
-            samples.append(
-                self._followup_draft_content(
-                    self._request_followup_draft(
-                        messages,
-                        logprobs=False,
-                        temperature=0.7,
+            method = "logprob_margin"
+            score = round(margin, 4)
+            confidence_reason = (
+                "Cached-context draft passed the logprob margin threshold."
+                if confident
+                else "Cached-context draft was below the logprob margin threshold."
+            )
+        else:
+            samples = [draft]
+            for _ in range(2):
+                samples.append(
+                    self._followup_draft_content(
+                        self._request_followup_draft(
+                            messages,
+                            logprobs=False,
+                            temperature=0.7,
+                        )
                     )
                 )
-            )
-        consistency = self._sample_consistency(samples)
-        confident = consistency >= _FOLLOWUP_SAMPLE_SIMILARITY_THRESHOLD
-        return {
-            "candidate": True,
-            "confident": confident,
-            "method": "multi_sample_similarity",
-            "score": round(consistency, 4),
-            "reason": (
+            consistency = self._sample_consistency(samples)
+            confident = consistency >= _FOLLOWUP_SAMPLE_SIMILARITY_THRESHOLD
+            method = "multi_sample_similarity"
+            score = round(consistency, 4)
+            confidence_reason = (
                 "Cached-context drafts were consistent."
                 if confident
                 else "Cached-context drafts varied; fresh retrieval is needed."
-            ),
+            )
+
+        support_reason = ""
+        if confident:
+            supported, support_reason = self._cached_draft_is_supported(
+                task,
+                self._build_assistant_followup_prompt(task),
+                draft,
+            )
+            confident = supported
+
+        if not confident and support_reason:
+            reason = support_reason
+        else:
+            reason = confidence_reason
+
+        return {
+            "candidate": True,
+            "confident": confident,
+            "method": method,
+            "score": score,
+            "reason": reason,
             "draft": draft,
         }
+
+    def _cached_draft_is_supported(
+        self,
+        task: str,
+        cached_context: str,
+        draft: str,
+    ) -> tuple[bool, str]:
+        """Require a separate check that the cached sources support the draft."""
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are a strict evidence checker. Decide whether the "
+                    "candidate answer is fully supported by the supplied "
+                    "previous assistant reply and cached code context. Do not "
+                    "approve answers based on general knowledge or plausibility. "
+                    "Return JSON only with boolean 'supported' and a brief "
+                    "'reason'."
+                ),
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"Follow-up question:\n{task}\n\n"
+                    f"Cached sources:\n{cached_context}\n\n"
+                    f"Candidate answer:\n{draft}\n\n"
+                    'Return {"supported": true or false, "reason": "..."}'
+                ),
+            },
+        ]
+        raw = self._request_followup_draft(
+            messages,
+            logprobs=False,
+            temperature=0.0,
+        )
+        content = self._followup_draft_content(raw)
+        match = re.search(r"\{[\s\S]*?\}", content)
+        if match:
+            try:
+                result = json.loads(match.group(0))
+            except json.JSONDecodeError:
+                result = {}
+        else:
+            result = {}
+
+        supported = result.get("supported")
+        reason = str(result.get("reason") or "").strip()
+        if not isinstance(supported, bool):
+            return (
+                False,
+                "Cached-context support check was inconclusive; continuing with retrieval.",
+            )
+        return supported, reason or (
+            "Cached context supports the draft."
+            if supported
+            else "Cached context does not support the draft; continuing with retrieval."
+        )
 
     def _request_followup_draft(
         self,

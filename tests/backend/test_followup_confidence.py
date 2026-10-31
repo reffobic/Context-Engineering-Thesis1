@@ -61,6 +61,8 @@ def test_confident_logprob_draft_uses_cached_context(agent: OllamaAgent) -> None
 
     def post(_url: str, body: dict[str, Any]) -> dict[str, Any]:
         captured.append(body)
+        if "strict evidence checker" in body["messages"][0]["content"].lower():
+            return _draft('{"supported": true, "reason": "The cached code confirms it."}')
         return _draft("Its dependencies are request and dispatch.", logprobs=token_scores)
 
     agent._post_json_raw = post  # type: ignore[method-assign]
@@ -69,7 +71,7 @@ def test_confident_logprob_draft_uses_cached_context(agent: OllamaAgent) -> None
     assert decision["candidate"] is True
     assert decision["confident"] is True
     assert decision["method"] == "logprob_margin"
-    assert len(captured) == 1
+    assert len(captured) == 2
     cached_prompt = captured[0]["messages"][1]["content"]
     assert "Previous assistant reply:\nIt validates the request and dispatches it." in cached_prompt
     assert "Code context retrieved for that previous topic:" in cached_prompt
@@ -83,7 +85,12 @@ def test_varying_samples_continue_to_retrieval(agent: OllamaAgent) -> None:
             "It returns the result of dispatch.",
         ]
     )
-    agent._post_json_raw = lambda *_args, **_kwargs: _draft(next(answers))  # type: ignore[method-assign]
+    def post(_url: str, body: dict[str, Any]) -> dict[str, Any]:
+        if "strict evidence checker" in body["messages"][0]["content"].lower():
+            return _draft('{"supported": true, "reason": "Supported."}')
+        return _draft(next(answers))
+
+    agent._post_json_raw = post  # type: ignore[method-assign]
 
     decision = agent.assess_cached_followup("What does it return?")
 
@@ -93,9 +100,12 @@ def test_varying_samples_continue_to_retrieval(agent: OllamaAgent) -> None:
 
 
 def test_consistent_samples_skip_retrieval(agent: OllamaAgent) -> None:
-    agent._post_json_raw = lambda *_args, **_kwargs: _draft(  # type: ignore[method-assign]
-        "It validates the request, then dispatches it."
-    )
+    def post(_url: str, body: dict[str, Any]) -> dict[str, Any]:
+        if "strict evidence checker" in body["messages"][0]["content"].lower():
+            return _draft('{"supported": true, "reason": "Supported."}')
+        return _draft("It validates the request, then dispatches it.")
+
+    agent._post_json_raw = post  # type: ignore[method-assign]
 
     decision = agent.assess_cached_followup("What does it do?")
 
@@ -108,6 +118,8 @@ def test_unsupported_logprobs_fall_back_to_sampling(agent: OllamaAgent) -> None:
 
     def post(_url: str, body: dict[str, Any]) -> dict[str, Any]:
         calls.append(body)
+        if "strict evidence checker" in body["messages"][0]["content"].lower():
+            return _draft('{"supported": true, "reason": "Supported."}')
         if body.get("logprobs"):
             raise RuntimeError("Ollama HTTP error 400: unknown field 'logprobs'")
         return _draft("It validates the request, then dispatches it.")
@@ -117,9 +129,43 @@ def test_unsupported_logprobs_fall_back_to_sampling(agent: OllamaAgent) -> None:
 
     assert decision["confident"] is True
     assert decision["method"] == "multi_sample_similarity"
-    assert len(calls) == 4
+    assert len(calls) == 5
     assert calls[0]["logprobs"] is True
     assert all("logprobs" not in call for call in calls[1:])
+
+
+def test_high_logprob_but_unsupported_draft_continues_to_retrieval(
+    agent: OllamaAgent,
+) -> None:
+    token_scores = [
+        {
+            "token": "The",
+            "logprob": -0.01,
+            "top_logprobs": [
+                {"token": "The", "logprob": -0.01},
+                {"token": "A", "logprob": -4.0},
+            ],
+        }
+    ]
+
+    def post(_url: str, body: dict[str, Any]) -> dict[str, Any]:
+        if "strict evidence checker" in body["messages"][0]["content"].lower():
+            return _draft(
+                '{"supported": false, "reason": "The answer contradicts the cached source."}'
+            )
+        return _draft(
+            "Meta-memory questions trigger a fresh Mem0 search.",
+            logprobs=token_scores,
+        )
+
+    agent._post_json_raw = post  # type: ignore[method-assign]
+    decision = agent.assess_cached_followup(
+        "What does it do with meta-memory questions?"
+    )
+
+    assert decision["candidate"] is True
+    assert decision["confident"] is False
+    assert "contradicts the cached source" in decision["reason"]
 
 
 def test_accepting_cached_draft_persists_followup(agent: OllamaAgent) -> None:

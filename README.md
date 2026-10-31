@@ -57,7 +57,7 @@ flowchart LR
   CH --> R
 ```
 
-- In `SELF_ROUTE`, a regex prefilter first identifies assistant-referential follow-ups. Only those questions receive a short draft prompt containing the previous assistant reply and cached code context. Ollama token logprob margins are used when supported; otherwise three drafts are compared for consistency. A confident draft skips retrieval and becomes the answer; an uncertain draft continues through retrieval, pruning, and the RAG-vs-LC assessor. Meta-memory and normal coding questions bypass the confidence model call.
+- In `SELF_ROUTE`, a regex prefilter first identifies assistant-referential follow-ups. Only those questions receive a short draft prompt containing the previous assistant reply and cached code context. Ollama token logprob margins are used when supported; otherwise three drafts are compared for consistency. A statistically confident draft must also pass a separate cached-source support check before it can skip retrieval; an uncertain or unsupported draft continues through retrieval, pruning, and the RAG-vs-LC assessor. Meta-memory and normal coding questions bypass the confidence model call.
 - **Indexing** embeds code chunks and stores them in **ChromaDB** (cosine space, collection `code_embeddings` by default).
 - **Retrieval** uses **hybrid** signals (dense vectors, BM25-style keywording, path/symbol hooks, then ranking) implemented in `backend/retrieval/retrieval_tool.py`. It is not “pure dense vector only,” but the dominant signal is still embedding similarity over the same index.
 - **Pruning** is structure-aware and token-budget–driven (`backend/pruning/file.py`), wired into `run_pipeline` and the tools.
