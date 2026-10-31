@@ -1,14 +1,16 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { checkOllama } from './extension';
+import { checkOllama, setIndexingContext } from './extension';
 
 export class SidebarProvider implements vscode.WebviewViewProvider {
     private _view?: vscode.WebviewView;
     private readonly _context: vscode.ExtensionContext;
+    private readonly _logger?: vscode.LogOutputChannel;
 
-    constructor(context: vscode.ExtensionContext) {
+    constructor(context: vscode.ExtensionContext, logger?: vscode.LogOutputChannel) {
         this._context = context;
+        this._logger = logger;
     }
 
     public resolveWebviewView(
@@ -86,19 +88,23 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
                     await this._context.globalState.update('customModels', message.models || []);
                     break;
                 case 'startServer':
-                    vscode.commands.executeCommand('contextEngine.startServer');
+                    void vscode.commands.executeCommand('contextEngine.startServer');
                     break;
                 case 'stopServer':
-                    vscode.commands.executeCommand('contextEngine.stopServer');
+                    void vscode.commands.executeCommand('contextEngine.stopServer');
+                    break;
+                case 'setIndexing':
+                    void setIndexingContext(Boolean(message.indexing));
                     break;
                 case 'showError':
                     vscode.window.showErrorMessage(`Context Engine: ${message.text}`);
                     break;
                 case 'showInfo':
-                    vscode.window.showInformationMessage(`Context Engine: ${message.text}`);
+                    vscode.window.setStatusBarMessage(`$(info) Context Engine: ${message.text}`, 4000);
                     break;
                 case 'copyToClipboard':
                     await vscode.env.clipboard.writeText(message.text);
+                    vscode.window.setStatusBarMessage('$(check) Copied code to clipboard', 2500);
                     break;
                 case 'openExternal':
                     if (message.url) {
@@ -192,22 +198,30 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         });
     }
 
-    private async _applyToFile(filePath: string, content: string) {
-        if (!filePath) {
-            vscode.window.showErrorMessage('Context Engine: No file path specified for apply.');
+    private async _applyToFile(filePath: string | undefined, content: string) {
+        let targetEditor = vscode.window.activeTextEditor;
+        if (filePath) {
+            const uri = vscode.Uri.file(filePath);
+            const doc = await vscode.workspace.openTextDocument(uri);
+            targetEditor = await vscode.window.showTextDocument(doc);
+        }
+        if (!targetEditor) {
+            vscode.window.showWarningMessage('Open a file in the editor first to apply this code snippet.');
             return;
         }
-        const uri = vscode.Uri.file(filePath);
-        const doc = await vscode.workspace.openTextDocument(uri);
-        const editor = await vscode.window.showTextDocument(doc);
+        const doc = targetEditor.document;
         const edit = new vscode.WorkspaceEdit();
-        const fullRange = new vscode.Range(
-            doc.positionAt(0),
-            doc.positionAt(doc.getText().length)
-        );
-        edit.replace(uri, fullRange, content);
+        if (!targetEditor.selection.isEmpty) {
+            edit.replace(doc.uri, targetEditor.selection, content);
+        } else {
+            const fullRange = new vscode.Range(
+                doc.positionAt(0),
+                doc.positionAt(doc.getText().length)
+            );
+            edit.replace(doc.uri, fullRange, content);
+        }
         await vscode.workspace.applyEdit(edit);
-        vscode.window.showInformationMessage('Context Engine: Changes applied to file.');
+        vscode.window.setStatusBarMessage(`$(check) Applied changes to ${vscode.workspace.asRelativePath(doc.uri)}`, 3500);
     }
 
     private async _openFile(filePath: string, line?: number) {
@@ -225,7 +239,13 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
 
     private _getHtml(webview: vscode.Webview): string {
         const webviewDir = vscode.Uri.joinPath(this._context.extensionUri, 'webview');
-        const codiconsUri = webview.asWebviewUri(vscode.Uri.joinPath(this._context.extensionUri, 'node_modules', '@vscode', 'codicons', 'dist', 'codicon.css'));
+        const bundledCodiconsPath = vscode.Uri.joinPath(webviewDir, 'codicons', 'codicon.css');
+        const nodeModulesCodiconsPath = vscode.Uri.joinPath(
+            this._context.extensionUri, 'node_modules', '@vscode', 'codicons', 'dist', 'codicon.css'
+        );
+        const codiconsUri = webview.asWebviewUri(
+            fs.existsSync(bundledCodiconsPath.fsPath) ? bundledCodiconsPath : nodeModulesCodiconsPath
+        );
 
         const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(webviewDir, 'style.css'));
         const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(webviewDir, 'main.js'));

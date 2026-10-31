@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- Central AST / Context Hub Node -->
+  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.75" />
+  <!-- Outer Graph Nodes -->
+  <circle cx="5" cy="6" r="2" stroke="currentColor" stroke-width="1.75" />
+  <circle cx="19" cy="6" r="2" stroke="currentColor" stroke-width="1.75" />
+  <circle cx="5" cy="18" r="2" stroke="currentColor" stroke-width="1.75" />
+  <circle cx="19" cy="18" r="2" stroke="currentColor" stroke-width="1.75" />
+  <!-- Directed Call-Graph / Retrieval Edges -->
+  <path d="M6.6 7.2L9.6 10.1M17.4 7.2L14.4 10.1M6.6 16.8L9.6 13.9M17.4 16.8L14.4 13.9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+  <path d="M12 3V6M12 18V21" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+</svg>
+

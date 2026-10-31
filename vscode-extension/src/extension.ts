@@ -7,9 +7,17 @@ import { SidebarProvider } from './sidebarProvider';
 
 let serverProcess: cp.ChildProcess | null = null;
 let statusBarItem: vscode.StatusBarItem;
+let logger: vscode.LogOutputChannel;
 
 export function activate(context: vscode.ExtensionContext) {
-    console.log('Context Engine extension activating...');
+    // ── Native LogOutputChannel ─────────────────────────────────────────────
+    logger = vscode.window.createOutputChannel('Context Engine', { log: true });
+    context.subscriptions.push(logger);
+    logger.info('Activating Context Engine extension…');
+
+    // Initialize dynamic context keys for title bar actions
+    void setServerRunningContext(false);
+    void setIndexingContext(false);
 
     // ── Status Bar ──────────────────────────────────────────────────────────
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
@@ -19,7 +27,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(statusBarItem);
 
     // ── Sidebar WebviewView Provider ────────────────────────────────────────
-    const sidebarProvider = new SidebarProvider(context);
+    const sidebarProvider = new SidebarProvider(context, logger);
     context.subscriptions.push(
         vscode.window.registerWebviewViewProvider('contextEngine.sidebar', sidebarProvider, {
             webviewOptions: { retainContextWhenHidden: true }
@@ -33,22 +41,35 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('contextEngine.indexWorkspace', () => {
             sidebarProvider.postMessage({ type: 'triggerIndex' });
         }),
+        vscode.commands.registerCommand('contextEngine.indexingInProgress', () => {
+            // No-op command used for disabled spinning state in view/title
+        }),
         vscode.commands.registerCommand('contextEngine.openSidebar', () => {
-            vscode.commands.executeCommand('workbench.view.extension.context-engine-container');
+            void vscode.commands.executeCommand('workbench.view.extension.context-engine-container');
         })
     );
 
     // ── Probe server on startup ─────────────────────────────────────────────
-    probeServer(sidebarProvider);
+    void probeServer(sidebarProvider);
 
     // ── Auto-start if configured ────────────────────────────────────────────
     const config = vscode.workspace.getConfiguration('contextEngine');
     if (config.get<boolean>('autoStartServer')) {
-        startServer(context, sidebarProvider);
+        void startServer(context, sidebarProvider);
     }
 
     // ── Ollama preflight ────────────────────────────────────────────────────
     void checkOllama();
+}
+
+// ── Dynamic Context Key Helpers ──────────────────────────────────────────────
+
+export async function setServerRunningContext(running: boolean): Promise<void> {
+    await vscode.commands.executeCommand('setContext', 'contextEngine.serverRunning', running);
+}
+
+export async function setIndexingContext(indexing: boolean): Promise<void> {
+    await vscode.commands.executeCommand('setContext', 'contextEngine.isIndexing', indexing);
 }
 
 // ── Preflight helpers ────────────────────────────────────────────────────────
@@ -69,7 +90,7 @@ function isPortInUse(port: number, host = '127.0.0.1'): Promise<boolean> {
     });
 }
 
-/** Non-blocking check; shows a notification (at most once per 60s) if Ollama is unreachable. */
+/** Non-blocking check; shows an actionable warning (at most once per 60s) if Ollama is unreachable. */
 export async function checkOllama(): Promise<boolean> {
     const reachable = await new Promise<boolean>((resolve) => {
         const req = http.get(`${OLLAMA_URL}/api/tags`, (res) => {
@@ -81,16 +102,66 @@ export async function checkOllama(): Promise<boolean> {
     });
     if (!reachable && Date.now() - ollamaWarnedAt > 60_000) {
         ollamaWarnedAt = Date.now();
-        // Intentionally not awaited so it never blocks startup or queries.
+        logger.warn(`Ollama unreachable at ${OLLAMA_URL}`);
         void vscode.window.showWarningMessage(
-            "Context Engine: Ollama appears offline. Ensure 'ollama serve' is running."
-        );
+            'Ollama is not running. Start Ollama to enable local model responses.',
+            'Retry Connection'
+        ).then((selection) => {
+            if (selection === 'Retry Connection') {
+                ollamaWarnedAt = 0;
+                void checkOllama();
+            }
+        });
     }
     return reachable;
 }
 
 export function deactivate() {
-    stopServer();
+    terminateServerProcessTree();
+}
+
+// ── Process Hygiene & Tree Termination ───────────────────────────────────────
+
+function terminateServerProcessTree() {
+    if (!serverProcess) {
+        return;
+    }
+    const pid = serverProcess.pid;
+    logger?.info(`Stopping Context Engine service (PID: ${pid ?? 'unknown'})…`);
+
+    if (pid) {
+        try {
+            if (process.platform === 'win32') {
+                cp.exec(`taskkill /pid ${pid} /T /F`, (err) => {
+                    if (err) {
+                        logger?.debug(`taskkill exited with: ${err.message}`);
+                    }
+                });
+            } else {
+                // Kill entire POSIX process group (-pid) to prevent orphaned Uvicorn workers
+                process.kill(-pid, 'SIGTERM');
+                setTimeout(() => {
+                    try {
+                        process.kill(-pid, 0);
+                        process.kill(-pid, 'SIGKILL');
+                    } catch {
+                        // Process group already exited cleanly
+                    }
+                }, 1500);
+            }
+        } catch (err) {
+            logger?.warn(`Process group kill fallback: ${err instanceof Error ? err.message : String(err)}`);
+            try {
+                serverProcess.kill('SIGTERM');
+            } catch {
+                // Ignore if already dead
+            }
+        }
+    } else {
+        serverProcess.kill('SIGTERM');
+    }
+
+    serverProcess = null;
 }
 
 // ── Server Management ────────────────────────────────────────────────────────
@@ -105,7 +176,7 @@ function getBackendDir(): string {
 
 async function startServer(context: vscode.ExtensionContext, provider: SidebarProvider) {
     if (serverProcess) {
-        vscode.window.showInformationMessage('Context Engine server is already running.');
+        vscode.window.setStatusBarMessage('$(check) Context Engine is already running', 3000);
         return;
     }
 
@@ -114,19 +185,24 @@ async function startServer(context: vscode.ExtensionContext, provider: SidebarPr
     const port = config.get<number>('backendPort') || 8000;
     const backendDir = getBackendDir();
 
-    // ── Port-in-use preflight ──
+    // ── Port-in-use preflight with actionable recovery ──
     if (await isPortInUse(port)) {
-        const connect = 'Connect to existing server';
-        const change = 'Change port in settings';
+        logger.warn(`Port ${port} is already in use prior to engine launch.`);
+        const connectAction = 'Connect to Existing';
+        const changePortAction = 'Change Port';
+        const cancelAction = 'Cancel';
         const choice = await vscode.window.showWarningMessage(
-            `Context Engine: port ${port} is already in use by another process.`,
-            connect,
-            change
+            `Port ${port} is already in use. Connect to the existing Context Engine instance or choose another port?`,
+            connectAction,
+            changePortAction,
+            cancelAction
         );
-        if (choice === connect) {
+        if (choice === connectAction) {
             setStatusBarConnected(port);
+            await setServerRunningContext(true);
             provider.postMessage({ type: 'serverStatus', status: 'running', port });
-        } else if (choice === change) {
+            vscode.window.setStatusBarMessage(`$(plug) Connected to Context Engine on port ${port}`, 4000);
+        } else if (choice === changePortAction) {
             await vscode.commands.executeCommand(
                 'workbench.action.openSettings', 'contextEngine.backendPort'
             );
@@ -136,6 +212,7 @@ async function startServer(context: vscode.ExtensionContext, provider: SidebarPr
 
     setStatusBarStarting();
     provider.postMessage({ type: 'serverStatus', status: 'starting' });
+    logger.info(`Starting Context Engine on 127.0.0.1:${port} using '${pythonPath}'…`);
 
     const args = ['-m', 'uvicorn', 'mcp_server.server:app', '--host', '127.0.0.1', '--port', String(port)];
 
@@ -143,55 +220,87 @@ async function startServer(context: vscode.ExtensionContext, provider: SidebarPr
         serverProcess = cp.spawn(pythonPath, args, {
             cwd: backendDir,
             env: { ...process.env, PYTHONPATH: backendDir },
-            stdio: ['ignore', 'pipe', 'pipe']
+            stdio: ['ignore', 'pipe', 'pipe'],
+            detached: process.platform !== 'win32' // Required for POSIX process group (-pid) termination
         });
 
+        const handleEngineReady = () => {
+            setStatusBarConnected(port);
+            void setServerRunningContext(true);
+            provider.postMessage({ type: 'serverStatus', status: 'running', port });
+            vscode.window.setStatusBarMessage('$(pass-filled) Context Engine ready', 3500);
+        };
+
         serverProcess.stdout?.on('data', (data: Buffer) => {
-            const text = data.toString();
-            console.log('[Context Engine]', text);
+            const text = data.toString().trim();
+            if (text) {
+                logger.info(text);
+            }
             if (text.includes('Application startup complete')) {
-                setStatusBarConnected(port);
-                provider.postMessage({ type: 'serverStatus', status: 'running', port });
+                handleEngineReady();
             }
         });
 
         serverProcess.stderr?.on('data', (data: Buffer) => {
-            const text = data.toString();
-            console.error('[Context Engine]', text);
-            // uvicorn also logs to stderr
+            const text = data.toString().trim();
+            if (text) {
+                // Uvicorn emits standard lifecycle logs on stderr
+                if (text.includes('ERROR') || text.includes('Traceback')) {
+                    logger.error(text);
+                } else {
+                    logger.info(text);
+                }
+            }
             if (text.includes('Application startup complete') || text.includes('Uvicorn running')) {
-                setStatusBarConnected(port);
-                provider.postMessage({ type: 'serverStatus', status: 'running', port });
+                handleEngineReady();
             }
         });
 
         serverProcess.on('close', (code) => {
-            console.log(`[Context Engine] Server exited with code ${code}`);
+            logger.info(`Context Engine process exited (code ${code ?? 'null'}).`);
             serverProcess = null;
             setStatusBarDisconnected();
+            void setServerRunningContext(false);
+            void setIndexingContext(false);
             provider.postMessage({ type: 'serverStatus', status: 'stopped' });
         });
 
         serverProcess.on('error', (err) => {
-            vscode.window.showErrorMessage(`Context Engine: Failed to start server — ${err.message}`);
+            logger.error(`Failed to launch Context Engine: ${err.message}`);
             serverProcess = null;
             setStatusBarDisconnected();
+            void setServerRunningContext(false);
             provider.postMessage({ type: 'serverStatus', status: 'stopped' });
+
+            void vscode.window.showErrorMessage(
+                `Could not start Context Engine with Python interpreter '${pythonPath}'.`,
+                'Configure Python Path',
+                'Show Logs'
+            ).then((choice) => {
+                if (choice === 'Configure Python Path') {
+                    void vscode.commands.executeCommand('workbench.action.openSettings', 'contextEngine.pythonPath');
+                } else if (choice === 'Show Logs') {
+                    logger.show();
+                }
+            });
         });
 
     } catch (err) {
-        vscode.window.showErrorMessage(`Context Engine: ${err}`);
+        const msg = err instanceof Error ? err.message : String(err);
+        logger.error(`Engine spawn exception: ${msg}`);
         setStatusBarDisconnected();
+        void setServerRunningContext(false);
     }
 }
 
 function stopServer(provider?: SidebarProvider) {
     if (serverProcess) {
-        serverProcess.kill();
-        serverProcess = null;
+        terminateServerProcessTree();
         setStatusBarDisconnected();
+        void setServerRunningContext(false);
+        void setIndexingContext(false);
         provider?.postMessage({ type: 'serverStatus', status: 'stopped' });
-        vscode.window.showInformationMessage('Context Engine server stopped.');
+        vscode.window.setStatusBarMessage('$(circle-slash) Context Engine stopped', 3000);
     }
 }
 
@@ -199,32 +308,32 @@ async function probeServer(provider: SidebarProvider) {
     const config = vscode.workspace.getConfiguration('contextEngine');
     const port = config.get<number>('backendPort') || 8000;
 
-    // Retry with back-off: 0ms → 1s → 3s
-    // This ensures we detect a server that started before VS Code loaded the extension.
     const delays = [0, 1000, 3000];
     for (const delay of delays) {
         if (delay > 0) { await new Promise(r => setTimeout(r, delay)); }
-        if (serverProcess) { break; } // our own process just started
+        if (serverProcess) { break; }
         try {
-            const http = await import('http');
             await new Promise<void>((resolve, reject) => {
                 const req = http.get(`http://127.0.0.1:${port}/`, (res) => {
+                    res.resume();
                     if (res.statusCode && res.statusCode < 500) { resolve(); }
                     else { reject(new Error(`HTTP ${res.statusCode}`)); }
                 });
                 req.on('error', reject);
                 req.setTimeout(2000, () => { req.destroy(); reject(new Error('timeout')); });
             });
+            logger.info(`Connected to existing Context Engine service on port ${port}.`);
             setStatusBarConnected(port);
+            await setServerRunningContext(true);
             provider.postMessage({ type: 'serverStatus', status: 'running', port });
-            return; // found the server — stop probing
+            return;
         } catch {
-            // Not up yet — continue to next retry
+            // Not reachable yet — continue to next retry
         }
     }
-    // All retries exhausted and no owned process started
     if (!serverProcess) {
         setStatusBarDisconnected();
+        await setServerRunningContext(false);
         provider.postMessage({ type: 'serverStatus', status: 'stopped' });
     }
 }
@@ -233,19 +342,19 @@ async function probeServer(provider: SidebarProvider) {
 
 function setStatusBarDisconnected() {
     statusBarItem.text = '$(circle-slash) Context Engine';
-    statusBarItem.tooltip = 'Context Engine: Server not running — click to open panel';
+    statusBarItem.tooltip = 'Context Engine: Offline — Click to open agent panel';
     statusBarItem.backgroundColor = undefined;
     statusBarItem.color = new vscode.ThemeColor('statusBarItem.warningForeground');
 }
 
 function setStatusBarStarting() {
     statusBarItem.text = '$(loading~spin) Context Engine';
-    statusBarItem.tooltip = 'Context Engine: Starting server…';
+    statusBarItem.tooltip = 'Context Engine: Starting local service…';
     statusBarItem.color = undefined;
 }
 
 function setStatusBarConnected(port: number) {
     statusBarItem.text = '$(pass-filled) Context Engine';
-    statusBarItem.tooltip = `Context Engine: Running on http://127.0.0.1:${port}`;
+    statusBarItem.tooltip = `Context Engine: Connected (127.0.0.1:${port})`;
     statusBarItem.color = new vscode.ThemeColor('statusBarItem.prominentForeground');
 }

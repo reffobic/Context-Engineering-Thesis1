@@ -12,9 +12,11 @@
     port: 8000,
     serverRunning: false,
     serverStarting: false,
+    indexedFilesCount: 0,
+    indexedChunksCount: 0,
     ollamaModels: [],       // models from Ollama /api/tags
     customModels: [],       // user-added models (persisted via globalState)
-    generatorModel: '',
+    generatorModel: 'qwen3.5:9b',
     assessorModel: '',
     activeModelPicker: null, // 'generator' or 'assessor'
     selectedMode: 'GASR',
@@ -29,31 +31,107 @@
 
   // ── DOM ────────────────────────────────────────────────────────────────
   let app, chatArea, promptInput, sendBtn, modeSelect;
-  let serverDot, serverBanner, indexProgress, contextChipRow;
+  let serverDot, serverStatusLabel, serverBanner, indexProgress, contextChipRow, indexBadgeLabel;
+
+  function buildEmptyStateHtml() {
+    const modelLabel = escHtml(state.generatorModel || 'qwen3.5:9b');
+    const statusLabel = state.serverRunning ? 'Ready' : (state.serverStarting ? 'Starting…' : 'Offline');
+    return `
+      <div class="empty-state" id="emptyState">
+        <div class="empty-state-hero">
+          <div class="empty-state-icon"><i class="codicon codicon-hubot"></i></div>
+          <h3>Context Engine Agent</h3>
+          <p class="empty-state-subtitle">Graph-augmented code intelligence powered by AST call graphs and local Ollama models.</p>
+          <div class="empty-state-meta">
+            <span class="meta-pill"><i class="codicon codicon-sparkle"></i> ${modelLabel}</span>
+            <span class="meta-pill" id="welcomeStatusPill"><i class="codicon codicon-Broadcast"></i> ${statusLabel}</span>
+          </div>
+        </div>
+
+        <div class="quick-actions-grid">
+          <button class="quick-action-card" data-action="index">
+            <div class="qa-icon"><i class="codicon codicon-database"></i></div>
+            <div class="qa-text">
+              <span class="qa-title">Index current project</span>
+              <span class="qa-desc">Build AST call graph &amp; vector embeddings</span>
+            </div>
+          </button>
+          <button class="quick-action-card" data-action="explain-file">
+            <div class="qa-icon"><i class="codicon codicon-file-code"></i></div>
+            <div class="qa-text">
+              <span class="qa-title">Explain active file</span>
+              <span class="qa-desc">Summarize responsibilities &amp; key symbols</span>
+            </div>
+          </button>
+          <button class="quick-action-card" data-action="analyze-graph">
+            <div class="qa-icon"><i class="codicon codicon-type-hierarchy"></i></div>
+            <div class="qa-text">
+              <span class="qa-title">Analyze call graph</span>
+              <span class="qa-desc">Trace multi-hop callers and dependencies</span>
+            </div>
+          </button>
+          <button class="quick-action-card" data-prompt="How does the GASR retrieval pipeline expand AST call-graph hops?">
+            <div class="qa-icon"><i class="codicon codicon-search"></i></div>
+            <div class="qa-text">
+              <span class="qa-title">Explore architecture</span>
+              <span class="qa-desc">Ask how retrieval and pruning work</span>
+            </div>
+          </button>
+        </div>
+      </div>`;
+  }
+
+  function bindQuickActions() {
+    document.querySelectorAll('.quick-action-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const action = card.dataset.action;
+        if (action === 'index') {
+          handleIndex();
+        } else if (action === 'explain-file') {
+          vscode.postMessage({ type: 'getActiveFile' });
+          promptInput.value = 'Explain the architecture, key functions, and edge cases in this file.';
+          autoResize();
+          promptInput.focus();
+        } else if (action === 'analyze-graph') {
+          promptInput.value = 'Trace the multi-hop AST call graph and key dependencies across this workspace.';
+          autoResize();
+          handleSend();
+        } else if (card.dataset.prompt) {
+          promptInput.value = card.dataset.prompt;
+          autoResize();
+          handleSend();
+        }
+      });
+    });
+  }
 
   function buildUI() {
     document.getElementById('app').innerHTML = `
-      <!-- Header -->
+      <!-- Agent Status Header Bar -->
       <div class="header">
         <div class="header-left">
-          <div class="logo">
-            <i class="codicon codicon-circuit-board logo-icon"></i>
-            <span>Context Engine</span>
-          </div>
-          <div class="server-dot" id="serverDot"></div>
+          <button class="status-pill" id="serverToggleBtn" title="Click to toggle engine">
+            <span class="server-dot" id="serverDot"></span>
+            <span id="serverStatusLabel">Offline</span>
+          </button>
+          <button class="index-badge" id="indexBtn" title="Click to index workspace">
+            <i class="codicon codicon-database" id="indexBadgeIcon"></i>
+            <span id="indexBadgeLabel">0 files indexed</span>
+          </button>
         </div>
         <div class="header-actions">
-          <button class="icon-btn" id="graphBtn" data-tooltip="View Call Graph" title="View Call Graph (opens in browser)"><i class="codicon codicon-type-hierarchy"></i></button>
-          <button class="icon-btn" id="indexBtn" data-tooltip="Index Workspace" title="Index Workspace"><i class="codicon codicon-database"></i></button>
-          <button class="icon-btn" id="serverToggleBtn" data-tooltip="Start Server" title="Start Server"><i class="codicon codicon-play" id="serverToggleIcon"></i></button>
-          <button class="icon-btn" id="clearBtn" data-tooltip="Clear Chat" title="Clear Chat"><i class="codicon codicon-clear-all"></i></button>
+          <button class="icon-btn" id="graphBtn" title="Open interactive AST Call Graph"><i class="codicon codicon-type-hierarchy"></i></button>
+          <button class="icon-btn" id="clearBtn" title="Clear conversation"><i class="codicon codicon-clear-all"></i></button>
         </div>
       </div>
 
-      <!-- Server offline banner -->
+      <!-- In-Webview Server Offline CTA Banner -->
       <div class="server-banner hidden" id="serverBanner">
-        <span class="banner-text"><strong>Server offline</strong> — start the backend to use Context Engine.</span>
-        <button class="action-btn" id="bannerStartBtn"><i class="codicon codicon-play"></i> Start</button>
+        <div class="banner-content">
+          <i class="codicon codicon-info banner-icon"></i>
+          <span class="banner-text"><strong>Local engine is offline.</strong> Start the service to index and query your workspace.</span>
+        </div>
+        <button class="primary-cta-btn" id="bannerStartBtn"><i class="codicon codicon-play"></i> Start Engine</button>
       </div>
 
       <!-- Index progress -->
@@ -64,52 +142,41 @@
 
       <!-- Chat -->
       <div class="chat-area" id="chatArea">
-        <!-- Empty state -->
-        <div class="empty-state" id="emptyState">
-          <div class="empty-state-icon"><i class="codicon codicon-circuit-board"></i></div>
-          <h3>Context Engine (GASR)</h3>
-          <p>Ask anything about your codebase. The GASR pipeline retrieves, assesses, graph-expands, and injects context automatically.</p>
-          <div class="suggestion-chips">
-            <span class="chip" data-prompt="How does the GASR retrieval pipeline work?">How does GASR work?</span>
-            <span class="chip" data-prompt="Explain the graph expansion in the pipeline">Graph expansion?</span>
-            <span class="chip" data-prompt="What models are available in this project?">Available models?</span>
-            <span class="chip" data-prompt="How is the context injected into the prompt?">How is context injected?</span>
-          </div>
-        </div>
+        ${buildEmptyStateHtml()}
       </div>
 
       <!-- Input area -->
       <div class="input-area">
         <div class="context-chip-row" id="contextChipRow"></div>
         <div class="textarea-wrapper">
-          <textarea id="prompt" placeholder="Ask anything about your codebase…" rows="3"></textarea>
-          <button class="send-btn" id="sendBtn" title="Send (Enter)"><i class="codicon codicon-send"></i></button>
+          <textarea id="prompt" placeholder="Ask a question or type @codebase to search your project…" rows="3"></textarea>
+          <button class="send-btn" id="sendBtn" title="Send message (Enter)"><i class="codicon codicon-send"></i></button>
         </div>
         <div class="bottom-controls">
-          <button class="add-context-btn" id="addFileBtn" title="Add active file as context"><i class="codicon codicon-file-add"></i> File</button>
-          <button class="add-context-btn" id="addSelBtn" title="Add selection as context"><i class="codicon codicon-symbol-snippet"></i> Selection</button>
-          <div class="spacer"></div>
+          <button class="add-context-btn" id="addFileBtn" title="Attach active file"><i class="codicon codicon-file"></i> Active File</button>
+          <button class="add-context-btn" id="addSelBtn" title="Attach editor selection"><i class="codicon codicon-selection"></i> Selection</button>
           <!-- Scope toggle -->
-          <div class="scope-toggle" id="scopeToggle" title="Context scope">
-            <button class="scope-btn active" id="scopeRepoBtn" data-scope="repo"><i class="codicon codicon-folder"></i> Workspace</button>
-            <button class="scope-btn" id="scopeFileBtn" data-scope="file"><i class="codicon codicon-file"></i> File</button>
+          <div class="scope-toggle" id="scopeToggle" title="Retrieval scope">
+            <button class="scope-btn active" id="scopeRepoBtn" data-scope="repo">@codebase</button>
+            <button class="scope-btn" id="scopeFileBtn" data-scope="file">File only</button>
           </div>
+          <div class="spacer"></div>
           <div class="model-selectors" style="display: flex; gap: 4px;">
-            <button class="model-pill" id="assessorModelPillBtn" title="Choose Assessor model">
-              <span style="color:var(--muted)">Assessor:</span>
-              <span id="assessorModelPillLabel" style="margin-left: 2px;">Loading…</span>
+            <button class="model-pill" id="assessorModelPillBtn" title="Select Assessor model">
+              <span style="color:var(--muted)">Gate:</span>
+              <span id="assessorModelPillLabel" style="margin-left: 2px;">qwen3.5:9b</span>
             </button>
-            <button class="model-pill" id="generatorModelPillBtn" title="Choose Generator model">
-              <span style="color:var(--muted)">Gen:</span>
-              <span id="generatorModelPillLabel" style="margin-left: 2px;">Loading…</span>
+            <button class="model-pill" id="generatorModelPillBtn" title="Select Primary model">
+              <i class="codicon codicon-sparkle model-pill-icon"></i>
+              <span id="generatorModelPillLabel">qwen3.5:9b</span>
             </button>
           </div>
-          <select class="select-pill" id="modeSelect" title="Pipeline mode">
-            <option value="GAPA">GAPA (Fast Gate)</option>
-            <option value="GASR">GASR (Adaptive)</option>
+          <select class="select-pill" id="modeSelect" title="Context retrieval strategy">
+            <option value="GAPA">Fast Gate (GAPA)</option>
+            <option value="GASR" selected>Adaptive Graph (GASR)</option>
             <option value="SELF_ROUTE">Auto-Route</option>
-            <option value="RAG">RAG</option>
-            <option value="LC">Long Context</option>
+            <option value="RAG">Standard Vector (RAG)</option>
+            <option value="LC">Direct Long Context</option>
           </select>
         </div>
         <!-- File scope indicator -->
@@ -158,9 +225,11 @@
     sendBtn = document.getElementById('sendBtn');
     modeSelect = document.getElementById('modeSelect');
     serverDot = document.getElementById('serverDot');
+    serverStatusLabel = document.getElementById('serverStatusLabel');
     serverBanner = document.getElementById('serverBanner');
     indexProgress = document.getElementById('indexProgress');
     contextChipRow = document.getElementById('contextChipRow');
+    indexBadgeLabel = document.getElementById('indexBadgeLabel');
 
     // Events
     sendBtn.addEventListener('click', handleSend);
@@ -229,14 +298,8 @@
       state.selectedMode = modeSelect.value;
     });
 
-    // Suggestion chips
-    document.querySelectorAll('.chip[data-prompt]').forEach(chip => {
-      chip.addEventListener('click', () => {
-        promptInput.value = chip.dataset.prompt;
-        autoResize();
-        handleSend();
-      });
-    });
+    bindQuickActions();
+    renderContextChips();
 
     // Request workspace path, saved custom models, and initial Ollama list
     vscode.postMessage({ type: 'getWorkspacePath' });
@@ -264,6 +327,7 @@
     } else {
       bar.classList.add('hidden');
     }
+    renderContextChips();
   }
 
   function updateFileScopeBar(relativePath) {
@@ -283,24 +347,26 @@
     state.serverStarting = starting;
     const dot = serverDot;
     const toggleBtn = document.getElementById('serverToggleBtn');
-    const toggleIcon = document.getElementById('serverToggleIcon');
+    const welcomePill = document.getElementById('welcomeStatusPill');
     if (starting) {
       dot.className = 'server-dot starting';
-      if (toggleIcon) { toggleIcon.className = 'codicon codicon-loading codicon-modifier-spin'; }
-      if (toggleBtn) { toggleBtn.title = 'Stop Server'; }
+      if (serverStatusLabel) { serverStatusLabel.textContent = 'Starting…'; }
+      if (toggleBtn) { toggleBtn.title = 'Stop Engine'; }
       if (serverBanner) { serverBanner.classList.add('hidden'); }
+      if (welcomePill) { welcomePill.innerHTML = '<i class="codicon codicon-sync codicon-modifier-spin"></i> Starting…'; }
     } else if (running) {
       dot.className = 'server-dot running';
-      if (toggleIcon) { toggleIcon.className = 'codicon codicon-debug-stop'; }
-      if (toggleBtn) { toggleBtn.title = 'Stop Server'; }
+      if (serverStatusLabel) { serverStatusLabel.textContent = 'Connected'; }
+      if (toggleBtn) { toggleBtn.title = 'Stop Engine'; }
       if (serverBanner) { serverBanner.classList.add('hidden'); }
+      if (welcomePill) { welcomePill.innerHTML = '<i class="codicon codicon-pass-filled"></i> Connected'; }
     } else {
       dot.className = 'server-dot';
-      if (toggleIcon) { toggleIcon.className = 'codicon codicon-play'; }
-      if (toggleBtn) { toggleBtn.title = 'Start Server'; }
+      if (serverStatusLabel) { serverStatusLabel.textContent = 'Offline'; }
+      if (toggleBtn) { toggleBtn.title = 'Start Engine'; }
       if (serverBanner) { serverBanner.classList.remove('hidden'); }
+      if (welcomePill) { welcomePill.innerHTML = '<i class="codicon codicon-circle-slash"></i> Offline'; }
     }
-    // Index & graph buttons are always visible — only warn when clicked if server is down
   }
 
   function toggleServer() {
@@ -462,11 +528,20 @@
   }
 
   function renderContextChips() {
+    if (!contextChipRow) { return; }
     contextChipRow.innerHTML = '';
+    if (state.selectedScope === 'repo') {
+      const repoChip = document.createElement('div');
+      repoChip.className = 'context-chip codebase-chip';
+      repoChip.title = 'Graph-augmented codebase retrieval active';
+      repoChip.innerHTML = `<i class="codicon codicon-repo"></i> <span>@codebase</span>`;
+      contextChipRow.appendChild(repoChip);
+    }
     state.contextChips.forEach(chip => {
       const el = document.createElement('div');
       el.className = 'context-chip';
-      el.innerHTML = `<i class="codicon codicon-file-add"></i> <span>${escHtml(chip.label)}</span> <span class="chip-remove" data-label="${escHtml(chip.label)}"><i class="codicon codicon-close"></i></span>`;
+      const iconCls = chip.type === 'selection' ? 'codicon-selection' : 'codicon-file-code';
+      el.innerHTML = `<i class="codicon ${iconCls}"></i> <span>${escHtml(chip.label)}</span> <button class="chip-remove" title="Remove context" data-label="${escHtml(chip.label)}"><i class="codicon codicon-close"></i></button>`;
       el.querySelector('.chip-remove').addEventListener('click', () => removeContextChip(chip.label));
       contextChipRow.appendChild(el);
     });
@@ -477,7 +552,7 @@
     const text = promptInput.value.trim();
     if (!text || state.generating) { return; }
     if (!state.serverRunning) {
-      appendSystemMessage('⚠ Server is offline. Click ▶ in the header to start it.');
+      appendSystemMessage('Local engine is offline. Click "Start Engine" above to begin.');
       return;
     }
 
@@ -514,7 +589,7 @@
   // ── Streaming ─────────────────────────────────────────────────────────
   async function streamGenerate(prompt, fileContext = null) {
     if (state.selectedScope === 'file' && !fileContext) {
-      appendSystemMessage('⚠ Fetching current file content…');
+      appendSystemMessage('Reading active file…');
       await new Promise(resolve => {
         const handler = (event) => {
           const msg = event.data;
@@ -560,9 +635,10 @@
       pipelineEl.querySelector('.pipeline-body').appendChild(row);
       stageRowEls[s] = row;
     });
-    pipelineEl.classList.add('open');
+    pipelineEl.open = true;
 
     let fullAnswer = '';
+    let traceStats = { hops: 0, chunks: 0, files: 0 };
 
     // Non-blocking: extension host warns if Ollama is unreachable.
     try { vscode.postMessage({ type: 'checkOllama' }); } catch (_) { /* ignore */ }
@@ -614,7 +690,21 @@
               row.classList.remove('stage-row-hidden');
               updateStageRow(row, ev.status, ev.label, ev.summary || {}, ev.duration_ms);
             }
+            if (ev.summary) {
+              if (ev.summary.hops_used != null) { traceStats.hops = Math.max(traceStats.hops, ev.summary.hops_used); }
+              if (ev.summary.kept != null) { traceStats.chunks = ev.summary.kept; }
+              else if (ev.summary.candidate_chunks != null && !traceStats.chunks) { traceStats.chunks = ev.summary.candidate_chunks; }
+              if (ev.summary.unique_files != null) { traceStats.files = ev.summary.unique_files; }
+            }
+            const summaryLabelEl = document.getElementById(`${msgId}-pipeline-title`);
+            if (summaryLabelEl) {
+              summaryLabelEl.textContent = formatReasoningSummary(traceStats, true);
+            }
           } else if (ev.event === 'token') {
+            if (!fullAnswer && pipelineEl) {
+              // Auto-collapse reasoning trace once answer tokens start streaming
+              pipelineEl.open = false;
+            }
             fullAnswer += ev.content;
             renderAnswer(answerEl, fullAnswer, true);
             scrollToBottom();
@@ -624,17 +714,21 @@
         }
       }
     } catch (err) {
-      renderAnswer(answerEl, `⚠ Error: ${err.message}`, false);
+      renderAnswer(answerEl, `Unable to complete request: ${err.message}`, false);
     }
 
     renderAnswer(answerEl, fullAnswer || '(No response)', false);
+    const summaryLabelEl = document.getElementById(`${msgId}-pipeline-title`);
+    if (summaryLabelEl) {
+      summaryLabelEl.textContent = formatReasoningSummary(traceStats, false);
+    }
     const metaEl = document.getElementById(`${msgId}-pipeline-meta`);
     if (metaEl) {
       const doneCount = Object.values(stageRowEls).filter(r => {
         const icon = r && r.querySelector('.stage-icon');
         return icon && (icon.classList.contains('complete') || icon.classList.contains('skipped'));
       }).length;
-      metaEl.textContent = `${doneCount}/${stageOrder.length} stages done`;
+      metaEl.textContent = `${doneCount} steps`;
     }
 
     state.generating = false;
@@ -642,6 +736,15 @@
     sendBtn.classList.remove('loading');
     sendBtn.innerHTML = '<i class="codicon codicon-send"></i>';
     scrollToBottom();
+  }
+
+  function formatReasoningSummary(stats, inProgress) {
+    if (stats.hops > 0 || stats.chunks > 0) {
+      const hopStr = `${stats.hops} AST call-graph hop${stats.hops === 1 ? '' : 's'}`;
+      const chunkStr = `${stats.chunks} chunk${stats.chunks === 1 ? '' : 's'}`;
+      return `Retrieved ${hopStr} and ${chunkStr}`;
+    }
+    return inProgress ? 'Retrieving codebase context…' : 'Context retrieval complete';
   }
 
   // ── Message DOM helpers ───────────────────────────────────────────────
@@ -652,11 +755,11 @@
     let chipHtml = '';
     if (chips.length > 0) {
       chipHtml = `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px;justify-content:flex-end">
-        ${chips.map(c => `<span class="context-chip" style="cursor:default"><i class="codicon codicon-file-add"></i> ${escHtml(c.label)}</span>`).join('')}
+        ${chips.map(c => `<span class="context-chip" style="cursor:default"><i class="codicon codicon-file-code"></i> ${escHtml(c.label)}</span>`).join('')}
       </div>`;
     }
     el.innerHTML = `
-      <div class="avatar user-avatar">U</div>
+      <div class="avatar user-avatar"><i class="codicon codicon-account"></i></div>
       <div class="message-content">
         ${chipHtml}
         <div class="bubble user-bubble">${escHtml(text)}</div>
@@ -670,19 +773,19 @@
     el.className = 'message';
     el.id = id;
     el.innerHTML = `
-      <div class="avatar agent-avatar"><i class="codicon codicon-circuit-board"></i></div>
+      <div class="avatar agent-avatar"><i class="codicon codicon-hubot"></i></div>
       <div class="message-content" style="width:100%">
         <div class="bubble agent-bubble">
-          <div class="pipeline-accordion" id="${id}-pipeline">
-            <div class="pipeline-header" onclick="toggleAccordion('${id}-pipeline')">
+          <details class="pipeline-accordion" id="${id}-pipeline" open>
+            <summary class="pipeline-header">
               <div class="pipeline-header-left">
                 <i class="codicon codicon-chevron-right pipeline-chevron"></i>
-                <span>Pipeline</span>
+                <span id="${id}-pipeline-title">Retrieving codebase context…</span>
               </div>
               <span style="font-size:11px;color:var(--muted)" id="${id}-pipeline-meta"></span>
-            </div>
+            </summary>
             <div class="pipeline-body"></div>
-          </div>
+          </details>
           <div class="answer-text cursor-blink" id="${id}-answer"></div>
         </div>
       </div>`;
@@ -816,8 +919,16 @@
       btn.addEventListener('click', () => {
         const code = btn.closest('.code-block-wrapper').querySelector('code');
         vscode.postMessage({ type: 'copyToClipboard', text: code.textContent });
-        btn.textContent = 'Copied!';
-        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+        btn.innerHTML = '<i class="codicon codicon-check"></i> Copied';
+        setTimeout(() => { btn.innerHTML = '<i class="codicon codicon-copy"></i> Copy'; }, 1500);
+      });
+    });
+    el.querySelectorAll('.code-apply-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const code = btn.closest('.code-block-wrapper').querySelector('code');
+        vscode.postMessage({ type: 'applyToFile', content: code.textContent });
+        btn.innerHTML = '<i class="codicon codicon-check"></i> Applied';
+        setTimeout(() => { btn.innerHTML = '<i class="codicon codicon-insert"></i> Apply to File'; }, 1500);
       });
     });
   }
@@ -828,7 +939,10 @@
       return `<div class="code-block-wrapper">
         <div class="code-block-header">
           <span class="code-lang">${escHtml(l)}</span>
-          <button class="code-copy-btn">Copy</button>
+          <div class="code-block-actions">
+            <button class="code-action-btn code-copy-btn" title="Copy to clipboard"><i class="codicon codicon-copy"></i> Copy</button>
+            <button class="code-action-btn code-apply-btn" title="Apply to active editor"><i class="codicon codicon-insert"></i> Apply to File</button>
+          </div>
         </div>
         <pre class="code-block"><code>${escHtml(code.trimEnd())}</code></pre>
       </div>`;
@@ -842,17 +956,27 @@
     return text;
   }
 
+  function updateIndexBadge(filesCount) {
+    state.indexedFilesCount = filesCount;
+    if (indexBadgeLabel) {
+      indexBadgeLabel.textContent = filesCount > 0 ? `${filesCount} files indexed` : 'Index workspace';
+    }
+  }
+
   // ── Index Workspace ────────────────────────────────────────────────────
   async function handleIndex() {
     if (!state.serverRunning) {
-      vscode.postMessage({ type: 'showError', text: 'Start the server first before indexing.' });
+      vscode.postMessage({ type: 'showError', text: 'Start the Context Engine first before indexing.' });
       return;
     }
     const repoPath = state.workspacePath;
-    const shortPath = repoPath ? '...' + repoPath.split('/').slice(-2).join('/') : 'workspace';
+    const shortPath = repoPath ? '…/' + repoPath.split('/').slice(-2).join('/') : 'workspace';
     indexProgress.classList.remove('hidden');
     const progressText = document.getElementById('indexProgressText');
-    progressText.textContent = `Indexing ${shortPath} (may take 1-5 min for large repos)...`;
+    const badgeIcon = document.getElementById('indexBadgeIcon');
+    if (badgeIcon) { badgeIcon.className = 'codicon codicon-sync codicon-modifier-spin'; }
+    vscode.postMessage({ type: 'setIndexing', indexing: true });
+    progressText.textContent = `Indexing ${shortPath}…`;
 
     try {
       const url = new URL(`http://127.0.0.1:${state.port}/index`);
@@ -864,16 +988,20 @@
       if (!resp.ok) { throw new Error('HTTP ' + resp.status); }
       const data = await resp.json();
       const summary = data.index_summary || {};
-      const files = summary.total_files != null ? summary.total_files : (data.indexed_files || '?');
-      const chunks = summary.total_chunks != null ? summary.total_chunks : '?';
-      progressText.textContent = `Indexed ${files} files / ${chunks} chunks — Workspace queries ready!`;
-      setTimeout(() => indexProgress.classList.add('hidden'), 6000);
+      const files = summary.total_files != null ? summary.total_files : (data.indexed_files || 0);
+      const chunks = summary.total_chunks != null ? summary.total_chunks : 0;
+      updateIndexBadge(Number(files) || 0);
+      progressText.textContent = `Indexed ${files} files (${chunks} chunks) — Ready for queries.`;
+      setTimeout(() => indexProgress.classList.add('hidden'), 5000);
     } catch (err) {
       const msg = err.name === 'AbortError'
-        ? 'Indexing timed out (>10 min). Try a smaller directory.'
-        : 'Index error: ' + err.message;
+        ? 'Indexing timed out (>10 min). Try indexing a smaller folder.'
+        : 'Indexing failed: ' + err.message;
       progressText.textContent = msg;
       setTimeout(() => indexProgress.classList.add('hidden'), 6000);
+    } finally {
+      if (badgeIcon) { badgeIcon.className = 'codicon codicon-database'; }
+      vscode.postMessage({ type: 'setIndexing', indexing: false });
     }
   }
 
@@ -883,12 +1011,8 @@
       if (!resp.ok) { return; }
       const data = await resp.json();
       const chunks = data.total_chunks != null ? data.total_chunks : 0;
-      if (chunks === 0) {
-        const progressText = document.getElementById('indexProgressText');
-        indexProgress.classList.remove('hidden');
-        progressText.innerHTML = 'Workspace index is empty. Click <strong><i class="codicon codicon-database"></i></strong> in the header to index first.';
-        setTimeout(() => indexProgress.classList.add('hidden'), 10000);
-      }
+      const files = data.total_files != null ? data.total_files : (chunks > 0 ? Math.max(1, Math.round(chunks / 4)) : 0);
+      updateIndexBadge(files);
     } catch { /* server not ready yet */ }
   }
 
@@ -907,25 +1031,8 @@
   }
 
   function clearChat() {
-    chatArea.innerHTML = `
-      <div class="empty-state" id="emptyState">
-        <div class="empty-state-icon"><i class="codicon codicon-circuit-board"></i></div>
-        <h3>Context Engine (GASR)</h3>
-        <p>Ask anything about your codebase. The GASR pipeline retrieves, assesses, graph-expands, and injects context automatically.</p>
-        <div class="suggestion-chips">
-          <span class="chip" data-prompt="How does the GASR retrieval pipeline work?">How does GASR work?</span>
-          <span class="chip" data-prompt="Explain the graph expansion in the pipeline">Graph expansion?</span>
-          <span class="chip" data-prompt="What models are available in this project?">Available models?</span>
-          <span class="chip" data-prompt="How is the context injected into the prompt?">How is context injected?</span>
-        </div>
-      </div>`;
-    document.querySelectorAll('.chip[data-prompt]').forEach(chip => {
-      chip.addEventListener('click', () => {
-        promptInput.value = chip.dataset.prompt;
-        autoResize();
-        handleSend();
-      });
-    });
+    chatArea.innerHTML = buildEmptyStateHtml();
+    bindQuickActions();
   }
 
   // Exposed globally for inline onclick

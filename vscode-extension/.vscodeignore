@@ -2,6 +2,8 @@
 .vscode-test/**
 src/**
 node_modules/**
+!node_modules/@vscode/codicons/dist/codicon.css
+!node_modules/@vscode/codicons/dist/codicon.ttf
 out/test/**
 !out/extension.js
 !out/sidebarProvider.js
@@ -11,3 +13,4 @@ tsconfig.json
 **/*.map
 **/*.ts
 !webview/**
+!media/**
