@@ -821,10 +821,11 @@ def list_models() -> dict:
 # ---------------------------------------------------------------------------
 class StreamGenerateRequest(BaseModel):
     prompt: str
-    mode: Literal["RAG", "LC", "SELF_ROUTE", "GASR"] = "SELF_ROUTE"
+    mode: Literal["RAG", "LC", "SELF_ROUTE", "GASR", "GAPA"] = "SELF_ROUTE"
     model: Optional[str] = None           # Ollama model for generation; None = use default
     assessor_model: Optional[str] = None  # Ollama model for sufficiency judge; None = use default
     file_context: Optional[str] = None    # raw file text from the editor (skips RAG retrieval)
+    pruning_method: Literal["heuristic", "selective"] = "heuristic"
 
 
 def _sse(event: dict) -> str:
@@ -838,6 +839,7 @@ def _run_pipeline_streaming(
     model: Optional[str],
     assessor_model: Optional[str] = None,
     file_context: Optional[str] = None,
+    pruning_method: str = "heuristic",
 ) -> Generator[str, None, None]:
     """
     Generator that yields SSE frames as each pipeline stage completes,
@@ -952,7 +954,7 @@ def _run_pipeline_streaming(
                         lambda: prune_context_graph_aware(
                             user_prompt, seeds, neighbors,
                             token_budget=token_budget,
-                            method=req.pruning_method,
+                            method=pruning_method,
                         )
                     )
                     _gasr_state["pruned"] = p
@@ -1091,7 +1093,12 @@ def generate_stream(req: StreamGenerateRequest):
     """SSE endpoint: yields pipeline stage events + streaming LLM tokens."""
     return StreamingResponse(
         _run_pipeline_streaming(
-            req.prompt, req.mode, req.model, req.assessor_model, req.file_context
+            req.prompt,
+            req.mode,
+            req.model,
+            req.assessor_model,
+            req.file_context,
+            req.pruning_method,
         ),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},

@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "context-engineering-mcp"
+version = "0.2.0"
+description = "Adaptive Context Engineering Pipeline (RAG, LC, SELF_ROUTE, GASR, GAPA) with MCP Server and VS Code Extension"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.22.0",
+    "pydantic>=2.0.0",
+    "chromadb>=0.4.22",
+    "sentence-transformers>=2.2.2",
+    "rank-bm25>=0.2.2",
+    "numpy>=1.24.0",
+    "httpx>=0.24.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.4.0",
+    "httpx>=0.24.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["backend*"]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests/backend",
+    "backend/diamond",
+]
+pythonpath = [
+    ".",
+    "backend",
+    "backend/mcp_server",
+]
+addopts = "-q"

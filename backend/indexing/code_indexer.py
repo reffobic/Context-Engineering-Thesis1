@@ -522,11 +522,15 @@ def _chunk_python(source: str, rel_path: str, language: str, f_hash: str) -> lis
 
 # ─── generic heuristic chunker ────────────────────────────────────────────────
 _FUNC_PATTERNS = [
+    re.compile(r"^\s*(?:async\s+)?def\s+(\w+)\s*\(", re.M),
     re.compile(r"^(?:export\s+)?(?:async\s+)?function\s+(\w+)", re.M),
     re.compile(r"^(?:export\s+)?(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s*)?\(", re.M),
     re.compile(r"^\s*(?:public|private|protected|static|override)?\s*\w[\w<>\[\]]*\s+(\w+)\s*\(", re.M),
     re.compile(r"^func\s+(\w+)\s*\(", re.M),
-    re.compile(r"^(?:export\s+)?(?:abstract\s+)?(?:class|struct|interface|enum)\s+(\w+)", re.M),
+    re.compile(
+        r"^\s*(?:(?:export|public|private|protected|internal|final|abstract|static)\s+)*(?:class|struct|interface|enum)\s+(\w+)",
+        re.M,
+    ),
 ]
 
 def _chunk_generic(source: str, rel_path: str, language: str, f_hash: str) -> list[CodeChunk]:
@@ -553,7 +557,7 @@ def _chunk_generic(source: str, rel_path: str, language: str, f_hash: str) -> li
         e = starts[i + 1][0] if i + 1 < len(starts) else n
         e = min(e, s + MAX_CHUNK_TOKENS)
 
-        code     = "".join(lines[s:e])
+        code     = "".join(lines[s:e])[: MAX_CHUNK_TOKENS * 6]
         chunk_id = _sha256(f"{rel_path}:{s + 1}")
         chunks.append(CodeChunk(
             chunk_id   = chunk_id,
