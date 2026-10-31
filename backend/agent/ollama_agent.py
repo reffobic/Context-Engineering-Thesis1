@@ -445,14 +445,17 @@ class OllamaAgent:
     def _is_meta_memory_question(self, text: str) -> bool:
         """True when the user is asking about prior turns, not about code."""
         q = text.strip().lower()
+        ordinal = r"(first|1st|second|2nd|third|3rd|last|previous|prior|earliest|original)"
+        ask_noun = r"(thing|question|query|prompt|message|request)"
         patterns = (
             r"\bwhat (was|were|did) (the )?(last|previous|prior)\b",
-            r"\bwhat did i (just )?(ask|say|request|want)\b",
-            r"\b(my|the) (last|previous|prior) (thing|question|query|prompt|message|request)\b",
+            r"\bwhat did i (just |originally |first )?(ask|say|request|want)\b",
+            rf"\bmy {ordinal} {ask_noun}\b",
+            rf"\b(the )?{ordinal} {ask_noun} i (asked|said)\b",
             r"\bremind me what i (asked|said)\b",
             r"\bwhat was i (asking|talking) about\b",
-            r"\blast thin[gk] i asked\b",
-            r"\blast thing i asked\b",
+            rf"\b{ordinal} thin[gk] i asked\b",
+            r"\bwhat did i ask (first|originally|before)\b",
         )
         return any(re.search(p, q) for p in patterns)
 
@@ -712,14 +715,30 @@ class OllamaAgent:
         lines.extend(
             [
                 "",
+                f'The first user question was: "{prior[0]}"',
                 f'The most recent previous user question was: "{prior[-1]}"',
                 "",
                 f"Current question:\n{task}",
                 "",
+                "If the user asks for their first / original question, quote item 1.",
+                "If they ask for the last / previous question, quote the most recent one.",
                 "Answer the current question directly from the history above.",
             ]
         )
         return "\n".join(lines)
+
+    def _is_durable_memory_statement(self, text: str) -> bool:
+        """True for explicit remember/preference statements worth keeping raw."""
+        q = (text or "").strip().lower()
+        if not q:
+            return False
+        return bool(
+            re.search(
+                r"\b(remember (that|this)|don't forget|always want|"
+                r"my preference|my name is|please remember)\b",
+                q,
+            )
+        )
 
     def _remember_chat_turn(
         self,
@@ -732,29 +751,65 @@ class OllamaAgent:
         Short-term history is already stored in ``self.messages``.
         """
 
-        if not prompt and not response:
-            return
-
         if self.memory_store is None:
             return
 
+        compact = self._clean_topic(prompt) or (prompt or "").strip()
+        if not compact:
+            return
+        if self._is_meta_memory_question(compact):
+            return
+        if len(compact) > 1500:
+            compact = compact[:1500] + "\n...[truncated for long-term memory]"
+
+        reply = (response or "").strip()
+        if len(reply) > 800:
+            reply = reply[:800] + "..."
+
         try:
             if hasattr(self.memory_store, "add"):
-                messages = [
-                    {"role": "user", "content": prompt.strip()},
-                    {"role": "assistant", "content": response.strip()},
-                ]
-                self.memory_store.add(
-                    messages,
+                result = self.memory_store.add(
+                    [
+                        {"role": "user", "content": compact},
+                        {"role": "assistant", "content": reply},
+                    ],
                     user_id=self.memory_user_id,
+                    infer=True,
                 )
+                stored = result.get("results") if isinstance(result, dict) else result
+                stored = stored or []
+                if stored:
+                    facts = [
+                        item.get("memory")
+                        for item in stored
+                        if isinstance(item, dict) and item.get("memory")
+                    ]
+                    print(f"[Memory] Long-term extracted {len(facts)} fact(s): {facts}")
+                    return
+
+                # Local models often fail Mem0's strict JSON schema, or the
+                # extractor returns [] when the prompt was a RAG dump.
+                # Persist explicit remember/preference turns as raw text.
+                if self._is_durable_memory_statement(compact):
+                    raw = self.memory_store.add(
+                        compact,
+                        user_id=self.memory_user_id,
+                        infer=False,
+                    )
+                    raw_stored = raw.get("results") if isinstance(raw, dict) else raw
+                    print(
+                        f"[Memory] Long-term infer empty → stored raw "
+                        f"({len(raw_stored or [])} item(s)): {compact[:160]!r}"
+                    )
+                else:
+                    print(
+                        "[Memory] Long-term infer returned no facts "
+                        f"(user turn={compact[:120]!r})"
+                    )
                 return
 
             if hasattr(self.memory_store, "create"):
-                entry = (
-                    f"User: {prompt.strip()}\n"
-                    f"Assistant: {response.strip()}"
-                )
+                entry = f"User: {compact}\nAssistant: {reply}"
                 self.memory_store.create(
                     entry,
                     user_id=self.memory_user_id,
