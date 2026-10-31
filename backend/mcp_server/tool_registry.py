@@ -1,5 +1,6 @@
 from indexing.code_indexer_endpoint import index_codebase
 from retrieval.retrieval_tool_endpoint import retrieve_context
+from retrieval.retrieval_tool import list_files, find_symbol, find_references
 from pruning.pruning_tool_endpoint import prune_context
 from injection.prompt_builder_endpoint import inject_context
 from agent.agent_endpoint import ollama_generate
@@ -33,6 +34,9 @@ register_tool("index_codebase", index_codebase)
 
 # Retrieval ----------------------------------------------------------------
 register_tool("retrieve_context", retrieve_context)
+register_tool("list_files", list_files)
+register_tool("find_symbol", find_symbol)
+register_tool("find_references", find_references)
 
 
 def _load_graph_expand():
