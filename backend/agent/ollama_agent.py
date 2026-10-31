@@ -778,6 +778,11 @@ class OllamaAgent:
                 draft,
             )
             confident = supported
+            if supported:
+                confidence_reason = (
+                    f"{confidence_reason} Cached-source support check passed: "
+                    f"{support_reason}"
+                )
 
         if not confident and support_reason:
             reason = support_reason

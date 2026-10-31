@@ -71,6 +71,7 @@ def test_confident_logprob_draft_uses_cached_context(agent: OllamaAgent) -> None
     assert decision["candidate"] is True
     assert decision["confident"] is True
     assert decision["method"] == "logprob_margin"
+    assert "Cached-source support check passed" in decision["reason"]
     assert len(captured) == 2
     cached_prompt = captured[0]["messages"][1]["content"]
     assert "Previous assistant reply:\nIt validates the request and dispatches it." in cached_prompt
@@ -111,6 +112,7 @@ def test_consistent_samples_skip_retrieval(agent: OllamaAgent) -> None:
 
     assert decision["confident"] is True
     assert decision["method"] == "multi_sample_similarity"
+    assert "Cached-source support check passed" in decision["reason"]
 
 
 def test_unsupported_logprobs_fall_back_to_sampling(agent: OllamaAgent) -> None:
