@@ -992,3 +992,127 @@ def retrieve_context(query: str, top_k: int = 5, include_parent: bool = False) -
     top        = ranked[:top_k]
     results    = reconstruct_file_context(top) if include_parent else top
     return results
+
+
+def list_files(directory: str = "", extension: str = "") -> list[str]:
+    """Return matching indexed file paths without retrieving code or embeddings."""
+    rows = collection.get(include=["metadatas"])
+    paths = set()
+
+    directory = directory.replace("\\", "/").strip("/").lower()
+    extension = extension.lower()
+
+    for meta in rows.get("metadatas", []) or []:
+        path = str(meta.get("file_path") or meta.get("file") or "")
+        normalized = path.replace("\\", "/")
+
+        if not path:
+            continue
+        if directory and not normalized.lower().startswith(directory + "/"):
+            continue
+        if extension and not normalized.lower().endswith(extension):
+            continue
+
+        paths.add(normalized)
+
+    return sorted(paths)
+
+
+def find_symbol(symbol: str, limit: int = 20) -> list[dict]:
+    """Find exact class/function definitions and return their locations only.
+
+    Matches ``name`` or ``qualified_name`` only (not every chunk that merely
+    mentions the symbol). Prefers definition-like chunk types and caps results
+    so lookup prompts stay cheaper than hybrid code retrieval.
+    """
+    symbol = symbol.strip().strip("`'\"")
+    if not symbol:
+        return []
+
+    limit = max(1, min(limit, 100))
+    rows = collection.get(include=["metadatas"])
+    matches = {}
+    definition_types = {"function", "class", "method", "def"}
+
+    for meta in rows.get("metadatas", []) or []:
+        name = str(meta.get("name") or "")
+        qualified = str(meta.get("qualified_name") or "")
+        # Exact definition identity only — "symbol in symbols" pulls co-located
+        # neighbors and inflates token cost for common names like create_app.
+        if name != symbol and qualified != symbol and not qualified.endswith(f"::{symbol}"):
+            continue
+
+        chunk_type = str(meta.get("chunk_type") or "")
+        chunk_id = _chunk_id(meta)
+        matches[chunk_id] = {
+            "symbol": name or symbol,
+            "qualified_name": qualified,
+            "file": meta.get("file_path", meta.get("file", "")),
+            "chunk_type": chunk_type,
+            "start_line": meta.get("start_line"),
+            "end_line": meta.get("end_line"),
+            "_is_definition": chunk_type.lower() in definition_types,
+        }
+
+    ranked = sorted(
+        matches.values(),
+        key=lambda m: (
+            0 if m.get("_is_definition") else 1,
+            str(m.get("file") or ""),
+            int(m.get("start_line") or 0),
+        ),
+    )
+    out = []
+    for item in ranked[:limit]:
+        item.pop("_is_definition", None)
+        out.append(item)
+    return out
+
+
+def find_references(symbol: str, limit: int = 30) -> list[dict]:
+    """Find indexed code chunks containing a symbol, returning locations and snippets."""
+    symbol = symbol.strip().strip("`'\"")
+    if not symbol:
+        return []
+
+    limit = max(1, min(limit, 100))
+    try:
+        rows = collection.get(
+            where_document={"$contains": symbol},
+            include=["documents", "metadatas"],
+            limit=limit,
+        )
+    except Exception:
+        logging.getLogger("retrieval_tool").exception(
+            "Reference lookup failed for %s", symbol
+        )
+        return []
+
+    references = []
+    seen = set()
+    for doc, meta in zip(
+        rows.get("documents", []) or [],
+        rows.get("metadatas", []) or [],
+    ):
+        code = _raw_code(doc)
+        if symbol.lower() not in code.lower():
+            continue
+
+        chunk_id = _chunk_id(meta)
+        if chunk_id in seen:
+            continue
+        seen.add(chunk_id)
+        references.append({
+            "symbol": symbol,
+            "file": meta.get("file_path", meta.get("file", "")),
+            "function": meta.get("name", ""),
+            "chunk_type": meta.get("chunk_type", ""),
+            "start_line": meta.get("start_line"),
+            "end_line": meta.get("end_line"),
+            "snippet": next(
+                (line.strip() for line in code.splitlines() if symbol.lower() in line.lower()),
+                "",
+            ),
+        })
+
+    return references
