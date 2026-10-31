@@ -46,6 +46,40 @@ def test_regex_prefilter_avoids_draft_for_normal_questions(agent: OllamaAgent) -
     assert decision["method"] == "regex_prefilter"
 
 
+def test_chat_continues_response_when_ollama_reports_length(agent: OllamaAgent) -> None:
+    requests: list[dict[str, Any]] = []
+    responses = iter(
+        [
+            {"message": {"content": "The answer is incom"}, "done_reason": "length"},
+            {"message": {"content": "plete."}, "done_reason": "stop"},
+        ]
+    )
+
+    def post(_url: str, body: dict[str, Any]) -> dict[str, Any]:
+        requests.append(body.copy())
+        return next(responses)
+
+    agent._post_json_raw = post  # type: ignore[method-assign]
+
+    response = agent._chat(
+        messages=[{"role": "user", "content": "Give a complete answer."}]
+    )
+
+    assert response == "The answer is incomplete."
+    assert len(requests) == 2
+    assert requests[1]["messages"][-2:] == [
+        {"role": "assistant", "content": "The answer is incom"},
+        {
+            "role": "user",
+            "content": (
+                "Continue the answer from its exact ending. Do not "
+                "repeat earlier text. Complete the current thought "
+                "and finish the answer."
+            ),
+        },
+    ]
+
+
 def test_confident_logprob_draft_uses_cached_context(agent: OllamaAgent) -> None:
     captured: list[dict[str, Any]] = []
     token_scores = [
@@ -208,6 +242,23 @@ def test_followup_does_not_replace_cached_code_context(agent: OllamaAgent) -> No
     )
 
     assert agent._last_code_context == original
+
+
+def test_uncertain_followup_retrieval_query_includes_original_topic(
+    agent: OllamaAgent,
+) -> None:
+    query = agent.build_retrieval_query(
+        "What can it use to answer those questions, and what must it avoid?"
+    )
+
+    assert query.startswith("Original topic: Explain the API handler.")
+    assert "Follow-up question: What can it use to answer those questions" in query
+
+
+def test_normal_retrieval_query_is_unchanged(agent: OllamaAgent) -> None:
+    task = "Explain how cache keys are generated."
+
+    assert agent.build_retrieval_query(task) == task
 
 
 def test_uncertain_followup_can_use_fresh_retrieval(agent: OllamaAgent) -> None:

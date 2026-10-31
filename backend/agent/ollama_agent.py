@@ -56,6 +56,7 @@ _MEM0_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 _FOLLOWUP_LOGPROB_MARGIN_THRESHOLD = 1.0
 _FOLLOWUP_SAMPLE_SIMILARITY_THRESHOLD = 0.78
 _FOLLOWUP_DRAFT_TOKENS = 192
+_MAX_RESPONSE_CONTINUATIONS = 2
 
 # Process-wide singleton so short-term history survives across callers
 # (agent_endpoint, generate_response shortcut, tests) within one server process.
@@ -625,6 +626,17 @@ class OllamaAgent:
         print(f"[Memory] Follow-up resolved using prior topic: {last_topic[:120]!r}")
         return resolved
 
+    def build_retrieval_query(self, task: str) -> str:
+        """Include the original topic when fresh retrieval follows a follow-up."""
+        clean_task = self._clean_topic(task)
+        if not self._is_assistant_referential_followup(clean_task):
+            return task
+
+        last_topic = self._last_real_user_topic()
+        if not last_topic:
+            return task
+        return f"Original topic: {last_topic}\nFollow-up question: {clean_task}"
+
     def _prior_user_tasks(self, *, skip_meta: bool = False) -> List[str]:
         """Compact prior user turns already stored in ``self.messages``."""
         tasks: List[str] = []
@@ -1149,7 +1161,8 @@ class OllamaAgent:
                 meta_system = (
                     "You answer follow-up questions about your previous reply. "
                     "Use only that previous reply. Do not invent a different list "
-                    "from retrieved code."
+                    "from retrieved code. Give a complete answer and finish all "
+                    "sentences; do not stop mid-word or mid-thought."
                 )
                 print(
                     "[Memory] Assistant-referential follow-up → LLM with prior reply."
@@ -1264,24 +1277,47 @@ class OllamaAgent:
             "options": self._ollama_options(),
         }
 
-        raw = self._post_json_raw(
-            url,
-            body,
-        )
+        request_messages = list(body["messages"])
+        raw = self._post_json_raw(url, body)
+        parts: list[str] = []
 
-        msg = raw.get("message") or {}
+        for continuation_index in range(_MAX_RESPONSE_CONTINUATIONS + 1):
+            msg = raw.get("message") or {}
+            content = str(msg.get("content") or "")
+            if not content.strip():
+                thinking = (msg.get("thinking") or "").strip()
+                if thinking and not parts:
+                    return thinking
+                raise RuntimeError(f"Ollama returned no response content: {raw}")
+            parts.append(content)
 
-        content = (msg.get("content") or "").strip()
+            done_reason = str(raw.get("done_reason") or "").lower()
+            if done_reason not in {"length", "max_tokens"}:
+                return "".join(parts).strip()
+            if continuation_index == _MAX_RESPONSE_CONTINUATIONS:
+                raise RuntimeError(
+                    "Ollama response remained incomplete after "
+                    f"{_MAX_RESPONSE_CONTINUATIONS} continuations "
+                    f"(done_reason={done_reason})."
+                )
 
-        if content:
-            return content
+            request_messages.extend(
+                [
+                    {"role": "assistant", "content": content},
+                    {
+                        "role": "user",
+                        "content": (
+                            "Continue the answer from its exact ending. Do not "
+                            "repeat earlier text. Complete the current thought "
+                            "and finish the answer."
+                        ),
+                    },
+                ]
+            )
+            body["messages"] = request_messages
+            raw = self._post_json_raw(url, body)
 
-        thinking = (msg.get("thinking") or "").strip()
-
-        if thinking:
-            return thinking
-
-        raise RuntimeError(f"Ollama returned no response content: {raw}")
+        raise RuntimeError("Ollama response continuation ended unexpectedly.")
 
     # =============================================================
     # HTTP

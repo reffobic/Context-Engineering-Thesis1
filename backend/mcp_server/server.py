@@ -307,6 +307,7 @@ def run_pipeline(
         ) + ["retrieve", "prune", "assess", "inject", "generate"],
     }
 
+    retrieval_query = user_prompt
     # Only assistant-referential follow-ups are eligible for the cached-context
     # path. The agent's regex prefilter avoids spending a model call on normal
     # coding requests and meta-memory questions.
@@ -368,6 +369,9 @@ def run_pipeline(
                 result,
             )
             return {"output": result, "pipeline": pipeline}
+        if cache_decision.get("candidate") and _memory_agent is not None:
+            retrieval_query = _memory_agent.build_retrieval_query(user_prompt)
+            pipeline["retrieval_query"] = retrieval_query
     elif route_mode == "SELF_ROUTE":
         logging.warning(
             "Cached-context confidence gate unavailable; continuing with retrieval"
@@ -388,7 +392,7 @@ def run_pipeline(
     context, duration_ms = _time_stage(
         lambda: call_tool(
             "retrieve_context",
-            user_prompt,
+            retrieval_query,
             mode=rm,
             alpha=graph_alpha,
             w_pagerank=graph_w_pagerank,
@@ -413,7 +417,11 @@ def run_pipeline(
     # P4 expects (query, retrieved_items). Use the core function here so the
     # dashboard can show the same pruning stats used to choose the final chunks.
     (pruned_context, pruning_stats), duration_ms = _time_stage(
-        lambda: prune_context_with_stats(user_prompt, context, token_budget=token_budget)
+        lambda: prune_context_with_stats(
+            retrieval_query,
+            context,
+            token_budget=token_budget,
+        )
     )
     pipeline["stages"]["prune"] = _stage(
         "Pruning",
@@ -442,7 +450,7 @@ def run_pipeline(
     if route_mode == "SELF_ROUTE":
         logging.info("Sufficiency assessment started")
         decision, duration_ms = _time_stage(
-            lambda: assess_sufficiency(user_prompt, pruned_context)
+            lambda: assess_sufficiency(retrieval_query, pruned_context)
         )
         pipeline["stages"]["assess"] = _stage(
             "Sufficiency assessment",
