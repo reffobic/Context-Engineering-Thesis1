@@ -34,7 +34,7 @@ export class SidebarProvider implements vscode.WebviewViewProvider {
         webviewView.webview.onDidReceiveMessage(async (message) => {
             switch (message.type) {
                 case 'checkOllama':
-                    void checkOllama();
+                    void checkOllama(true);
                     break;
                 case 'getActiveFile':
                     await this._sendActiveFile();

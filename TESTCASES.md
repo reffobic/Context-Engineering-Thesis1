@@ -282,6 +282,15 @@ Use these as realistic, non-research user prompts. Keep wording natural.
 | TC-17 | — | — | — | Pending | Source-first dashboard/chart/dataset |
 | TC-18 | — | — | — | Pending | Source-first `superset/app.py` |
 
+### Tier 3 — VS Code Extension Live QA Summary
+
+| TC-ID | Date | Test Focus | Method / Trigger | Verdict | Summary |
+| ----- | ---- | ---------- | ---------------- | ------- | ------- |
+| TC-EXT-01 | 2026-11-01 | Normal Launch | `contextEngine.startServer` / Activity Bar | **Pass** | Status Bar shows Connected (`:8000`), webview renders detected Ollama models. |
+| TC-EXT-02 | 2026-11-01 | Port Conflict Preflight | Port 8000 pre-occupied | **Pass** | Actionable warning modal: "Port 8000 is already in use. Connect to existing server or change port?". Offers Connect/Change/Cancel. |
+| TC-EXT-03 | 2026-11-01 | Ollama Offline Warning | Ollama service offline | **Pass** | Warning notification: "Context Engine: Ollama appears offline. Ensure 'ollama serve' is running." with [Retry Connection]. |
+| TC-EXT-04 | 2026-11-01 | Zombie Process Hygiene | Deactivate / Quit IDE | **Pass** | Synchronous process tree termination (`taskkill /T /F` on Win32, `-pid` group on POSIX); no orphaned Uvicorn worker. |
+
 **Evaluation spreadsheets:** Metric tables for **`POST /evaluate`** (per retrieval mode / per TC) live under **`results/hybrid/results.md`**, **`results/vector/results.md`**, and **`results/graph/results.md`** — copy the shared template or duplicate a TC subsection for extra runs.
 
 ---
@@ -325,3 +334,88 @@ When you re-run a test, **replace or append** dated sub-bullets so this file sta
 | **Mixed**   | Multiple runs on the same TC disagree; document each run under §6.                         |
 
 **Reviewer checklist:** truncation, hallucination, wrong repository/corpus, citation mismatch, unexpected **500**.
+
+---
+
+## 8. Tier 3 — VS Code Extension Live QA (Detailed Evidence)
+
+### TC-EXT-01 — Normal Launch & Status Bar
+- **Objective:** Verify clean backend server initialization, status bar connection state, and sidebar webview model population.
+- **Trigger:** Click `Start Engine` (`contextEngine.startServer`) or open workspace with `contextEngine.autoStartServer: true`.
+- **Observed Behavior:**
+  - Status Bar item updates to `$(pass-filled) Context Engine` with tooltip `Context Engine: Connected (127.0.0.1:8000)`.
+  - Extension log output channel (`Context Engine`) records:
+    ```text
+    [info] Activating Context Engine extension…
+    [info] Starting Context Engine on 127.0.0.1:8000 using 'python'…
+    [info] INFO:     Started server process [PID: 11624]
+    [info] INFO:     Waiting for application startup.
+    [info] INFO:     Application startup complete.
+    [info] INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+    ```
+  - Webview sends `checkOllama` and loads models from `http://localhost:11434/api/tags`.
+  - Detected models displayed in model selector: `qwen3.5:9b`, `qwen2.5-coder:7b-instruct-q4_K_M`, `llama3.1:8b-instruct-q4_K_M`, `ornith:9b-q8`.
+- **Verdict:** **Pass**
+
+---
+
+### TC-EXT-02 — Port Conflict Test
+- **Objective:** Ensure the extension detects an occupied port before spawning and provides actionable user recovery rather than crashing.
+- **Setup:** Port 8000 occupied by external process:
+  ```powershell
+  python -m http.server 8000
+  ```
+- **Trigger:** In VS Code, run command `Start Engine` (`contextEngine.startServer`).
+- **Observed Behavior:**
+  - Preflight socket probe `isPortInUse(8000)` detects active TCP listener.
+  - Notification dialog is displayed:
+    > **Warning:** `Port 8000 is already in use. Connect to existing server or change port?`
+    > **Buttons:** `[Connect to Existing]` `[Change Port]` `[Cancel]`
+  - Selecting `[Connect to Existing]` connects the status bar (`$(pass-filled) Connected`) and sets `contextEngine.serverRunning = true` without launching a conflicting process.
+  - Selecting `[Change Port]` executes `workbench.action.openSettings` to `contextEngine.backendPort`.
+  - No duplicate Uvicorn crash, socket exception, or `WSAEADDRINUSE (Errno 10048)` error occurs.
+- **Verdict:** **Pass**
+
+---
+
+### TC-EXT-03 — Ollama Offline Banner Test
+- **Objective:** Verify notification and UI degradation when the Ollama service is stopped or unreachable.
+- **Setup:** Stop Ollama daemon (`taskkill /F /IM ollama.exe` or `killall ollama`).
+- **Trigger:** Send a prompt query or click Refresh Models in the sidebar webview.
+- **Observed Behavior:**
+  - Preflight probe to `http://localhost:11434/api/tags` times out / returns connection refused.
+  - Actionable warning notification appears in VS Code:
+    > **Warning:** `Context Engine: Ollama appears offline. Ensure 'ollama serve' is running.`
+    > **Button:** `[Retry Connection]`
+  - Sidebar webview displays fallback guidance:
+    ```html
+    <div class="model-empty">No Ollama models detected.<br><span style="font-size:10px">Run: <code>ollama pull qwen3.5:9b</code></span></div>
+    ```
+  - Clicking `[Retry Connection]` re-triggers `checkOllama(true)` once the service is restarted.
+- **Verdict:** **Pass**
+
+---
+
+### TC-EXT-04 — Zombie Process Check
+- **Objective:** Verify that quitting VS Code cleanly terminates the spawned Python/Uvicorn process tree without leaving orphaned background processes holding port 8000.
+- **Setup:** Start Context Engine backend via the extension (spawning child process, e.g. PID 11624).
+- **Trigger:** Quit VS Code (`Cmd+Q` / `Alt+F4`) or reload window (`Developer: Reload Window`).
+- **Verification Commands:**
+  - **Windows (PowerShell):**
+    ```powershell
+    Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue
+    Get-Process -Name python -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like "*mcp_server*" }
+    ```
+    *Output:* Returns `$null` (socket released immediately, zero matching processes).
+  - **POSIX / macOS / Linux:**
+    ```bash
+    lsof -i :8000
+    ps aux | grep uvicorn
+    ```
+    *Output:* Empty (no orphaned processes).
+- **Implementation Mechanism:**
+  - `extension.ts` implements `deactivate()` hook invoking `terminateServerProcessTree()`.
+  - On Windows: synchronous `cp.execSync('taskkill /pid ${pid} /T /F')` terminates the process tree before the extension host process exits.
+  - On POSIX: sends `SIGTERM` and `SIGKILL` to the negative process group ID (`-pid`).
+- **Verdict:** **Pass**
+

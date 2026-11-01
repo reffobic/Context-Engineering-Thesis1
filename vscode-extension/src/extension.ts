@@ -90,8 +90,8 @@ function isPortInUse(port: number, host = '127.0.0.1'): Promise<boolean> {
     });
 }
 
-/** Non-blocking check; shows an actionable warning (at most once per 60s) if Ollama is unreachable. */
-export async function checkOllama(): Promise<boolean> {
+/** Non-blocking check; shows an actionable warning if Ollama is unreachable. */
+export async function checkOllama(force = false): Promise<boolean> {
     const reachable = await new Promise<boolean>((resolve) => {
         const req = http.get(`${OLLAMA_URL}/api/tags`, (res) => {
             res.resume();
@@ -100,16 +100,16 @@ export async function checkOllama(): Promise<boolean> {
         req.on('error', () => resolve(false));
         req.setTimeout(1500, () => { req.destroy(); resolve(false); });
     });
-    if (!reachable && Date.now() - ollamaWarnedAt > 60_000) {
+    if (!reachable && (force || Date.now() - ollamaWarnedAt > 60_000)) {
         ollamaWarnedAt = Date.now();
-        logger.warn(`Ollama unreachable at ${OLLAMA_URL}`);
+        logger?.warn(`Ollama unreachable at ${OLLAMA_URL}`);
         void vscode.window.showWarningMessage(
-            'Ollama is not running. Start Ollama to enable local model responses.',
+            "Context Engine: Ollama appears offline. Ensure 'ollama serve' is running.",
             'Retry Connection'
         ).then((selection) => {
             if (selection === 'Retry Connection') {
                 ollamaWarnedAt = 0;
-                void checkOllama();
+                void checkOllama(true);
             }
         });
     }
@@ -132,14 +132,16 @@ function terminateServerProcessTree() {
     if (pid) {
         try {
             if (process.platform === 'win32') {
-                cp.exec(`taskkill /pid ${pid} /T /F`, (err) => {
-                    if (err) {
-                        logger?.debug(`taskkill exited with: ${err.message}`);
-                    }
-                });
+                try {
+                    cp.execSync(`taskkill /pid ${pid} /T /F`, { stdio: 'ignore' });
+                } catch (err) {
+                    logger?.debug(`taskkill exited with: ${err instanceof Error ? err.message : String(err)}`);
+                }
             } else {
                 // Kill entire POSIX process group (-pid) to prevent orphaned Uvicorn workers
-                process.kill(-pid, 'SIGTERM');
+                try {
+                    process.kill(-pid, 'SIGTERM');
+                } catch { /* already dead */ }
                 setTimeout(() => {
                     try {
                         process.kill(-pid, 0);
@@ -192,7 +194,7 @@ async function startServer(context: vscode.ExtensionContext, provider: SidebarPr
         const changePortAction = 'Change Port';
         const cancelAction = 'Cancel';
         const choice = await vscode.window.showWarningMessage(
-            `Port ${port} is already in use. Connect to the existing Context Engine instance or choose another port?`,
+            `Port ${port} is already in use. Connect to existing server or change port?`,
             connectAction,
             changePortAction,
             cancelAction
