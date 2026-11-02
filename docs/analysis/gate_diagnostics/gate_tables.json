@@ -1,0 +1,695 @@
+{
+ "two_readings_agree": [
+  83,
+  83
+ ],
+ "retrieval_identical_gapa_gasr": [
+  83,
+  83
+ ],
+ "a_call1_verdicts": [
+  [
+   "SWE-Bench-Lite",
+   27,
+   2,
+   25,
+   0,
+   "high 27",
+   25
+  ],
+  [
+   "Loc-Bench",
+   56,
+   8,
+   48,
+   0,
+   "high 55; medium 1",
+   48
+  ],
+  [
+   "Both",
+   83,
+   10,
+   73,
+   0,
+   "high 82; medium 1",
+   73
+  ]
+ ],
+ "json_bad_call1": [
+  "PrefectHQ__prefect-14259"
+ ],
+ "a_gasr_gate": [
+  [
+   "SWE-Bench-Lite",
+   27,
+   1,
+   11,
+   15,
+   0,
+   0,
+   {
+    "GRAPH": 11,
+    "LC": 15,
+    "RAG": 1
+   }
+  ],
+  [
+   "Loc-Bench",
+   56,
+   12,
+   13,
+   31,
+   0,
+   0,
+   {
+    "RAG": 12,
+    "LC": 32,
+    "GRAPH": 12
+   }
+  ],
+  [
+   "Both",
+   83,
+   13,
+   24,
+   46,
+   0,
+   0,
+   {
+    "GRAPH": 23,
+    "LC": 47,
+    "RAG": 13
+   }
+  ]
+ ],
+ "b_all_gold_vs_call2": [
+  [
+   "final (Always-RAG injected context)",
+   "SWE-Bench-Lite",
+   14,
+   "12/14 (86%)",
+   13,
+   "13/13 (100%)",
+   "0.4815"
+  ],
+  [
+   "final (Always-RAG injected context)",
+   "Loc-Bench",
+   32,
+   "24/32 (75%)",
+   24,
+   "24/24 (100%)",
+   "0.0079"
+  ],
+  [
+   "final (Always-RAG injected context)",
+   "Both",
+   46,
+   "36/46 (78%)",
+   37,
+   "37/37 (100%)",
+   "0.0018"
+  ],
+  [
+   "top-5 raw chunks seen by the gate",
+   "SWE-Bench-Lite",
+   14,
+   "12/14 (86%)",
+   13,
+   "13/13 (100%)",
+   "0.4815"
+  ],
+  [
+   "top-5 raw chunks seen by the gate",
+   "Loc-Bench",
+   32,
+   "24/32 (75%)",
+   24,
+   "24/24 (100%)",
+   "0.0079"
+  ],
+  [
+   "top-5 raw chunks seen by the gate",
+   "Both",
+   46,
+   "36/46 (78%)",
+   37,
+   "37/37 (100%)",
+   "0.0018"
+  ]
+ ],
+ "b_gasr": [
+  [
+   "SWE-Bench-Lite",
+   14,
+   "13/14 (93%)",
+   13,
+   "13/13 (100%)",
+   "1.0000"
+  ],
+  [
+   "Loc-Bench",
+   32,
+   "23/32 (72%)",
+   24,
+   "21/24 (88%)",
+   "0.2004"
+  ],
+  [
+   "Both",
+   46,
+   "36/46 (78%)",
+   37,
+   "34/37 (92%)",
+   "0.1298"
+  ]
+ ],
+ "c_f_skipped_vs_fired": [
+  [
+   "Both",
+   "issue length (chars)",
+   "10: 1,904 [385, 5,520]",
+   "73: 1,242 [155, 19,270]",
+   "0.58",
+   "0.8920",
+   "1.0000"
+  ],
+  [
+   "Both",
+   "issue length (words)",
+   "10: 235 [53, 698]",
+   "73: 166 [15, 2,158]",
+   "0.56",
+   "0.9313",
+   "1.0000"
+  ],
+  [
+   "Both",
+   "candidate files",
+   "10: 2 [1, 5]",
+   "73: 3 [1, 5]",
+   "0.28",
+   "0.0235",
+   "0.3995"
+  ],
+  [
+   "Both",
+   "top score",
+   "10: 0.508 [0.328, 0.716]",
+   "73: 0.430 [0.249, 0.679]",
+   "0.70",
+   "0.0129",
+   "0.2322"
+  ],
+  [
+   "Both",
+   "score margin",
+   "10: 0.029 [0.002, 0.232]",
+   "73: 0.025 [0.001, 0.213]",
+   "0.59",
+   "0.0362",
+   "0.5429"
+  ],
+  [
+   "Both",
+   "top-chunk dependencies",
+   "10: 16.5 [1, 58]",
+   "73: 6 [0, 144]",
+   "0.68",
+   "0.4739",
+   "1.0000"
+  ],
+  [
+   "SWE-Bench-Lite",
+   "issue length (chars)",
+   "2: 1,694 [1,681, 1,708]",
+   "25: 1,070 [285, 19,270]",
+   "0.74",
+   "0.9591",
+   "1.0000"
+  ],
+  [
+   "SWE-Bench-Lite",
+   "issue length (words)",
+   "2: 236 [228, 243]",
+   "25: 131 [44, 1,171]",
+   "0.74",
+   "0.8892",
+   "1.0000"
+  ],
+  [
+   "SWE-Bench-Lite",
+   "candidate files",
+   "2: 1.5 [1, 2]",
+   "25: 3 [1, 5]",
+   "0.12",
+   "0.1138",
+   "1.0000"
+  ],
+  [
+   "SWE-Bench-Lite",
+   "top score",
+   "2: 0.595 [0.474, 0.716]",
+   "25: 0.403 [0.249, 0.631]",
+   "0.86",
+   "0.0245",
+   "0.3995"
+  ],
+  [
+   "SWE-Bench-Lite",
+   "score margin",
+   "2: 0.058 [0.013, 0.104]",
+   "25: 0.025 [0.002, 0.100]",
+   "0.62",
+   "0.1195",
+   "1.0000"
+  ],
+  [
+   "SWE-Bench-Lite",
+   "top-chunk dependencies",
+   "2: 6.5 [6, 7]",
+   "25: 4 [0, 51]",
+   "0.66",
+   "0.8373",
+   "1.0000"
+  ],
+  [
+   "Loc-Bench",
+   "issue length (chars)",
+   "8: 2,100 [385, 5,520]",
+   "48: 1,768 [155, 17,800]",
+   "0.53",
+   "0.8698",
+   "1.0000"
+  ],
+  [
+   "Loc-Bench",
+   "issue length (words)",
+   "8: 216 [53, 698]",
+   "48: 230 [15, 2,158]",
+   "0.51",
+   "0.7999",
+   "1.0000"
+  ],
+  [
+   "Loc-Bench",
+   "candidate files",
+   "8: 2 [1, 5]",
+   "48: 3 [1, 5]",
+   "0.32",
+   "0.1431",
+   "1.0000"
+  ],
+  [
+   "Loc-Bench",
+   "top score",
+   "8: 0.501 [0.328, 0.661]",
+   "48: 0.450 [0.273, 0.679]",
+   "0.64",
+   "0.1250",
+   "1.0000"
+  ],
+  [
+   "Loc-Bench",
+   "score margin",
+   "8: 0.029 [0.002, 0.232]",
+   "48: 0.025 [0.001, 0.213]",
+   "0.58",
+   "0.1317",
+   "1.0000"
+  ],
+  [
+   "Loc-Bench",
+   "top-chunk dependencies",
+   "8: 17.5 [1, 58]",
+   "48: 7 [0, 144]",
+   "0.70",
+   "0.5211",
+   "1.0000"
+  ]
+ ],
+ "d_route_change": [
+  [
+   "SWE-Bench-Lite",
+   27,
+   25,
+   25,
+   0,
+   0,
+   "25/25 (100%)",
+   0,
+   25
+  ],
+  [
+   "Loc-Bench",
+   56,
+   48,
+   42,
+   6,
+   0,
+   "42/48 (88%)",
+   5,
+   42
+  ],
+  [
+   "Both",
+   83,
+   73,
+   67,
+   6,
+   0,
+   "67/73 (92%)",
+   5,
+   67
+  ]
+ ],
+ "d_failed_expansion": {
+  "PrefectHQ__prefect-12410": [
+   [
+    0,
+    0
+   ]
+  ],
+  "python__mypy-18197": [
+   [
+    0,
+    0
+   ]
+  ],
+  "yt-dlp__yt-dlp-11438": [
+   [
+    0,
+    0
+   ]
+  ],
+  "yt-dlp__yt-dlp-11711": [
+   [
+    0,
+    0
+   ]
+  ],
+  "yt-dlp__yt-dlp-11782": [
+   [
+    0,
+    0
+   ]
+  ]
+ },
+ "e_reason_themes": [
+  [
+   "sufficient: chunk holds the definition / diff the query asks about",
+   10,
+   2,
+   8,
+   0,
+   0,
+   0,
+   0,
+   "django__django-15252: The retrieved chunk contains the full definition of MigrationRecorder including the record_applied and ensure_schema methods mentioned in the query, w"
+  ],
+  [
+   "off-target chunk (test file, docs, changelog, template or unrelated code)",
+   17,
+   6,
+   11,
+   17,
+   0,
+   1,
+   4,
+   "django__django-13158: The retrieved chunk is a test file containing model definitions that do not include the specific Django form logic or the union() vs / query behavior "
+  ],
+  [
+   "shows only a definition / signature, lacks body or surrounding context",
+   19,
+   8,
+   11,
+   19,
+   2,
+   0,
+   1,
+   "django__django-14855: The retrieved chunk only shows the function definition without the surrounding context needed to verify if the `current_app` parameter is missing or h"
+  ],
+  [
+   "defines a related symbol but not the code / logic the issue concerns",
+   34,
+   10,
+   24,
+   34,
+   0,
+   0,
+   2,
+   "astropy__astropy-14182: The retrieved chunk defines the `write` function but does not contain the implementation of the RST writer class where the `header_rows` argument is l"
+  ],
+  [
+   "other",
+   3,
+   1,
+   2,
+   3,
+   0,
+   0,
+   1,
+   "sympy__sympy-18087: The query describes a specific bug in `trigsimp` involving complex numbers that is not addressed by the general definition of the `simplify` function "
+  ]
+ ],
+ "cites_score": 2,
+ "cites_dep": 1,
+ "crosstab": [
+  [
+   "loc-bench",
+   "sufficient=false",
+   "CONTEXT",
+   "LC",
+   1
+  ],
+  [
+   "loc-bench",
+   "sufficient=false",
+   "STRUCTURE",
+   "GRAPH",
+   42
+  ],
+  [
+   "loc-bench",
+   "sufficient=false",
+   "STRUCTURE",
+   "LC",
+   5
+  ],
+  [
+   "loc-bench",
+   "sufficient=true",
+   "(not run)",
+   "RAG",
+   8
+  ],
+  [
+   "swe-bench-lite",
+   "sufficient=false",
+   "STRUCTURE",
+   "GRAPH",
+   25
+  ],
+  [
+   "swe-bench-lite",
+   "sufficient=true",
+   "(not run)",
+   "RAG",
+   2
+  ],
+  [
+   "Both",
+   "sufficient=false",
+   "CONTEXT",
+   "LC",
+   1
+  ],
+  [
+   "Both",
+   "sufficient=false",
+   "STRUCTURE",
+   "GRAPH",
+   67
+  ],
+  [
+   "Both",
+   "sufficient=false",
+   "STRUCTURE",
+   "LC",
+   5
+  ],
+  [
+   "Both",
+   "sufficient=true",
+   "(not run)",
+   "RAG",
+   10
+  ]
+ ],
+ "information": [
+  [
+   "call 1 `sufficient=true`",
+   "10/46 when the RAG context holds all gold files",
+   "0/37 when it does not",
+   "0.0018"
+  ],
+  [
+   "call 2 `STRUCTURE` (of tasks where call 2 ran)",
+   "35/36 when all gold files are in the RAG context",
+   "37/37 when not",
+   "0.4932"
+  ],
+  [
+   "Always-RAG function Acc@10 on the same tasks",
+   "mean 0.600 where call 1 said sufficient (n=10)",
+   "mean 0.192 where it did not (n=73)",
+   "0.0109"
+  ],
+  [
+   "Always-RAG file Acc@5 on the same tasks",
+   "mean 0.900 (n=10)",
+   "mean 0.479 (n=73)",
+   "0.0151"
+  ]
+ ],
+ "expansion_effect": [
+  [
+   "SWE-Bench-Lite",
+   25,
+   0,
+   1,
+   24,
+   0,
+   0,
+   25,
+   "0.200 / 0.240",
+   "0.200 / 0.200"
+  ],
+  [
+   "Loc-Bench",
+   42,
+   0,
+   3,
+   39,
+   0,
+   2,
+   40,
+   "0.143 / 0.167",
+   "0.167 / 0.190"
+  ],
+  [
+   "Both",
+   67,
+   0,
+   4,
+   63,
+   0,
+   2,
+   65,
+   "0.164 / 0.194",
+   "0.179 / 0.194"
+  ]
+ ],
+ "shortest": [
+  [
+   "modin-project__modin-3438",
+   155
+  ],
+  [
+   "django__django-13315",
+   285
+  ],
+  [
+   "sympy__sympy-18087",
+   320
+  ],
+  [
+   "sympy__sympy-18532",
+   324
+  ],
+  [
+   "sympy__sympy-11870",
+   344
+  ],
+  [
+   "django__django-17885",
+   385
+  ],
+  [
+   "matplotlib__matplotlib-29265",
+   429
+  ],
+  [
+   "keras-team__keras-20456",
+   458
+  ],
+  [
+   "django__django-12308",
+   459
+  ],
+  [
+   "Lightning-AI__pytorch-lightning-20403",
+   469
+  ]
+ ],
+ "longest": [
+  [
+   "matplotlib__matplotlib-26020",
+   19270
+  ],
+  [
+   "ray-project__ray-26818",
+   17800
+  ],
+  [
+   "vllm-project__vllm-5473",
+   12537
+  ],
+  [
+   "vllm-project__vllm-10903",
+   11514
+  ],
+  [
+   "dask__dask-11303",
+   8045
+  ],
+  [
+   "py-pdf__pypdf-2934",
+   6398
+  ],
+  [
+   "langchain-ai__langgraph-2571",
+   6318
+  ],
+  [
+   "scikit-learn__scikit-learn-25747",
+   6147
+  ],
+  [
+   "django__django-19009",
+   5520
+  ],
+  [
+   "huggingface__diffusers-10189",
+   5493
+  ]
+ ],
+ "examples": {
+  "Call 2 fired and expansion helped, answer level (showing 0 of 0)": [],
+  "Call 2 fired and expansion helped, final-context level (showing 0 of 0; used because the answer level has none)": [],
+  "Call 2 fired and expansion hurt, answer level (showing 4 of 4)": [
+   "Qiskit__qiskit-12214",
+   "pytest-dev__pytest-11143",
+   "PrefectHQ__prefect-14259",
+   "huggingface__transformers-29511"
+  ],
+  "Call 2 skipped (showing 5 of 10)": [
+   "django__django-15252",
+   "sympy__sympy-24102",
+   "Chainlit__chainlit-1534",
+   "aio-libs__aiohttp-9692",
+   "django__django-17885"
+  ]
+ }
+}
