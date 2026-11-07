@@ -21,6 +21,11 @@ Normalisation follows locmap (LocAgent naming): file = path with "/" separators 
 without "::" contributes a file only. Lists are de-duplicated keeping the first rank, then scored with metrics.acc_at at
 the same k as the context metrics. An answer with no LOCATIONS section or no valid item scores 0 on every metric and is
 counted in the separate failure class `answer_no_locations` (not mixed into the gate / hard failure kinds).
+
+Strict scoring is the primary metric and the default. `--relaxed` (score_answer(..., relaxed=True)) adds SECONDARY columns and
+never changes the strict ones: `answer.function_acc@10_leaf` (a gold function counts as found when a top-10 answer function
+names the same file and the same leaf name, ignoring the class prefix), `answer.function_recall@10` (strict hits /
+min(#gold, 10)) and `answer.function_recall@10_leaf` (the same with leaf matching).
 """
 from __future__ import annotations
 
@@ -110,7 +115,26 @@ def answer_lists(text: str | None) -> tuple[dict, dict]:
     return info, lists
 
 
-def score_answer(text: str | None, gold: dict, done_reason: str | None = None) -> dict:
+def leaf_key(fid: str) -> tuple[str, str]:
+    """"path:Class.method" -> ("path", "method"); a bare "path:method" gives ("path", "method")."""
+    path, _, qual = fid.partition(":")
+    return path, qual.rsplit(".", 1)[-1]
+
+
+def relaxed_function_metrics(pred: list[str], gold: list[str], k: int = 10) -> dict:
+    """Secondary function-level metrics (strict stays primary). Leaf matching: same file and same final name component.
+    Acc follows the same cap rule as metrics.acc_at: found == min(#gold, k)."""
+    top = dedupe(pred)[:k]
+    cap = min(len(set(gold)), k)
+    strict = len(set(top) & set(gold))
+    leaves = {leaf_key(p) for p in top}
+    leaf = sum(1 for g in set(gold) if leaf_key(g) in leaves)
+    return {f"answer.function_acc@{k}_leaf": 1.0 if leaf >= cap else 0.0,
+            f"answer.function_recall@{k}": strict / cap if cap else 0.0,
+            f"answer.function_recall@{k}_leaf": min(leaf, cap) / cap if cap else 0.0}
+
+
+def score_answer(text: str | None, gold: dict, done_reason: str | None = None, relaxed: bool = False) -> dict:
     """Per-task result: status, failure class, lists and the `answer.<level>_acc@k` / `answer.file_recall@5` metrics.
     `truncated` = the answer call stopped on num_predict (done_reason == "length")."""
     info, lists = answer_lists(text)
@@ -122,6 +146,9 @@ def score_answer(text: str | None, gold: dict, done_reason: str | None = None) -
         for k in ks:
             out[f"answer.{lvl}_acc@{k}"] = acc_at(lists[key], gold[key], k) if ok else 0.0
     out["answer.file_recall@5"] = recall_at(lists["files"], gold["files"], 5) if ok else 0.0
+    if relaxed:                                    # opt-in secondary columns; absent unless asked for
+        out.update(relaxed_function_metrics(lists["functions"], gold["functions"], 10) if ok else
+                   {"answer.function_acc@10_leaf": 0.0, "answer.function_recall@10": 0.0, "answer.function_recall@10_leaf": 0.0})
     return out
 
 
@@ -141,7 +168,7 @@ def path_validity(rows: list[dict]) -> dict:
 
 
 def score_job(job: dict, gold: dict[str, dict], data_dir: Path,
-              exists: Callable[[dict, str], bool] | None = None) -> list[dict]:
+              exists: Callable[[dict, str], bool] | None = None, relaxed: bool = False) -> list[dict]:
     def default_exists(line: dict, path: str) -> bool:
         root = data_dir / "cache" / "checkouts" / line["repo"].replace("/", "__") / line["base_commit"]
         return (root / path).is_file()
@@ -150,7 +177,7 @@ def score_job(job: dict, gold: dict[str, dict], data_dir: Path,
     rows = []
     for line in job["rows"]:
         g = gold[line["task_id"]]
-        s = score_answer(line.get("answer"), g, (line.get("answer_call") or {}).get("done_reason"))
+        s = score_answer(line.get("answer"), g, (line.get("answer_call") or {}).get("done_reason"), relaxed=relaxed)
         files = s["lists"]["files"]
         ctx_files = set(((line.get("ranked") or {}).get("final_context") or {}).get("files") or [])
         gf = set(g["files"])
@@ -168,13 +195,15 @@ def main() -> int:
     ap.add_argument("--runs", type=Path, nargs="+", required=True)
     ap.add_argument("--data-dir", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--relaxed", action="store_true",
+                    help="add the secondary leaf-name / recall@10 function columns (strict columns are unchanged)")
     a = ap.parse_args()
     data = a.data_dir.resolve()
     a.out.mkdir(parents=True, exist_ok=True)
     summary, all_rows = {}, []
     for j in load_jobs([p.resolve() for p in a.runs]):
         gold = load_gold(data, j["dataset"])
-        rows = score_job(j, gold, data)
+        rows = score_job(j, gold, data, relaxed=a.relaxed)
         all_rows += rows
         n = len(rows)
         mean = lambda k: (sum(r[k] for r in rows) / n) if n else None
@@ -182,6 +211,7 @@ def main() -> int:
             "n_tasks": n, "n_answer_no_locations": sum(1 for r in rows if r["failure_class"]),
             "n_truncated": sum(1 for r in rows if r["truncated"]),
             **{f"answer.{lvl}_acc@{k}": mean(f"answer.{lvl}_acc@{k}") for lvl, _, ks in LEVELS for k in ks},
+            **({k: mean(k) for k in rows[0] if k.startswith("answer.") and ("_leaf" in k or "function_recall@10" in k)} if a.relaxed and rows else {}),
             **path_validity(rows), **conversion(rows)}
     cols = list(all_rows[0]) if all_rows else []
     with open(a.out / "answer_scores.csv", "w", newline="", encoding="utf-8") as f:

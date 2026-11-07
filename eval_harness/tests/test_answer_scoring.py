@@ -82,3 +82,30 @@ def test_conversion_and_path_validity():
     assert conversion(rows) == {"n_context_has_all_gold": 2, "n_also_in_answer": 1, "conversion_rate": 0.5}
     assert path_validity(rows) == {"n_paths": 6, "n_not_in_base_commit": 2, "share_not_in_base_commit": 2 / 6}
     assert conversion([])["conversion_rate"] is None
+
+
+# ── relaxed (secondary) metrics: strict stays primary ─────────────────────────────────────────────────────────────
+def test_relaxed_is_off_by_default_and_never_changes_strict():
+    t = "LOCATIONS\npkg/a.py::run\nEND_LOCATIONS"
+    base = score_answer(t, GOLD)
+    assert not any("_leaf" in k or "function_recall@10" in k for k in base)
+    rel = score_answer(t, GOLD, relaxed=True)
+    assert {k: v for k, v in rel.items() if k in base} == base
+
+
+def test_relaxed_leaf_ignores_class_prefix_only_within_the_same_file():
+    from harness.answer_scoring import relaxed_function_metrics
+    gold = ["pkg/a.py:Foo.run"]
+    assert relaxed_function_metrics(["pkg/a.py:run"], gold)["answer.function_acc@10_leaf"] == 1.0
+    assert relaxed_function_metrics(["pkg/a.py:Bar.run"], gold)["answer.function_acc@10_leaf"] == 1.0
+    assert relaxed_function_metrics(["pkg/b.py:Foo.run"], gold)["answer.function_acc@10_leaf"] == 0.0
+    assert relaxed_function_metrics(["pkg/a.py:other"], gold)["answer.function_acc@10_leaf"] == 0.0
+
+
+def test_relaxed_recall_is_the_fraction_of_gold_found_and_follows_the_cap_rule():
+    from harness.answer_scoring import relaxed_function_metrics
+    gold = ["a.py:A.f", "a.py:A.g"]
+    m = relaxed_function_metrics(["a.py:A.f"], gold)
+    assert m["answer.function_recall@10"] == 0.5 and m["answer.function_acc@10_leaf"] == 0.0
+    many = [f"a.py:f{i}" for i in range(12)]
+    assert relaxed_function_metrics(many[:10], many)["answer.function_acc@10_leaf"] == 1.0   # 10 hits == min(12, 10)
