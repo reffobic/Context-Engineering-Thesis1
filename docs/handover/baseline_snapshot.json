@@ -1,0 +1,106 @@
+{
+ "purpose": "Go-back point: the exact pipeline and harness the Nov 3 results (83 tasks x 7 arms, qwen3.5:9b) were produced with.",
+ "recorded_on": "2026-11-08",
+ "git": {
+  "harness_commit_nov3": "7c92a0b55a5c03c63ec2c159a1b0c6c5a64b3799",
+  "harness_remote_tag": "harness-nov3-runs",
+  "docs_only_successor_on_remote": "a75f180b00c378e7fedf2b6f46a2727e20782ce0 (origin/integration-oct28 tip; no code differs from 7c92a0b)",
+  "pipeline_frozen_sha": "2350c0b2e064e4fd808e941731366e6cc71a9551",
+  "pipeline_chain": [
+   "166dbd01e126cdfe91524534a172498746a49cc2  origin/main as frozen by the team (pipeline base_commit)",
+   "50cf149efd6180b41098210b234efef81685ceaf  GAPA expands from the same seeds as GASR (seed_alignment_commit)",
+   "cd84fad1c13d8e7783bff39389cfb195e0cbac5b  merge of gapa-aligned-seeds into eval-harness (earlier frozen SHA, revoked)",
+   "3bbc52f220addbc648d4802dab6b1c658d427612  CHROMA_PATH env override (previous frozen SHA, revoked)",
+   "2350c0b2e064e4fd808e941731366e6cc71a9551  Graphify path-prefix env + six ablation switches, all default off (frozen SHA)"
+  ],
+  "backend_tree_hash": {
+   "2350c0b": "54ed09065939d67162198daf371c985cee367fb8",
+   "7c92a0b": "54ed09065939d67162198daf371c985cee367fb8",
+   "a75f180": "54ed09065939d67162198daf371c985cee367fb8"
+  },
+  "eval_harness_tree_hash": {
+   "7c92a0b": "14200a47ae8996c144535b7d9edbf0be0d822395",
+   "a75f180": "14200a47ae8996c144535b7d9edbf0be0d822395"
+  },
+  "other_remote_tags": {
+   "harness-oct23-runs": "9c8ff12",
+   "harness-oct23-scorer-v2": "9208675"
+  }
+ },
+ "run_identity_from_log_rows": {
+  "machine_id": "ubuntu-4080",
+  "gpu_name": "NVIDIA GeForce RTX 4080",
+  "gpu_driver": "595.99.02",
+  "ollama_version": "0.34.1",
+  "model": "qwen3.5:9b",
+  "model_digest": "6488c96fa5faab64bb65cbd30d4289e20e6130ef535a93ef9a49f42eda893ea7",
+  "config_hash": "ee166c229fda207b",
+  "config_hashes": {
+   "experiment": "5f9aad96023b1bfb",
+   "pipeline_config": "9524a71931f851c8",
+   "index_config": "ca64eb2049611bb8",
+   "run_config": "1acb24354734fd02",
+   "ablations_config": "7a0af392962afd10",
+   "extras": "466fbbce62e2a39d"
+  },
+  "harness_clean": true,
+  "num_ctx": 32768
+ },
+ "answer_suffix_LOCATIONS": "Begin your answer with a section titled LOCATIONS. List, one per line and most likely first, each file that should be edited to resolve this issue, written as path, or as path::Class.method where a function applies. Then write the line END_LOCATIONS and continue with a short explanation of the fix.",
+ "config_file_sha256": {
+  "pipeline": "8b5128038238ffc1e592aeadd71a7689a7839d1a3373dda0bc2c4f50d3fade99",
+  "run": "ce5661e65f41a94979a63f957bde00e420ff857af2afa6a7883b7a26013ed6c5",
+  "extras": "6811dfef546106ac478e119e1f090695658ec9737a36c30b93ede1dd2ee7485b",
+  "experiment": "bde326a06e32a868a0f4680f1dce97f8f931b22933be03c13da8a5a52c157290",
+  "index": "4a86f37ff2bffd0ab52e3a8f4cb1746692a3a570f9873acf102482b3efe65f39",
+  "datasets": "4d30d0c23a5506add4d785a523718fccf10e539bc01813b2253c4e8d1b2551b0",
+  "ablations": "85217e4d30e4b02e515049afdc2e49972531fc0e16a87e2d1a198509323864ef",
+  "preflight": "740d36feb9d2fa529225b627805cb7015cb0741d3e4521641e06ee8cdf4ae7e4"
+ },
+ "sample_files_sha256": {
+  "swe-bench-lite": "5c98790edd8e0863a72a096d78d4d3494a6bcf6c57bf9cba0b426546bb674698",
+  "loc-bench": "a93c0c586044b528d4edf10146985e8b9f826643dd645fc21aed083c4859a781"
+ },
+ "data_not_in_git": "eval_harness/data/ is gitignored. Back up these before changing anything; the hashes below let you check a restored copy.",
+ "nov3_results_sha256": {
+  "eval_harness/data/runs/2350c0b/nov3-01-qwen3.5-9b-GAPA-swe-bench-lite/results.jsonl": "d07bd5a9fe5edbd18972326616a0064d36b53766037b39297883d5d613a836d0",
+  "eval_harness/data/runs/2350c0b/nov3-02-qwen3.5-9b-GAPA-loc-bench/results.jsonl": "e9c8d8ce091ba53b559ee5a08f6781e6bc04a3d8b8f10136e4b0938f4b330d81",
+  "eval_harness/data/runs/2350c0b/nov3-03-qwen3.5-9b-ALWAYS_LC-swe-bench-lite/results.jsonl": "c45022fc3ef3ddffee7dfa0cc35dd7d6802250024a68f1272c530ec1a2a2cfae",
+  "eval_harness/data/runs/2350c0b/nov3-04-qwen3.5-9b-ALWAYS_LC-loc-bench/results.jsonl": "efa13485e827dbdd750b3819535c9995b8966ad8c3493d9cfe03d20b411c5e46",
+  "eval_harness/data/runs/2350c0b/nov3-05-qwen3.5-9b-ALWAYS_RAG-swe-bench-lite/results.jsonl": "17000ada5e5e8272620f833b124b82e58745cb95cd5487b54ad4c0534c1deb9e",
+  "eval_harness/data/runs/2350c0b/nov3-06-qwen3.5-9b-ALWAYS_RAG-loc-bench/results.jsonl": "d64ba5ed77c885105ec35cdaf501674cd01f3c10d68b9c6d0c9866e89190251c",
+  "eval_harness/data/runs/2350c0b/nov3-07-qwen3.5-9b-PREASSESS-swe-bench-lite/results.jsonl": "e2d61a0f4d25a086bdebf5ae72a79ad423864d9f1d55eba77018ad6ad61138d6",
+  "eval_harness/data/runs/2350c0b/nov3-08-qwen3.5-9b-PREASSESS-loc-bench/results.jsonl": "cd7d4fc952b6d2b3c9ab250d85729bbb8ecaf4da8d8c67bce78ba1cc4d441090",
+  "eval_harness/data/runs/2350c0b/nov3-09-qwen3.5-9b-GASR-swe-bench-lite/results.jsonl": "60754d09d0762ed94948cf90567ffa73dbc5928736a16e60c5c6ebd3791803bc",
+  "eval_harness/data/runs/2350c0b/nov3-10-qwen3.5-9b-GASR-loc-bench/results.jsonl": "d2cced2515ebba0e875011c5b5009bbdc38909d6b202aeebc7894c47c117cc78",
+  "eval_harness/data/runs/2350c0b/nov3-11-qwen3.5-9b-ALWAYS_GRAPH-swe-bench-lite/results.jsonl": "e8d5e8d88bf3bb0023f9b7c7b9887ef59b8c3cbd457f16e09efda8d4c130fe6c",
+  "eval_harness/data/runs/2350c0b/nov3-12-qwen3.5-9b-ALWAYS_GRAPH-loc-bench/results.jsonl": "e4c3d38a6d3af40ef0325d290818e24845c4af0d2affecad24199bf4400fc80d",
+  "eval_harness/data/runs/2350c0b/nov3-13-qwen3.5-9b-SELF_ROUTE-swe-bench-lite/results.jsonl": "bafa2a02764bafb5a49ff58f83817a5fa1d9f6a6897d88c2a6f78665e096b85c",
+  "eval_harness/data/runs/2350c0b/nov3-14-qwen3.5-9b-SELF_ROUTE-loc-bench/results.jsonl": "c540268af7ede6b348177a38abec63c6dd23020ff408fb09701a6885390807fe"
+ },
+ "nov3_report_sha256": {
+  "eval_harness/data/reports/nov3_83/answer_scores.csv": "02186d4b549069de250c85cd295ac7d2622431d1069c96c6e7f0ce8ebe846f9e",
+  "eval_harness/data/reports/nov3_83/answer_summary.json": "ff67fee7daead37a9771585a5227534641865c7cbaef96628c41cf9af9ff8a7d",
+  "eval_harness/data/reports/nov3_83/diagnostics.csv": "04bb0dc2fa909b01a04d65ea7cc87231a366fa8e7b17dbdbf2672e4836736c99",
+  "eval_harness/data/reports/nov3_83/failures.csv": "c3c3c6d163eda7385bb6689e9d645241ae6031505bfc7d3b556796418da45aa1",
+  "eval_harness/data/reports/nov3_83/gate_tokens.csv": "0199c72e0727d25a022fc2e9ea5611474a574afd17f7970379bd54ff634ec351",
+  "eval_harness/data/reports/nov3_83/lc_resolution.csv": "f0a8071a4fb178becff59cf791f2fed5089240b5ffdb2a887f0fef5a9b0f56ef",
+  "eval_harness/data/reports/nov3_83/per_task.csv": "407b55c94619197cf64887f79be5688baee0b2ab4b0ce2f8c58061bcc6ce3cf4",
+  "eval_harness/data/reports/nov3_83/summary.json": "3cb835d4931fe9bbbd9eea71a239ae9fd6cd4fa1500d7a1e4f591b99a6692f45",
+  "eval_harness/data/reports/nov3_83/table_iv_context_quality_swe-bench-lite_qwen3.5-9b.csv": "ce658987a9bbd640da34d6b3aff766afdc5df1517618ab2d20c47b8831c7ec52",
+  "eval_harness/data/reports/nov3_83/table_iv_context_quality_swe-bench-lite_qwen3.5-9b_sensitivity.csv": "ce658987a9bbd640da34d6b3aff766afdc5df1517618ab2d20c47b8831c7ec52",
+  "eval_harness/data/reports/nov3_83/table_ix_ablation_qwen3.5-9b.csv": "259115ccb72d988ae96a6a1025815e2dfa4dfecb56316565245ce21053142010",
+  "eval_harness/data/reports/nov3_83/table_ix_ablation_qwen3.5-9b_sensitivity.csv": "259115ccb72d988ae96a6a1025815e2dfa4dfecb56316565245ce21053142010",
+  "eval_harness/data/reports/nov3_83/table_v_context_quality_loc-bench_qwen3.5-9b.csv": "8f582f36a8358926472846f3085668607f701a70f234193df0184eda27c96b4d",
+  "eval_harness/data/reports/nov3_83/table_v_context_quality_loc-bench_qwen3.5-9b_sensitivity.csv": "1367eea4258cea5ffc8c92a8e19c9414ea54e8e3b1f0d6d45f66ba588986123d",
+  "eval_harness/data/reports/nov3_83/table_vi_cost_routing_qwen3.5-9b.csv": "ae9de7db9f48bfe10b21bd592925d7c97ec7d3928952ce7f5c926b8611b4ea96",
+  "eval_harness/data/reports/nov3_83/table_vi_cost_routing_qwen3.5-9b_sensitivity.csv": "a1f95da2b5661a4192e231b48d805e0153750cc222e49f19808eb8345ee282c5",
+  "eval_harness/data/reports/nov3_83/table_vii_baselines_swe-bench-lite_qwen3.5-9b.csv": "3c5b3ac75f04440d589e177f474b840c10d37a6d31010347bbd13f9078665c8f",
+  "eval_harness/data/reports/nov3_83/table_viii_baselines_loc-bench_qwen3.5-9b.csv": "3c72cb513101a67443e995d6f5bdc197d23c7a8f89639cbba4121e60fbe5aee9"
+ },
+ "how_to_restore": [
+  "git switch --detach 7c92a0b   (or: git checkout harness-nov3-runs)",
+  "git diff --stat 2350c0b2e064e4fd808e941731366e6cc71a9551 HEAD -- backend   # must print nothing",
+  "check the config hashes above against eval_harness/configs/*.toml"
+ ]
+}
