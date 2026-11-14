@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 # ── Config ─────────────────────────────────────────────────────
 
-DEFAULT_TOKEN_BUDGET = 1800
+DEFAULT_TOKEN_BUDGET = 1300
 
 
 @dataclass
