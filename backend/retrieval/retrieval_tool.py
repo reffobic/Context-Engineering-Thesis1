@@ -738,7 +738,7 @@ def reconstruct_file_context(ranked_chunks: list[dict]) -> list[dict]:
 # PUBLIC API
 # ══════════════════════════════════════════════════════════════════
 
-def retrieve_context(query: str, top_k: int = 5) -> list[dict]:
+def retrieve_context(query: str, top_k: int = 47) -> list[dict]:
     """
     Full retrieval pipeline:
       vector search → hybrid scoring → ranking → late chunking context
