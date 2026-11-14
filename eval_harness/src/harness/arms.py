@@ -30,7 +30,7 @@ def run_always_graph(server, prompt: str, hops: int, pruning_method: str) -> dic
     from diamond.gasr_seeds import build_gasr_seed_pool
     from retrieval.graph_expand import graph_expand
 
-    token_budget = 1800                                    # same constant as run_pipeline
+    token_budget = 1300                                    # same constant as run_pipeline
     max_neighbors = int(os.environ.get("GASR_MAX_NEIGHBORS", "8"))
     fraction = float(os.environ.get("GASR_NEIGHBOR_BUDGET_FRACTION", "0.30"))
     context = server.call_tool("retrieve_context", prompt)
@@ -177,7 +177,7 @@ def _finish(server, arm: str, route: str, prompt: str, chunks: list[dict], asses
 
 def run_always_rag(server, prompt: str, pruning_method: str) -> dict:
     context = server.call_tool("retrieve_context", prompt)
-    pruned, _stats = server.prune_context_with_stats(prompt, context, token_budget=1800, method=pruning_method)
+    pruned, _stats = server.prune_context_with_stats(prompt, context, token_budget=1300, method=pruning_method)
     return _finish(server, "ALWAYS_RAG", "RAG", prompt, pruned)
 
 
@@ -205,7 +205,7 @@ def run_preassess(server, prompt: str, pruning_method: str) -> dict:
     import importlib
     pg = importlib.import_module("diamond.preroute_gate")           # looked up at call time: the instrument wraps this attribute
     context = server.call_tool("retrieve_context", prompt)
-    pruned, _stats = server.prune_context_with_stats(prompt, context, token_budget=1800, method=pruning_method)
+    pruned, _stats = server.prune_context_with_stats(prompt, context, token_budget=1300, method=pruning_method)
     try:
         d = dict(pg.preroute_structured_gate(prompt, context))
     except Exception as exc:                                         # the gate catches request / parse errors itself
