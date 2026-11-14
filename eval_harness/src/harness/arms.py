@@ -66,6 +66,7 @@ HARNESS_ARMS = (
     "ALWAYS_RAG",
     "ALWAYS_LC",
     "ALWAYS_LC_DEDUP",
+    "ALWAYS_LC_RANKED",
     "PREASSESS",
 )
 
@@ -106,6 +107,64 @@ def _build_lc_chunks(
     return out
 
 
+def _lc_file_block(path: str, file_chunks: list[dict]) -> str:
+    """Render a file block exactly as backend PromptBuilder does."""
+    parts = []
+
+    for chunk in file_chunks:
+        code = (chunk.get("text") or "").strip()
+        if not code:
+            continue
+
+        sym = f" (Symbol: {chunk['symbol']})" if chunk.get("symbol") else ""
+        lang = f" [lang={chunk['language']}]" if chunk.get("language") else ""
+        parts.append(f"--- Snippet{sym}{lang} ---\n{code}")
+
+    body = "\n\n".join(parts) if parts else "(empty)"
+    return f"=== File: {path} ===\n{body}"
+
+
+def _select_lc_chunks_by_rank(
+    chunks: list[dict],
+    max_tokens: int | None = None,
+) -> list[dict]:
+    """
+    Select complete LC file blocks in retrieval-priority order.
+
+    Uses the same per-block token estimate as backend PromptBuilder.
+    Does not deduplicate chunks within a file.
+    """
+    if max_tokens is None:
+        max_tokens = int(os.environ.get("MAX_CONTEXT_TOKENS", "24000"))
+
+    grouped: dict[str, list[dict]] = {}
+    for chunk in chunks:
+        path = chunk.get("path") or "(unknown path)"
+        grouped.setdefault(path, []).append(chunk)
+
+    selected_paths = []
+    remaining = max_tokens
+
+    for path, file_chunks in grouped.items():
+        block = _lc_file_block(path, file_chunks)
+        block_tokens = max(1, len(block) // 4)
+
+        if block_tokens <= remaining:
+            selected_paths.append(path)
+            remaining -= block_tokens
+        elif not selected_paths:
+            # Let the backend apply its existing oversized-first-file truncation.
+            selected_paths.append(path)
+            break
+        # Otherwise skip this file and continue considering lower-ranked files.
+
+    return [
+        chunk
+        for path in selected_paths
+        for chunk in grouped[path]
+    ]
+
+
 def _finish(server, arm: str, route: str, prompt: str, chunks: list[dict], assess: dict | None = None) -> dict:
     final_prompt = server.call_tool("inject_context", prompt, chunks)
     answer = server.call_tool("ollama_generate", final_prompt)
@@ -131,6 +190,13 @@ def run_always_lc_dedup(server, prompt: str) -> dict:
     context = server.call_tool("retrieve_context", prompt)
     chunks = _build_lc_chunks(server, context, deduplicate=True)
     return _finish(server, "ALWAYS_LC_DEDUP", "LC", prompt, chunks)
+
+
+def run_always_lc_ranked(server, prompt: str) -> dict:
+    context = server.call_tool("retrieve_context", prompt)
+    chunks = _build_lc_chunks(server, context)
+    selected = _select_lc_chunks_by_rank(chunks)
+    return _finish(server, "ALWAYS_LC_RANKED", "LC", prompt, selected)
 
 
 def run_preassess(server, prompt: str, pruning_method: str) -> dict:
@@ -162,6 +228,8 @@ def run_harness_arm(server, arm: str, prompt: str, hops: int, pruning_method: st
         return run_always_lc(server, prompt)
     if arm == "ALWAYS_LC_DEDUP":
         return run_always_lc_dedup(server, prompt)
+    if arm == "ALWAYS_LC_RANKED":
+        return run_always_lc_ranked(server, prompt)
     if arm == "PREASSESS":
         return run_preassess(server, prompt, pruning_method)
     raise ValueError(f"unknown harness arm {arm!r}")

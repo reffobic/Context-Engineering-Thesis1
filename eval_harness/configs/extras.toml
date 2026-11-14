@@ -5,8 +5,9 @@
 [arms]
 # arm name -> "HARNESS": composed by harness.arms from the pipeline's stage functions (arm_impl="harness")
 ALWAYS_RAG = "HARNESS"      # retrieve -> flat prune -> RAG injection, no gate
-ALWAYS_LC_DEDUP = "HARNESS"
 ALWAYS_LC = "HARNESS"       # retrieve -> LC injection of the parent files, no gate
+ALWAYS_LC_DEDUP = "HARNESS"
+ALWAYS_LC_RANKED = "HARNESS"
 PREASSESS = "HARNESS"       # retrieve -> flat prune -> GAPA call-1 metadata gate -> RAG if sufficient, else LC
 
 [flags]

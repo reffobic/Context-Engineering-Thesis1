@@ -35,7 +35,7 @@ ARM_ORDER = ["ALWAYS_GRAPH", "GASR", "GAPA", "SELF_ROUTE"]
 ARM_LABEL = {"ALWAYS_GRAPH": "Always-GRAPH", "GASR": "GASR", "GAPA": "GAPA", "SELF_ROUTE": "Self-Route"}
 QUALITY_ARMS = ["ALWAYS_GRAPH", "GASR", "GAPA"]                      # Tables IV / V
 COST_ARMS = ["ALWAYS_GRAPH", "GASR", "GAPA", "SELF_ROUTE"]            # Table VI
-NEW_ARMS = {"ALWAYS_RAG": "Always-RAG", "ALWAYS_LC": "Always-LC", "ALWAYS_LC_DEDUP": "Always-LC (dedup)", "PREASSESS": "Pre-assess"}
+NEW_ARMS = {"ALWAYS_RAG": "Always-RAG", "ALWAYS_LC": "Always-LC", "ALWAYS_LC_DEDUP": "Always-LC (dedup)", "ALWAYS_LC_RANKED": "Always-LC (ranked budget)", "PREASSESS": "Pre-assess"}
 HARD = ("timeout", "oom", "error", "preflight_failed")
 
 
@@ -490,7 +490,7 @@ def main() -> int:
     ap.add_argument("--lc-scorer", choices=["legacy", "v2"], default="legacy",
                     help="legacy = LC chunks are file-only (module / function lists empty); v2 = module / function ids joined from the retrieved chunk")
     ap.add_argument("--with-new-arms", action="store_true",
-                    help="also tabulate ALWAYS_RAG / ALWAYS_LC / ALWAYS_LC_DEDUP / PREASSESS (default: arm order and tables as for Oct 23)")
+                    help="also tabulate ALWAYS_RAG / ALWAYS_LC / ALWAYS_LC_DEDUP / ALWAYS_LC_RANKED / PREASSESS (default: arm order and tables as for Oct 23)")
     a = ap.parse_args()
     if a.with_new_arms:
         ARM_ORDER.extend(x for x in NEW_ARMS if x not in ARM_ORDER)
