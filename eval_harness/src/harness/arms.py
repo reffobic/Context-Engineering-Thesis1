@@ -61,48 +61,21 @@ def run_always_graph(server, prompt: str, hops: int, pruning_method: str) -> dic
 # exist in run_pipeline but are not used: the LC branch there runs a pruning stage whose output it discards, and
 # PREASSESS exists only on origin/plain_preasses (not taken). Gate input, pruning and injection are the pipeline's.
 
-HARNESS_ARMS = (
-    "ALWAYS_GRAPH",
-    "ALWAYS_RAG",
-    "ALWAYS_LC",
-    "ALWAYS_LC_DEDUP",
-    "PREASSESS",
-)
+HARNESS_ARMS = ("ALWAYS_GRAPH", "ALWAYS_RAG", "ALWAYS_LC", "PREASSESS")
 
-def _build_lc_chunks(
-    server,
-    raw_retrieved: list[dict],
-    deduplicate: bool = False,
-) -> list[dict]:
-    """Build LC parent-file context, optionally keeping only the first occurrence of each file."""
+
+def _build_lc_chunks(server, raw_retrieved: list[dict]) -> list[dict]:
+    """Same mapping as the nested helper in server.run_pipeline (_build_lc_chunks): parent files of the retrieved chunks."""
     if any("parent_context" not in i for i in raw_retrieved):
         raw_retrieved = server.reconstruct_file_context(raw_retrieved)
-
     out = []
-    seen_files = set()
-
     for item in raw_retrieved:
         pc = item.get("parent_context") or item.get("code") or ""
         if not pc.strip():
             continue
-
         meta = item.get("metadata") or {}
-        path = meta.get("file") or ""
-
-        # Keep the first occurrence of each known file in retrieval order.
-        # Entries without a file path are retained rather than grouped together.
-        if deduplicate and path:
-            if path in seen_files:
-                continue
-            seen_files.add(path)
-
-        out.append({
-            "text": pc,
-            "path": path,
-            "symbol": meta.get("function") or "",
-            "language": meta.get("language") or "",
-        })
-
+        out.append({"text": pc, "path": meta.get("file") or "", "symbol": meta.get("function") or "",
+                    "language": meta.get("language") or ""})
     return out
 
 
@@ -125,12 +98,6 @@ def run_always_rag(server, prompt: str, pruning_method: str) -> dict:
 def run_always_lc(server, prompt: str) -> dict:
     context = server.call_tool("retrieve_context", prompt)
     return _finish(server, "ALWAYS_LC", "LC", prompt, _build_lc_chunks(server, context))
-
-
-def run_always_lc_dedup(server, prompt: str) -> dict:
-    context = server.call_tool("retrieve_context", prompt)
-    chunks = _build_lc_chunks(server, context, deduplicate=True)
-    return _finish(server, "ALWAYS_LC_DEDUP", "LC", prompt, chunks)
 
 
 def run_preassess(server, prompt: str, pruning_method: str) -> dict:
@@ -160,8 +127,6 @@ def run_harness_arm(server, arm: str, prompt: str, hops: int, pruning_method: st
         return run_always_rag(server, prompt, pruning_method)
     if arm == "ALWAYS_LC":
         return run_always_lc(server, prompt)
-    if arm == "ALWAYS_LC_DEDUP":
-        return run_always_lc_dedup(server, prompt)
     if arm == "PREASSESS":
         return run_preassess(server, prompt, pruning_method)
     raise ValueError(f"unknown harness arm {arm!r}")
