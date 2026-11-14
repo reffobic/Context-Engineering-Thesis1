@@ -105,8 +105,8 @@ class EvaluateRequest(BaseModel):
     """
 
     prompt: str
-    top_k: int = 10
-    token_budget: int = 1800
+    top_k: int = 47
+    token_budget: int = 1300
     pruning_method: Literal["heuristic", "selective"] = "heuristic"
     relevant_files: Optional[List[str]] = None
     judge_retrieval_relevancy: bool = False
@@ -419,7 +419,7 @@ def run_pipeline(
 ) -> dict:
     import os
 
-    token_budget = 1800
+    token_budget = 1300
     gasr_hard_cap = int(os.environ.get("GASR_HARD_CAP", "2"))
     pipeline = {
         "prompt": user_prompt,
