@@ -159,12 +159,12 @@ Tokens = mean(`answer_prompt` + `answer_completion`) on ok rows. Knowledge% = kn
 | Arm | Overall% | Knowledge% | Clarity mean† | PerfectSolve% | tokens mean | Route mix (n=108 jobs) |
 |-----|--------:|-----------:|--------------:|--------------:|------------:|------------------------|
 | **GASR** | **56.1** | 43.1 | 1.71 | 20.0 | 9831 | 10% RAG / 40% GRAPH / 50% LC |
-| GAPA | 53.0 | 40.1 | 1.62 | 15.4 | 2782 | ~89% GRAPH |
-| SELF_ROUTE | 52.6 | 41.6 | 1.68 | 19.2 | 15243 | ~90% LC |
-| PREASSESS | 52.0 | 36.0 | 1.74 | 18.5 | 17043 | ~97% LC |
-| ALWAYS_LC | 48.9 | 37.8 | 1.52 | 17.6 | 17443 | 100% LC |
-| ALWAYS_GRAPH | 41.9 | 32.4 | 1.29 | 12.1 | 1989 | 100% GRAPH |
-| ALWAYS_RAG | 40.3 | 29.9 | 1.30 | 10.2 | 2088 | 100% RAG |
+| GAPA | 53.0 | 40.1 | 1.62 | 15.4 | 2782 | 3% RAG / 89% GRAPH / 8% LC |
+| SELF_ROUTE | 52.6 | 41.6 | 1.68 | 19.2 | 15243 | 10% RAG / 0% GRAPH / 90% LC |
+| PREASSESS | 52.0 | 36.0 | 1.74 | 18.5 | 17043 | 3% RAG / 0% GRAPH / 97% LC |
+| ALWAYS_LC | 48.9 | 37.8 | 1.52 | 17.6 | 17443 | 0% RAG / 0% GRAPH / 100% LC |
+| ALWAYS_GRAPH | 41.9 | 32.4 | 1.29 | 12.1 | 1989 | 0% RAG / 100% GRAPH / 0% LC |
+| ALWAYS_RAG | 40.3 | 29.9 | 1.30 | 10.2 | 2088 | 100% RAG / 0% GRAPH / 0% LC |
 
 † Paper clarity is 0/1; our local judge often exceeds 1 — use Overall%/Knowledge% more than Clarity for paper-style reading.
 

@@ -258,15 +258,15 @@ Tokens = same metric as Table B (`est_tokens_div4`, else `prompt_eval_count`) ·
 
 **Our Wave 1 full (qwen-7B judge)** — same 7 arms · generator `qwen3.5:9b` · judge **`qwen-7B:latest` · single-pass** · **n=144** (flask+requests+pytest) · tokens vs Always-LC mean **14928**. Full table: [`TABLE_B_SWEQA_W1.md`](TABLE_B_SWEQA_W1.md).
 
-| Model / system | Corr | Comp | Rel | Clar | Reason | **Overall** | tokens mean | token% vs LC |
-|----------------|-----:|-----:|----:|-----:|-------:|------------:|------------:|-------------:|
-| ALWAYS_RAG | 9.25 | 8.90 | 9.44 | 9.06 | 8.81 | **45.4** | **1892** | **12.7%** |
-| GASR | 7.78 | 7.58 | 7.87 | 7.68 | 7.56 | **38.5** | 6433 | 43.1% |
-| ALWAYS_GRAPH | 7.60 | 7.33 | 7.73 | 7.48 | 7.32 | **37.5** | 1655 | 11.1% |
-| GAPA | 7.24 | 6.98 | 7.34 | 7.13 | 6.98 | **35.7** | 2408 | 16.1% |
-| SELF_ROUTE | 5.86 | 5.58 | 5.78 | 5.73 | 5.62 | **28.6** | 11751 | 78.7% |
-| PREASSESS | 3.53 | 3.20 | 3.24 | 3.31 | 3.26 | **16.6** | 14791 | 99.1% |
-| ALWAYS_LC | 3.28 | 2.90 | 2.94 | 3.03 | 2.97 | **15.1** | 14928 | 100% |
+| Model / system | Corr | Comp | Rel | Clar | Reason | **Overall** | tokens mean | token% vs LC | Route mix |
+|----------------|-----:|-----:|----:|-----:|-------:|------------:|------------:|-------------:|-----------|
+| ALWAYS_RAG | 9.25 | 8.90 | 9.44 | 9.06 | 8.81 | **45.4** | **1892** | **12.7%** | 100% RAG / 0% GRAPH / 0% LC |
+| GASR | 7.78 | 7.58 | 7.87 | 7.68 | 7.56 | **38.5** | 6433 | 43.1% | 29% RAG / 40% GRAPH / 31% LC |
+| ALWAYS_GRAPH | 7.60 | 7.33 | 7.73 | 7.48 | 7.32 | **37.5** | 1655 | 11.1% | 0% RAG / 100% GRAPH / 0% LC |
+| GAPA | 7.24 | 6.98 | 7.34 | 7.13 | 6.98 | **35.7** | 2408 | 16.1% | 2% RAG / 94% GRAPH / 4% LC |
+| SELF_ROUTE | 5.86 | 5.58 | 5.78 | 5.73 | 5.62 | **28.6** | 11751 | 78.7% | 25% RAG / 0% GRAPH / 75% LC |
+| PREASSESS | 3.53 | 3.20 | 3.24 | 3.31 | 3.26 | **16.6** | 14791 | 99.1% | 2% RAG / 0% GRAPH / 98% LC |
+| ALWAYS_LC | 3.28 | 2.90 | 2.94 | 3.03 | 2.97 | **15.1** | 14928 | 100% | 0% RAG / 0% GRAPH / 100% LC |
 
 Sources: flask Claude — [`agent_cursor/TABLE_B_AGENT_FLASK.md`](agent_cursor/TABLE_B_AGENT_FLASK.md), `scores_batch*.json` + `mapping.json`, `join_metrics.jsonl` (flask-only); Wave 1 qwen — [`table_b_sweqa_w1.csv`](table_b_sweqa_w1.csv).
 
