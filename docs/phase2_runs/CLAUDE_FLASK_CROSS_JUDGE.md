@@ -181,6 +181,23 @@ Overall = sum → stored under `"ARM|flask-000"` in `claude_overall_flask.json` 
 
 Source: SWE-QA paper Table 3 ([arXiv:2509.14635](https://arxiv.org/abs/2509.14635)). Metrics are **answer quality vs gold** (5 dims × 1–20 → Overall /100), **not** a direct “context quality” score. Better context usually raises the answer score.
 
+### Metrics explained (how to read every table below)
+
+| Column | What it measures | Scale / note |
+|--------|------------------|--------------|
+| **Corr** (Correctness) | Factual match to the gold answer | 1–20 · wrong facts pull this down |
+| **Comp** (Completeness) | Coverage of gold’s key points | 1–20 · often the **weakest** dim |
+| **Rel** (Relevance) | Stays on the question (little off-topic) | 1–20 |
+| **Clar** (Clarity) | Clear, readable wording | 1–20 · can stay high even when wrong |
+| **Reason** (Reasoning) | Logical structure / argumentation | 1–20 |
+| **Overall** | Sum of the five dims | **/100** · primary quality number |
+| **tokens mean** | Context / prompt size we inject (Table B metric) | `est_tokens_div4`, else `prompt_eval_count` · **not** judge tokens |
+| **token% vs LC** | tokens mean ÷ Always-LC tokens mean | **100%** = as heavy as full parent-file LC dump |
+
+**Judge ≠ generator.** Wave 1 quality rows use **`qwen-7B`** as judge; flask cross-judge / Cursor-agent rows use **Claude-subagent** (single-pass). Paper Table 3 uses **Claude Sonnet 4.5 · 5-vote**. Same rubric family; absolute Overall is **not** interchangeable across judges.
+
+**Arms (ours):** ALWAYS_* = force that route; **GASR** = escalate RAG→GRAPH→LC when a gate says context is weak; **GAPA** = assess-then-GRAPH-heavy; **SELF_ROUTE** / **PREASSESS** = sufficiency gates that often fall through to LC.
+
 ### 3A. Paper Table 3 (transcribed)
 
 | Model / system | Corr | Comp | Rel | Clar | Reason | **Overall** |
@@ -221,21 +238,61 @@ Source: SWE-QA paper Table 3 ([arXiv:2509.14635](https://arxiv.org/abs/2509.1463
 
 Paper takeaway: RAG ≫ Direct; agents often ≥ RAG; GPT-5.1+OpenHands and Cursor lead (~70–71).
 
-**Our flask results (same /100 columns)** — Claude-subagent judge · **single-pass** (not paper Sonnet 4.5 · 5-vote) · **flask only n=48** (paper Table 3 = full SWE-QA).
+**Our flask results (same /100 columns + tokens)** — Claude-subagent judge · **single-pass** (not paper Sonnet 4.5 · 5-vote) · **flask only n=48** (paper Table 3 = full SWE-QA).
 
-| Model / system | Corr | Comp | Rel | Clar | Reason | **Overall** |
-|----------------|-----:|-----:|----:|-----:|-------:|------------:|
-| **Ours — Cursor CLI agent** (`agent` 2026.11.13 · `auto`) | 15.06 | 10.19 | 16.62 | 15.58 | 12.04 | **69.5** |
-| **Ours — 7 arms · generator `qwen3.5:9b`** | | | | | | |
-| GASR | 4.85 | 3.65 | 7.58 | 13.81 | 5.85 | **35.8** |
-| ALWAYS_RAG | 4.75 | 3.58 | 7.75 | 13.75 | 5.90 | **35.7** |
-| GAPA | 4.21 | 3.08 | 7.17 | 13.52 | 5.31 | **33.3** |
-| ALWAYS_GRAPH | 4.21 | 3.08 | 7.19 | 13.50 | 5.31 | **33.3** |
-| SELF_ROUTE | 4.10 | 3.10 | 6.62 | 13.65 | 5.15 | **32.6** |
-| ALWAYS_LC | 2.73 | 2.08 | 4.98 | 13.29 | 4.00 | **27.1** |
-| PREASSESS | 2.73 | 2.08 | 4.98 | 13.29 | 4.00 | **27.1** |
+Tokens = same metric as Table B (`est_tokens_div4`, else `prompt_eval_count`) · **flask subset** of Wave 1 · token% vs Always-LC flask mean (**18460**).
 
-Sources: agent dims [`agent_cursor/TABLE_B_AGENT_FLASK.md`](agent_cursor/TABLE_B_AGENT_FLASK.md); 7-arm dims aggregated from `scores_batch*.json` + `mapping.json` (Overall matches §1 / `claude_overall_flask.json`).
+| Model / system | Corr | Comp | Rel | Clar | Reason | **Overall** | tokens mean | token% vs LC |
+|----------------|-----:|-----:|----:|-----:|-------:|------------:|------------:|-------------:|
+| **Ours — Cursor CLI agent** (`agent` 2026.11.13 · `auto`) | 15.06 | 10.19 | 16.62 | 15.58 | 12.04 | **69.5** | —† | — |
+| **Ours — 7 arms · generator `qwen3.5:9b`** | | | | | | | | |
+| GASR | 4.85 | 3.65 | 7.58 | 13.81 | 5.85 | **35.8** | 6411 | 34.7% |
+| ALWAYS_RAG | 4.75 | 3.58 | 7.75 | 13.75 | 5.90 | **35.7** | **1876** | **10.2%** |
+| GAPA | 4.21 | 3.08 | 7.17 | 13.52 | 5.31 | **33.3** | 1685 | 9.1% |
+| ALWAYS_GRAPH | 4.21 | 3.08 | 7.19 | 13.50 | 5.31 | **33.3** | 1688 | 9.1% |
+| SELF_ROUTE | 4.10 | 3.10 | 6.62 | 13.65 | 5.15 | **32.6** | 15677 | 84.9% |
+| ALWAYS_LC | 2.73 | 2.08 | 4.98 | 13.29 | 4.00 | **27.1** | 18460 | 100% |
+| PREASSESS | 2.73 | 2.08 | 4.98 | 13.29 | 4.00 | **27.1** | 18460 | 100% |
+
+† Cursor-agent `flask.jsonl` has `total_tokens`/`input_tokens`/`output_tokens` all **0** (not logged by the batch script); mean wall latency ≈ **33 s**/question.
+
+**Our Wave 1 full (qwen-7B judge)** — same 7 arms · generator `qwen3.5:9b` · judge **`qwen-7B:latest` · single-pass** · **n=144** (flask+requests+pytest) · tokens vs Always-LC mean **14928**. Full table: [`TABLE_B_SWEQA_W1.md`](TABLE_B_SWEQA_W1.md).
+
+| Model / system | Corr | Comp | Rel | Clar | Reason | **Overall** | tokens mean | token% vs LC |
+|----------------|-----:|-----:|----:|-----:|-------:|------------:|------------:|-------------:|
+| ALWAYS_RAG | 9.25 | 8.90 | 9.44 | 9.06 | 8.81 | **45.4** | **1892** | **12.7%** |
+| GASR | 7.78 | 7.58 | 7.87 | 7.68 | 7.56 | **38.5** | 6433 | 43.1% |
+| ALWAYS_GRAPH | 7.60 | 7.33 | 7.73 | 7.48 | 7.32 | **37.5** | 1655 | 11.1% |
+| GAPA | 7.24 | 6.98 | 7.34 | 7.13 | 6.98 | **35.7** | 2408 | 16.1% |
+| SELF_ROUTE | 5.86 | 5.58 | 5.78 | 5.73 | 5.62 | **28.6** | 11751 | 78.7% |
+| PREASSESS | 3.53 | 3.20 | 3.24 | 3.31 | 3.26 | **16.6** | 14791 | 99.1% |
+| ALWAYS_LC | 3.28 | 2.90 | 2.94 | 3.03 | 2.97 | **15.1** | 14928 | 100% |
+
+Sources: flask Claude — [`agent_cursor/TABLE_B_AGENT_FLASK.md`](agent_cursor/TABLE_B_AGENT_FLASK.md), `scores_batch*.json` + `mapping.json`, `join_metrics.jsonl` (flask-only); Wave 1 qwen — [`table_b_sweqa_w1.csv`](table_b_sweqa_w1.csv).
+
+### Why Always-RAG beats GASR (Wave 1, qwen-7B judge)
+
+Under **`qwen3.5:9b`**, focused RAG context is already strong. GASR only helps if escalations fix real misses; here they often **hurt**.
+
+| | ALWAYS_RAG | GASR |
+|--|----------:|-----:|
+| Overall (n=144) | **45.4** | 38.5 |
+| tokens mean | **1892** | 6433 |
+| Route mix | 100% RAG | 29% RAG / **40% GRAPH** / **31% LC** |
+
+**GASR quality by the route it actually took** (same judge, Wave 1):
+
+| GASR final route | n | Mean Overall | Δ vs Always-RAG on same questions |
+|------------------|---:|-------------:|----------------------------------:|
+| Stayed **RAG** | 42 | ~**76.8** | ~**0** (essentially tied) |
+| Escalated **GRAPH** | 58 | ~**30.4** | ~**−3** |
+| Escalated **LC** | 44 | ~**12.5** | ~**−19** |
+
+**Reading:** When the gate leaves RAG alone, GASR ≈ Always-RAG. The Overall gap is mostly from **GRAPH/LC escalations** — especially LC (24k cap / lost-in-the-middle), which collapses answers the same way Always-LC does. On paired questions, GASR beats Always-RAG on only **14**/144, ties **87**, loses **43** (mean Δ ≈ **−7** Overall).
+
+**Flask Claude cross-judge** (n=48) is almost a **tie** (GASR 35.8 vs RAG 35.7) because flask GASR is mostly GRAPH (30/48), not the heavy LC mix that drags Wave 1.
+
+**Thesis framing:** Always-RAG = best **quality** (and still cheap). GASR = win vs **Self-Route** (less LC, higher score, fewer tokens than Self-Route) — **not** a win vs always staying on RAG when RAG is already enough.
 
 ### 3B. How much stronger is the paper’s stack than ours?
 
