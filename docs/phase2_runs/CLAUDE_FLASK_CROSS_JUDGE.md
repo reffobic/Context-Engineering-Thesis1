@@ -221,6 +221,22 @@ Source: SWE-QA paper Table 3 ([arXiv:2509.14635](https://arxiv.org/abs/2509.1463
 
 Paper takeaway: RAG ≫ Direct; agents often ≥ RAG; GPT-5.1+OpenHands and Cursor lead (~70–71).
 
+**Our flask results (same /100 columns)** — Claude-subagent judge · **single-pass** (not paper Sonnet 4.5 · 5-vote) · **flask only n=48** (paper Table 3 = full SWE-QA).
+
+| Model / system | Corr | Comp | Rel | Clar | Reason | **Overall** |
+|----------------|-----:|-----:|----:|-----:|-------:|------------:|
+| **Ours — Cursor CLI agent** (`agent` 2026.11.13 · `auto`) | 15.06 | 10.19 | 16.62 | 15.58 | 12.04 | **69.5** |
+| **Ours — 7 arms · generator `qwen3.5:9b`** | | | | | | |
+| GASR | 4.85 | 3.65 | 7.58 | 13.81 | 5.85 | **35.8** |
+| ALWAYS_RAG | 4.75 | 3.58 | 7.75 | 13.75 | 5.90 | **35.7** |
+| GAPA | 4.21 | 3.08 | 7.17 | 13.52 | 5.31 | **33.3** |
+| ALWAYS_GRAPH | 4.21 | 3.08 | 7.19 | 13.50 | 5.31 | **33.3** |
+| SELF_ROUTE | 4.10 | 3.10 | 6.62 | 13.65 | 5.15 | **32.6** |
+| ALWAYS_LC | 2.73 | 2.08 | 4.98 | 13.29 | 4.00 | **27.1** |
+| PREASSESS | 2.73 | 2.08 | 4.98 | 13.29 | 4.00 | **27.1** |
+
+Sources: agent dims [`agent_cursor/TABLE_B_AGENT_FLASK.md`](agent_cursor/TABLE_B_AGENT_FLASK.md); 7-arm dims aggregated from `scores_batch*.json` + `mapping.json` (Overall matches §1 / `claude_overall_flask.json`).
+
 ### 3B. How much stronger is the paper’s stack than ours?
 
 | Dimension | Paper (typical) | Ours | Gap |
