@@ -26,7 +26,81 @@ This is the RepoProbe analogue of the SWE-QA “paper Table 3 + our rows” writ
 
 ---
 
-## 2. Metrics explained
+## 2. Their tasks (what a question looks like)
+
+RepoProbe items are **GitHub discussion / issue–style** open-ended Q&A about a **pinned repo snapshot** — not SWE-QA’s balanced What/How/Why/Where quiz format.
+
+| Source | Path |
+|--------|------|
+| Upstream CSV | `../external/RepoProbe/dataset/<repo>.csv` (`question`, `answer`, `checklist`, …) |
+| Our Phase 2 copy | [`eval_harness/data/datasets/repoprobe-py8/labels.jsonl`](../../eval_harness/data/datasets/repoprobe-py8/labels.jsonl) (**108** Q) |
+
+**Python-8 mix:** FieldStation42 14 · adk-python 30 · agent-framework 9 · browser-use 5 · crawl4ai 18 · docling 10 · sglang 11 · yasb 11.  
+**Taxonomy:** Implementation Details **74** · Business Logic **23** · Project Architecture **11** · all **Medium**.
+
+Each task = **question** (user prose) + **gold answer** + **tiered checklist** (judge rubric).
+
+### Examples (from `labels.jsonl`)
+
+**Implementation — `browser-use__browser-use-0`**
+```text
+Browser Use: Unable to Use Azure OpenAI Despite Valid Credentials
+… help me to fix issue why i am unable to connect with Azure open ai …
+Checklist starts: (3 points) Problem Root Cause Identification
+```
+
+**Implementation — `FieldStation42__FieldStation42-0`**
+```text
+ffmpeg filters. CRT Scanlines?
+… add filters to stations to simulate CRT scanlines? …
+Checklist starts: (3 points) Identifying the station_fx Configuration Option
+```
+
+**Business logic — `FieldStation42__FieldStation42-3`**
+```text
+Scheduling longer content on 'normal' channels?
+… proper approach to scheduling longer content? …
+```
+
+**Architecture — `FieldStation42__FieldStation42-11`**
+```text
+Catalog … My question is about the catalog. I already have my files sorted…
+```
+
+**Other repos (same shape):** MCP background tasks (`adk-python-0`) · customize chat client (`agent-framework-0`) · RegexExtractionStrategy empty (`crawl4ai-0`) · JS-rendered HTML (`docling-0`) · mxfp4 on MI300X (`sglang-0`) · weather location env (`yasb-0`).
+
+### Where their prompts live (upstream)
+
+| What | Path |
+|------|------|
+| **Judge template** | `../external/RepoProbe/prompt_templates_en.py` — `DIRECT_SCORING_WITH_REPO_TEMPLATE` |
+| **Judge call** | `../external/RepoProbe/scorer.py` — `create_scoring_prompt` |
+| **Agent user wrapper** | `../external/RepoProbe/evaluator.py` — `_create_agent_prompt` |
+| **Agent system + bash tool** | `../external/RepoProbe/agent_configs/example_agent.py` — `SYSTEM_PROMPT` |
+| **Container contract** | `../external/RepoProbe/docs/AGENT_INTEGRATION.md` |
+
+**Agent user prompt (paper harness):**
+```text
+Please answer the following question in English based on the current repository.
+No need to interact with me in the middle, just output the complete answer directly:
+
+<question from CSV>
+```
+
+**Judge prompt shape** (filled with Q + gold + checklist + candidate answer + optional directory tree):
+```text
+You are a professional code understanding evaluation expert…
+## Question Information / Real Repository Information / Model Answer
+## Reference Answer / Scoring Criteria  ← checklist from CSV
+… only integer scores from criteria; knowledge ≤9, clarity ≤1 …
+… reason BEFORE scores; JSON: knowledge_score, clarity_score, total_score, …
+```
+
+**Our CP9:** same **judge template** via `scripts/phase2_repoprobe_score_pipeline.py`; **generation** uses our RAG/GRAPH/LC inject prompts — not their Claude Code / example-agent tool loop.
+
+---
+
+## 3. Metrics explained
 
 | Metric | Definition (paper) | Our column |
 |--------|-------------------|------------|
@@ -45,7 +119,7 @@ This is the RepoProbe analogue of the SWE-QA “paper Table 3 + our rows” writ
 
 ---
 
-## 3. Paper Table 3 (RepoProbe) — transcribed
+## 4. Paper Table 3 (RepoProbe) — transcribed
 
 Source: RepoProbe paper Table 3. All systems judged by **Claude Sonnet 4.5** checklist protocol. Values are **%**.
 
@@ -76,7 +150,7 @@ Paper signatures: **Clarity ≫ Knowledge**; perfect solves stay moderate even f
 
 ---
 
-## 4. Our Python-8 results (same columns + tokens)
+## 5. Our Python-8 results (same columns + tokens)
 
 **Ours — 7 arms · `qwen3.5:9b` · judge `qwen-7B` · scorer-on-pipeline · Python-8**
 
@@ -96,7 +170,7 @@ Tokens = mean(`answer_prompt` + `answer_completion`) on ok rows. Knowledge% = kn
 
 **n scored:** GASR 105 · GAPA 104 · SELF_ROUTE 104 · PREASSESS 108 · ALWAYS_LC 108 · ALWAYS_GRAPH 107 · ALWAYS_RAG 108.
 
-### 4A. Is their Qwen3 stronger than ours?
+### 5A. Is their Qwen3 stronger than ours?
 
 **Yes — as models.** Not a fair absolute score match.
 
@@ -110,7 +184,7 @@ Tokens = mean(`answer_prompt` + `answer_completion`) on ok rows. Knowledge% = kn
 - Our **56% ≰ “beat Plus.”** Different judge + scaffolding. Soft family anchor only.  
 - Paper Max at **27.3** is low on *their* ladder; our 9B sitting near Plus-band % under a weak local judge is **not** evidence we match Plus.
 
-### 4B. Why GASR > Always-RAG here (≠ SWE-QA)
+### 5B. Why GASR > Always-RAG here (≠ SWE-QA)
 
 On **SWE-QA Wave 1**, Always-RAG won because GASR’s GRAPH/LC escalations hurt a gold-match /100 judge.
 
@@ -133,7 +207,7 @@ On **RepoProbe Python-8** (this checklist judge):
 
 ---
 
-## 5. How to compare fairly (thesis)
+## 6. How to compare fairly (thesis)
 
 | Comparison | Align | Claim |
 |------------|-------|-------|
@@ -148,7 +222,7 @@ On **RepoProbe Python-8** (this checklist judge):
 
 ---
 
-## 6. APIs for a fairer paper match
+## 7. APIs for a fairer paper match
 
 | Need | Why |
 |------|-----|
@@ -161,10 +235,13 @@ Cursor-subagent Claude is closer than `qwen-7B` but still **not** paper Sonnet �
 
 ---
 
-## 7. Artifact map
+## 8. Artifact map
 
 | Path | Role |
 |------|------|
+| [`labels.jsonl`](../../eval_harness/data/datasets/repoprobe-py8/labels.jsonl) | Task text + checklist + gold |
+| `../external/RepoProbe/dataset/*.csv` | Upstream tasks |
+| `../external/RepoProbe/prompt_templates_en.py` | Judge prompt template |
 | `phase2_repoprobe_py/full/*_score.jsonl` | Per-question checklist scores |
 | `phase2_repoprobe_py/full/summary.json` | Arm aggregates |
 | [`TABLE_C_REPOPROBE_PY8.md`](TABLE_C_REPOPROBE_PY8.md) | Compact Table C |
@@ -174,6 +251,6 @@ Cursor-subagent Claude is closer than `qwen-7B` but still **not** paper Sonnet �
 
 ---
 
-## 8. One-paragraph takeaway
+## 9. One-paragraph takeaway
 
 RepoProbe **Table 3** puts frontier agent+API systems around **~45–63%** Overall (checklist), with **Qwen3-Max 27.3** and **Qwen3.5-Plus 50.0** under Sonnet 4.5. Our **9B** 7-arm host run under local **`qwen-7B`** lands **GASR ~56%** best and **Always-RAG ~40%** worst — **suite-opposite** to SWE-QA Wave 1, where Always-RAG led and LC collapsed. That is expected: different questions, checklist vs 5-dim gold, weak local judge, and retrieval vs paper agents. Use this doc for **routing + soft anchors**; use Anthropic Sonnet (+ optional agent) before any absolute claim against paper Table 3.
