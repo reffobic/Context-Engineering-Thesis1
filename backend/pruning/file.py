@@ -630,7 +630,7 @@ def prune_context(
 #   - Seeds have high lexical overlap with the query → high pruning score.
 #   - Neighbours (callees, callers, imports …) have final_score ≈ 0.5 from
 #     the graph expand step and zero lexical match → they always lose.
-#   - Under the 1800-token budget ~5 seeds fill it; neighbours are dropped.
+#   - Under the token budget (1300 default) a handful of seeds fill it; neighbours are dropped.
 #   - assess_sufficiency then escalates to LC even though the answer was
 #     already in hop-1.
 #
@@ -758,8 +758,11 @@ def prune_context_graph_aware(
         query:                    The user's natural-language question / task.
         seeds:                    RAG retrieval results (source="retrieval").
         neighbors:                Graph-expand results (source="graph").
-        token_budget:             Total token budget (default 1800).
-        neighbor_budget_fraction: Fraction reserved for neighbours (default 0.55).
+        token_budget:             Total token budget (default DEFAULT_TOKEN_BUDGET, 1300).
+        neighbor_budget_fraction: Fraction reserved for neighbours (default
+                                  NEIGHBOR_BUDGET_FRACTION, i.e. env
+                                  GASR_NEIGHBOR_BUDGET_FRACTION; code default 0.30).
+                                  Pinned per freeze in the pipeline config.
         weights:                  Heuristic weights for seed scoring.
         method:                   ``"heuristic"`` or ``"selective"``.
         model_name:               HuggingFace causal LM for selective pruning.

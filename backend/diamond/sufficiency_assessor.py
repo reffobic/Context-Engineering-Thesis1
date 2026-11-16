@@ -446,8 +446,23 @@ def assess_rag_gate(
             "route": "LC",
         }
 
+    # Ablation (ABL_GASR_GATE_OFF): no gate. Report "insufficient, STRUCTURE" without
+    # an LLM call, so GASR always takes its graph-expansion step. Default off.
+    if os.environ.get("ABL_GASR_GATE_OFF", "0") == "1":
+        return {
+            "sufficient": False,
+            "need": "STRUCTURE",
+            "confidence": "high",
+            "reason": "Ablation: GASR gate switched off (always expand).",
+            "route": "GRAPH",
+            "token_usage": {"prompt_tokens": 0, "completion_tokens": 0},
+        }
+
     top = _top_score(chunks)
-    if top is not None and top < SCORE_SHORTCUT_THRESHOLD:
+    # Ablation (ABL_GASR_GATE_NO_SHORTCUT): remove the score shortcut so the LLM
+    # judge always decides. Default off.
+    no_shortcut = os.environ.get("ABL_GASR_GATE_NO_SHORTCUT", "0") == "1"
+    if top is not None and top < SCORE_SHORTCUT_THRESHOLD and not no_shortcut:
         logger.info(
             "assess_rag_gate: top score %.3f < %.3f → CONTEXT/LC (no LLM call)",
             top,

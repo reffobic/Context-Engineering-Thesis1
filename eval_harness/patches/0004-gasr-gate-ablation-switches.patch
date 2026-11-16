@@ -1,0 +1,56 @@
+diff --git a/backend/diamond/sufficiency_assessor.py b/backend/diamond/sufficiency_assessor.py
+index 0bef156..aff3102 100644
+--- a/backend/diamond/sufficiency_assessor.py
++++ b/backend/diamond/sufficiency_assessor.py
+@@ -446,8 +446,23 @@ def assess_rag_gate(
+             "route": "LC",
+         }
+ 
++    # Ablation (ABL_GASR_GATE_OFF): no gate. Report "insufficient, STRUCTURE" without
++    # an LLM call, so GASR always takes its graph-expansion step. Default off.
++    if os.environ.get("ABL_GASR_GATE_OFF", "0") == "1":
++        return {
++            "sufficient": False,
++            "need": "STRUCTURE",
++            "confidence": "high",
++            "reason": "Ablation: GASR gate switched off (always expand).",
++            "route": "GRAPH",
++            "token_usage": {"prompt_tokens": 0, "completion_tokens": 0},
++        }
++
+     top = _top_score(chunks)
+-    if top is not None and top < SCORE_SHORTCUT_THRESHOLD:
++    # Ablation (ABL_GASR_GATE_NO_SHORTCUT): remove the score shortcut so the LLM
++    # judge always decides. Default off.
++    no_shortcut = os.environ.get("ABL_GASR_GATE_NO_SHORTCUT", "0") == "1"
++    if top is not None and top < SCORE_SHORTCUT_THRESHOLD and not no_shortcut:
+         logger.info(
+             "assess_rag_gate: top score %.3f < %.3f → CONTEXT/LC (no LLM call)",
+             top,
+diff --git a/backend/pruning/file.py b/backend/pruning/file.py
+index 048e173..3cdcae6 100644
+--- a/backend/pruning/file.py
++++ b/backend/pruning/file.py
+@@ -630,7 +630,7 @@ def prune_context(
+ #   - Seeds have high lexical overlap with the query → high pruning score.
+ #   - Neighbours (callees, callers, imports …) have final_score ≈ 0.5 from
+ #     the graph expand step and zero lexical match → they always lose.
+-#   - Under the 1800-token budget ~5 seeds fill it; neighbours are dropped.
++#   - Under the token budget (1300 default) a handful of seeds fill it; neighbours are dropped.
+ #   - assess_sufficiency then escalates to LC even though the answer was
+ #     already in hop-1.
+ #
+@@ -758,8 +758,11 @@ def prune_context_graph_aware(
+         query:                    The user's natural-language question / task.
+         seeds:                    RAG retrieval results (source="retrieval").
+         neighbors:                Graph-expand results (source="graph").
+-        token_budget:             Total token budget (default 1800).
+-        neighbor_budget_fraction: Fraction reserved for neighbours (default 0.55).
++        token_budget:             Total token budget (default DEFAULT_TOKEN_BUDGET, 1300).
++        neighbor_budget_fraction: Fraction reserved for neighbours (default
++                                  NEIGHBOR_BUDGET_FRACTION, i.e. env
++                                  GASR_NEIGHBOR_BUDGET_FRACTION; code default 0.30).
++                                  Pinned per freeze in the pipeline config.
+         weights:                  Heuristic weights for seed scoring.
+         method:                   ``"heuristic"`` or ``"selective"``.
+         model_name:               HuggingFace causal LM for selective pruning.
