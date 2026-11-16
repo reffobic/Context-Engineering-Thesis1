@@ -349,32 +349,46 @@ def indexer_import_closure(pipeline_root: Path) -> list[str]:
     return json.loads(r.stdout.strip().splitlines()[-1])
 
 
-def prove_indexer_identity(repo: Path, old_sha: str, new_sha: str, data_dir: Path) -> dict:
+def prove_indexer_identity(repo: Path, old_sha: str, new_sha: str, data_dir: Path, allow_changed: tuple[str, ...] = ()) -> dict:
     """Everything the indexer loads must be byte-identical at both commits, else re-keying is refused.
 
     Files are the import closure of the indexer (measured on both snapshots) plus run_index.py and requirements.txt,
-    compared by git object hash. Files that changed under backend/ are listed and must not be in the closure."""
+    compared by git object hash. Files that changed under backend/ are listed and must not be in the closure.
+
+    allow_changed: exact repo paths whose change the caller has separately shown not to alter the index (see rekey --allow-changed-file
+    and --evidence). They are not refused, and both object hashes are recorded in the proof. Any other differing file still refuses."""
     import subprocess
     from .pipeline_src import snapshot
     git = lambda *a: subprocess.run(["git", *a], cwd=repo, capture_output=True, text=True, check=True).stdout.strip()
     closure = sorted(set(indexer_import_closure(snapshot(old_sha, data_dir)[1])) | set(indexer_import_closure(snapshot(new_sha, data_dir)[1]))
                      | set(INDEXER_PATHS))
-    hashes = {}
+    hashes, allowed = {}, {}
     for f in closure:
         h = [git("rev-parse", f"{sha}:{f}") for sha in (old_sha, new_sha)]
         if h[0] != h[1]:
+            if f in allow_changed:
+                allowed[f] = {"old": h[0], "new": h[1]}
+                continue
             raise RuntimeError(f"{f} differs between {old_sha[:7]} and {new_sha[:7]}; not re-keying")
         hashes[f] = h[0]
     changed = [x for x in git("diff", "--name-only", old_sha, new_sha, "--", "backend", "requirements.txt").splitlines() if x]
-    if set(changed) & set(closure):
-        raise RuntimeError(f"changed files inside the indexer closure: {sorted(set(changed) & set(closure))}")
+    inside = (set(changed) & set(closure)) - set(allowed)
+    if inside:
+        raise RuntimeError(f"changed files inside the indexer closure: {sorted(inside)}")
+    unused = sorted(set(allow_changed) - set(allowed))
+    if unused:
+        raise RuntimeError(f"--allow-changed-file given for files that did not change or are outside the closure: {unused}")
     return {"closure_files": len(closure), "object_hashes": hashes, "files_changed_between_commits": changed,
-            "changed_files_in_closure": [], "graphify_adapter_in_closure": "backend/indexing/graphify_adapter.py" in closure}
+            "changed_files_in_closure": [], "allowed_changed_files": allowed,
+            "graphify_adapter_in_closure": "backend/indexing/graphify_adapter.py" in closure}
 
 
-def rekey(data_dir: Path, repo: Path, old_sha: str, new_sha: str, icfg: dict, gver: str | None, dry_run: bool) -> dict:
+def rekey(data_dir: Path, repo: Path, old_sha: str, new_sha: str, icfg: dict, gver: str | None, dry_run: bool,
+          allow_changed: tuple[str, ...] = (), evidence: str = "") -> dict:
     """Rename indexes built at old_sha to the key of new_sha without rebuilding (indexer code proven identical)."""
-    proof = prove_indexer_identity(repo, old_sha, new_sha, data_dir)
+    if allow_changed and not evidence.strip():
+        raise RuntimeError("--allow-changed-file needs --evidence: say how the unchanged index content was shown")
+    proof = prove_indexer_identity(repo, old_sha, new_sha, data_dir, tuple(allow_changed))
     idx_root = data_dir / "cache" / "indexes"
     plan, skipped = [], []
     for d in sorted(idx_root.iterdir()):
@@ -389,9 +403,12 @@ def rekey(data_dir: Path, repo: Path, old_sha: str, new_sha: str, icfg: dict, gv
         if make_key(parts["repo"], parts["base_commit"], old_sha, icfg, gver)["key"] != parts["key"]:
             raise RuntimeError(f"{d.name}: stored key does not match the current index settings; not re-keying")
         new_parts = make_key(parts["repo"], parts["base_commit"], new_sha, icfg, gver)
+        if index_dir(data_dir, new_parts).exists():                     # a fresh build under new_sha is already there: keep both
+            skipped.append(f"{d.name} (fresh index under the new SHA already exists)")
+            continue
         plan.append({"old_dir": d.name, "old_key": parts["key"], "new_dir": index_dir(data_dir, new_parts).name,
                      "new_key": new_parts["key"], "repo": parts["repo"], "base_commit": parts["base_commit"], "_parts": new_parts})
-    mapping = {"old_sha": old_sha, "new_sha": new_sha, "proof_indexer_identity": proof, "n_renamed": len(plan),
+    mapping = {"old_sha": old_sha, "new_sha": new_sha, "proof_indexer_identity": proof, "allow_changed_evidence": evidence, "n_renamed": len(plan),
                "already_new": skipped, "entries": [{k: v for k, v in e.items() if k != "_parts"} for e in plan],
                "created_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "dry_run": dry_run}
     map_path = data_dir / "cache" / f"REKEY_{old_sha[:7]}_to_{new_sha[:7]}.json"
@@ -480,6 +497,8 @@ def main() -> int:
         rk.add_argument(f"--{x}", type=Path, required=True)
     rk.add_argument("--old-sha", required=True)
     rk.add_argument("--dry-run", action="store_true")
+    rk.add_argument("--allow-changed-file", action="append", default=[], help="indexer-closure file whose change is shown not to alter the index (repeatable, needs --evidence)")
+    rk.add_argument("--evidence", default="", help="how equivalence was shown, recorded in the REKEY mapping file")
     v = sub.add_parser("verify")
     v.add_argument("--dir", type=Path, required=True)
     v.add_argument("--compare-with", type=Path, default=None)
@@ -493,7 +512,7 @@ def main() -> int:
     if a.cmd == "rekey":
         pc, ic = load_toml(a.pipeline_config), load_toml(a.index_config)
         m = rekey(data_dir, Path(__file__).resolve().parents[3], a.old_sha, pc["pipeline"]["frozen_sha"], ic,
-                  _graphify_version(), a.dry_run)
+                  _graphify_version(), a.dry_run, tuple(a.allow_changed_file), a.evidence)
         print(json.dumps({k: v for k, v in m.items() if k not in ("entries", "already_new")}, indent=1))
         print(f"entries: {len(m['entries'])}; first: {m['entries'][0] if m['entries'] else None}")
         return 0
