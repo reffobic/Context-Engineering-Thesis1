@@ -11,7 +11,7 @@ Written 2026-11-16. Branch **`phase2-next`** (local worktree `/home/g7/Documents
 | Neighbour reserve ("graph reprune") | The `re_prune` stage and oversized-neighbour truncation already exist (`ca843a4`). Only the reserve size changed: `GASR_NEIGHBOR_BUDGET_FRACTION` 0.30 -> **0.42** (about 546 tokens at the 1300 budget; Nov 3 measured 540). Env only, in `pipeline_phase2.toml`: revert there, no new SHA. Evidence is weak (a bigger reserve added at most one gold function per dataset in the Nov 8 replay, `docs/analysis/gate_diagnostics/edge_budget_report.md`) and seed-side cost cannot be measured offline: **check on the smoke run.** |
 | Ablations | GAPA ablation is **rerun** on the new freeze; GASR ablation is **new**. Shared rows on both arms: `full`, `no_graph_expansion`, `contains_only`, `truncation`, `no_keyword_channel`. GAPA only: `gate_no_scores`, `gate_no_deps`. GASR only: `gasr_gate_off` (no gate call, always expand), `gasr_gate_no_shortcut` (no top-score shortcut). There is **no `gate_no_deps` row for GASR**: its gate sees only the query and chunk text. |
 | LocAgent baseline | **Finish the local fine-tuned Qwen2.5-Coder-7B run** (LocAgent's own pipeline, its own indexes, not pinned to our SHA) and score it with our metrics. |
-| Teammates' repo-QA plans | **Job lists are unchanged.** Only `frozen_sha` was updated where allowed (see section 6). |
+| Teammates' repo-QA plans | **Job lists are unchanged.** Only `frozen_sha` was updated (see section 6). |
 
 ## 2. Where things are
 
@@ -22,18 +22,11 @@ Written 2026-11-16. Branch **`phase2-next`** (local worktree `/home/g7/Documents
 
 ## 3. Before any queue: indexes, smoke, authorisation
 
-1. **Rebuild indexes under the new SHA.** `index_cache rekey` will refuse: the indexer now also writes `call_graph.json` and its import closure changed since `2350c0b`.
-   ```
-   PY=/home/g7/Documents/HANA/Context-Engineering-Thesis1/.venv/bin/python
-   PYTHONPATH=eval_harness/src $PY -m harness.index_cache build \
-     --profile eval_harness/profiles/ubuntu-4080.toml --experiment eval_harness/configs/experiment.toml \
-     --pipeline-config eval_harness/configs/pipeline_phase2.toml --index-config eval_harness/configs/index.toml \
-     --dataset swe-bench-lite --dataset loc-bench
-   ```
-   Every index must ship `call_graph.json` (`require_call_graph_json = true`). Large repos can hang in Graphify: `GRAPHIFY_TIMEOUT_S` (default 900) falls back to the call graph.
+1. **Indexes: DONE, nothing to rebuild.** All 83 indexes (SWE-Bench-Lite 27 + Loc-Bench 56 tasks) exist under the new SHA in the shared cache (`index_cache summary ... --pipeline-config eval_harness/configs/pipeline_phase2.toml` reports 83 expected, 83 present, none missing). A full rebuild would have taken about 40 hours. Instead: the only indexer-closure changes are `backend/indexing/code_indexer.py` (adds a best-effort call-graph sidecar after indexing) and `graph_builder.py`; 32 of the 83 indexes (25 repos, the cheap ones) were fresh-built under the new SHA and compared with the `2350c0b` originals: Chroma ids, documents, metadata and embeddings, `bm25_index.json` and `call_graph.json` are byte-identical in 32/32, and the Graphify node and link sets are identical in 32/32 once the build-directory key hash that Graphify embeds in some node ids is normalised. The other 51 were then renamed in place with `index_cache rekey --allow-changed-file backend/indexing/code_indexer.py --allow-changed-file backend/indexing/graph_builder.py --evidence "<this comparison>"` (new option; the evidence and both file hashes are recorded in `data/cache/REKEY_2350c0b_to_caceced.json`). The 32 old originals stay in the cache. Do not run `index_cache build` or `rekey` again unless the backend or index settings change. Large repos can hang in Graphify only on a fresh build (`GRAPHIFY_TIMEOUT_S`).
+
 2. **Smoke** (not a result run): one SWE-Lite task each for GAPA, GASR, and GASR with `--ablation gasr_gate_off`, via `harness.run ... --smoke --limit 1` (arguments as in `Queue.cmd` in `harness/queue.py`). Expect: the retrieval ranked lists equal the `a2cfcec` Phase 2 logs (the Nov 3 logs used different retrieval defaults) except for the intended changes; the gate-off trace shows route STRUCTURE and zero gate tokens. Look at how often GASR neighbours survive at the 0.42 reserve.
 3. **Freeze checks:** `git diff --stat cacecedb HEAD -- backend` must print nothing; the worktree must have no uncommitted tracked changes.
-4. **`data/queue/record_authorisation.json` is written by the user, not by a session**, after the final commit of the checkout being run: `{"pipeline_sha": "cacecedb1862539822e2009e0b17cb5406fee8b4", "harness_commit": "<git rev-parse HEAD>", "authorised_by": "...", "authorised_utc": "..."}`. Any later commit changes `harness_commit` and invalidates it. Without it only `--smoke` runs.
+4. **`data/queue/record_authorisation.json`** is written with the user's explicit approval, after the final commit of the checkout being run (the user approved on 2026-11-17 that the Phase 2 freeze session writes it): `{"pipeline_sha": "cacecedb1862539822e2009e0b17cb5406fee8b4", "harness_commit": "<git rev-parse HEAD>", "authorised_by": "...", "authorised_utc": "..."}`. Any later commit changes `harness_commit` and invalidates it. Without it only `--smoke` runs.
 
 ## 4. Ablation queue (GAPA rerun and GASR)
 
@@ -59,11 +52,22 @@ Scoring: `PYTHONPATH=eval_harness/src $PY -m harness.locagent_baseline --loc-out
 - `backend/`: only patch 0004 (two `ABL_GASR_*` switches, default off) plus docstring-only edits on top of `ca843a4`.
 - `eval_harness/configs/pipeline_phase2.toml`: new SHA, reserve 0.42, new env names, patch keys. `ablations.toml`: per-setting `arms`. `extras.toml`: answer-format instruction now has a `path::Class.method` example (used only by jobs with `answer_locations_instruction = true`: localization, not repo-QA). `metrics.py`: Loc-Bench File@10, Module@15, Function@15; Table VII/VIII placeholder rows now have the right width.
 - Relaxed scoring (`--relaxed`, commit from `answer-scoring-relaxed`) is included; strict stays the headline.
-- **Teammates' queues:** `phase2-sweqa-rest.toml` and `phase2-repoprobe-py.toml` have only `frozen_sha` changed to the new SHA. **`phase2-sweqa-w1.toml` was NOT changed** (the edit was blocked): it still says `a2cfcec`, so with this branch's config the queue launcher refuses it. Those three queues already produced their results on `a2cfcec`; rerunning them on the new freeze is a separate decision for the user.
+- **Teammates' queues:** `phase2-sweqa-w1.toml`, `phase2-sweqa-rest.toml` and `phase2-repoprobe-py.toml` have only `frozen_sha` changed to the new SHA (job lists untouched), so every Phase 2 queue and `pipeline_phase2.toml` carry one SHA, `cacecedb`; the Phase 1 queues `nov3-83.toml` and `ubuntu-4080.toml` stay on `2350c0b` as the record of those runs. Those three repo-QA queues already produced their results on `a2cfcec`; rerunning them on the new freeze is a separate decision for the user.
 - `ALWAYS_LC_RANKED` is **redundant** now: on synthetic data the backend packing alone gives the same file blocks (`eval_harness/tests/test_lc_ranked_matches_backend.py`). Keep the arm out of the main tables.
 - Not done: a full 7-arm localization queue on the new freeze (`nov3-83.toml` targets `2350c0b`), the stale `PROPOSED_all-models_3bbc52f.toml` queue is still present (deletion was blocked), nothing has been pushed.
 - Known failing tests, unchanged by this branch: three `test_pruning.py` tests (`test_heuristic_weights_default`, `test_score_candidate_with_custom_weights`, `test_score_candidate_returns_float`) assert pre-Pareto default weights and already fail at `ca843a4`.
 
 ## 7. Who runs what, and GPU sharing
 
-One RTX 4080 (16 GB). **One GPU job at a time**: index build, ablation queue and the LocAgent server must not overlap. Suggested order: index build -> smoke -> ablation queue (session A) -> LocAgent resume and scoring (session B, the one that built the LocAgent run). Do not push `phase2-next`, change `frozen_sha`, rewrite `record_authorisation.json` or touch `backend/` without asking the user.
+One RTX 4080 (16 GB). **One GPU job at a time**: the ablation queue and the LocAgent server must not overlap. Do not push `phase2-next`, change `frozen_sha`, rewrite `record_authorisation.json` or touch `backend/` without asking the user.
+
+Agreed schedule (user, 2026-11-17). Order = priority, then impact, then longest first; overnight takes the longest runs, to be reviewed in the morning.
+
+| Slot | Who | What | GPU | Est. |
+|---|---|---|---|---|
+| 1 (first) | session `context-engineering-thesis1-7c` | Finish LocAgent: run the 4 missing Loc-Bench tasks, score with `harness.locagent_baseline`, report numbers. A preliminary comparison against the Nov 3 numbers (old freeze, labelled) can be written without the GPU. | int8 server, 8 GB | 1 to 3 h (median 12 min per task earlier; server start extra) |
+| 2 | session `Nov6 Table IX ablation queue` | Smoke test, then queue jobs 1 to 2 (SWE-Lite `full` GAPA and GASR). The queue then **holds** (`hold_after`): a person reviews, deletes `data/queue/STOPPED` and reruns. | Ollama qwen3.5:9b | about 20 min |
+| 3 (overnight) | same session | Jobs 3 to 28 (Loc-Bench `full` rows, then gate rows, graph rows, `truncation`, `no_keyword_channel`). By morning jobs 1 to 12 (full + all gate rows) should be done and are the first thing to review. | Ollama qwen3.5:9b | about 7 h (whole queue 448 min of estimates, x1.25 safety) |
+| 4 (after jobs 1 to 4 exist) | 7c or the user | Final LocAgent comparison against our GAPA and GASR `full` rows on this freeze (Tables VII/VIII). | none | short |
+
+Start slot 2 only after slot 1's server is stopped and the user (or the session holding the user's approval) says go. Job order inside `phase2-ablations.toml`: P0 SWE-Lite full rows (checkpoint), P1 Loc-Bench full rows, P2 gate rows (`gasr_gate_off`, `gate_no_scores`, `gate_no_deps`, `gasr_gate_no_shortcut`), P3 `no_graph_expansion` and `contains_only`, P4 `truncation` and `no_keyword_channel`; Loc-Bench before SWE-Lite inside a tier because it runs about 2.2x longer.
