@@ -1,0 +1,452 @@
+diff --git a/backend/indexing/graphify_adapter.py b/backend/indexing/graphify_adapter.py
+index f2e4606..e49801b 100644
+--- a/backend/indexing/graphify_adapter.py
++++ b/backend/indexing/graphify_adapter.py
+@@ -325,15 +325,39 @@ class CodeGraphAdapter:
+             return key
+         return None
+ 
+-    def neighbors(
++    @staticmethod
++    def normalize_relation(rel: str) -> str:
++        """Map a stored adjacency relation to the label the pruner scores on.
++
++        Forward ``calls`` → ``callee`` (the seed calls it); reverse ``calls`` →
++        ``caller``. Inheritance/import/containment keep their own labels;
++        reverse inherit/import edges fall back to ``default``.
++        """
++        r = (rel or "").strip().lower().replace(" ", "_")
++        rev = r.startswith("rev_")
++        base = r[4:] if rev else r
++        if base in ("calls", "call"):
++            return "caller" if rev else "callee"
++        if base in ("inherits_from", "inherits", "inherit", "implements"):
++            return "default" if rev else "inherits"
++        if base in ("imports", "import"):
++            return "default" if rev else "imports"
++        if base in ("contains", "contain", "contained_in", "defines", "defined_in"):
++            return "contains"
++        return "default"
++
++    def neighbors_with_relations(
+         self,
+         seed_ids: list[str],
+         hops: int = 1,
+         edge_types: Optional[Iterable[str]] = None,
+         extracted_only: bool = True,
+-    ) -> list[str]:
++    ) -> list[tuple[str, str, int]]:
+         """
+-        BFS up to ``hops`` from seeds. Returns neighbor node keys (excluding seeds).
++        BFS up to ``hops`` from seeds. Returns ``(node_key, relation, distance)``
++        for each neighbour (seeds excluded) in BFS discovery order. ``relation``
++        is the *normalized* label of the edge through which the node was first
++        reached (see ``normalize_relation``); ``distance`` is the hop count (>=1).
+         """
+         if hops < 1 or not seed_ids:
+             return []
+@@ -342,7 +366,7 @@ class CodeGraphAdapter:
+         start = [s for s in start if s]
+         seen = set(start)
+         frontier = deque((s, 0) for s in start)
+-        found: list[str] = []
++        found: list[tuple[str, str, int]] = []
+ 
+         while frontier:
+             node, dist = frontier.popleft()
+@@ -359,11 +383,29 @@ class CodeGraphAdapter:
+                 if nbr in seen:
+                     continue
+                 seen.add(nbr)
+-                found.append(nbr)
++                found.append((nbr, self.normalize_relation(rel), dist + 1))
+                 frontier.append((nbr, dist + 1))
+ 
+         return found
+ 
++    def neighbors(
++        self,
++        seed_ids: list[str],
++        hops: int = 1,
++        edge_types: Optional[Iterable[str]] = None,
++        extracted_only: bool = True,
++    ) -> list[str]:
++        """
++        BFS up to ``hops`` from seeds. Returns neighbor node keys (excluding seeds).
++        Edge types are dropped; use ``neighbors_with_relations`` to keep them.
++        """
++        return [
++            n
++            for n, _rel, _d in self.neighbors_with_relations(
++                seed_ids, hops=hops, edge_types=edge_types, extracted_only=extracted_only
++            )
++        ]
++
+     def node_attrs(self, node_id: str) -> dict[str, Any]:
+         key = self._resolve(node_id) or node_id
+         return dict(self.nodes.get(key) or {"id": key, "label": key, "file": ""})
+diff --git a/backend/injection/prompt_builder.py b/backend/injection/prompt_builder.py
+index 3881b5d..d374171 100644
+--- a/backend/injection/prompt_builder.py
++++ b/backend/injection/prompt_builder.py
+@@ -78,6 +78,9 @@ class PromptBuilder:
+     estimate_tokens: Callable[[str], int] = field(default=default_token_estimate)
+     add_line_numbers_when_no_start_line: bool = False
+     """If True, number lines starting at 1 even when ``start_line`` is omitted."""
++    file_order: str = "rank"
++    """``"rank"`` (default): files ordered by first appearance in ``chunks`` (caller's
++    priority order). ``"sorted"``: legacy alphabetical order."""
+ 
+     @staticmethod
+     def _add_line_numbers(text: str, start_line: int = 1) -> str:
+@@ -125,11 +128,20 @@ class PromptBuilder:
+ 
+         budget = max_context_tokens if max_context_tokens is not None else self.max_context_tokens
+         grouped = self._group_chunks_by_path(chunks)
+-        # Stable order: sorted paths so output is reproducible
+-        paths_sorted = sorted(grouped.keys(), key=lambda p: (p == "(unknown path)", p))
++        if self.file_order == "sorted":
++            # Legacy: alphabetical path order (reproducible, but ignores rank).
++            paths_ordered = sorted(grouped.keys(), key=lambda p: (p == "(unknown path)", p))
++        else:
++            # Rank order: files appear in the order the caller supplied chunks
++            # (first appearance of each path), so the budget keeps the
++            # highest-priority files rather than the alphabetically-first ones.
++            # "(unknown path)" is always last.
++            paths_ordered = sorted(
++                grouped.keys(), key=lambda p: p == "(unknown path)"
++            )  # stable sort keeps first-appearance order for everything else
+ 
+         file_blocks: list[str] = []
+-        for path in paths_sorted:
++        for path in paths_ordered:
+             file_blocks.append(self._file_block(path, grouped[path]))
+ 
+         body = "\n\n\n".join(file_blocks)
+@@ -139,13 +151,22 @@ class PromptBuilder:
+         return self._truncate_file_blocks(file_blocks, budget)
+ 
+     def _truncate_file_blocks(self, file_blocks: list[str], max_tokens: int) -> str:
+-        """Keep leading file blocks until token budget; append truncation notice if needed."""
++        """Greedy rank-order packing under the token budget.
++
++        Blocks are considered in the given (priority) order. A block that does
++        not fit is *skipped* and lower-priority blocks that do fit are still
++        considered. If the very first block alone exceeds the budget it is
++        hard-truncated (and nothing else is added, as it already fills the
++        budget). A truncation notice is prepended whenever anything was
++        dropped or truncated.
++        """
+         if not file_blocks:
+             return "(no context chunks — retrieval/pruning may not have run yet)"
+ 
+         kept: list[str] = []
+         total = 0
+         est = self.estimate_tokens
++        skipped_any = False
+ 
+         for block in file_blocks:
+             t = est(block)
+@@ -162,11 +183,12 @@ class PromptBuilder:
+                 kept.append(block)
+                 total += t
+             else:
+-                break
++                skipped_any = True  # skip, don't stop: a later, smaller file may fit
++                continue
+ 
+         out = "\n\n\n".join(kept)
+         first_was_oversized = bool(file_blocks) and est(file_blocks[0]) > max_tokens
+-        dropped_files = len(kept) < len(file_blocks)
++        dropped_files = skipped_any or len(kept) < len(file_blocks)
+         if dropped_files or (len(kept) >= 1 and first_was_oversized):
+             notice = (
+                 f"{CONTEXT_TRUNCATED_TAG}\n{CONTEXT_TRUNCATED_MSG}\n"
+diff --git a/backend/pruning/file.py b/backend/pruning/file.py
+index 8bf91ab..048e173 100644
+--- a/backend/pruning/file.py
++++ b/backend/pruning/file.py
+@@ -664,6 +664,40 @@ _RELATION_PRIORITY: dict[str, float] = {
+ }
+ 
+ 
++# A neighbour that overflows the reserve is truncated (not dropped) only when at
++# least this many tokens of reserve remain.
++NEIGHBOR_MIN_TRUNC_TOKENS: int = 64   # constant (not env) so the frozen env list stays complete
++_TRUNC_MARKER = "# [... truncated ...]"
++
++
++def _truncate_chunk_to_tokens(chunk: ContextChunk, max_tokens: int) -> ContextChunk:
++    """Return a copy of ``chunk`` whose text fits ``max_tokens`` (whole leading lines).
++
++    The marker line is counted in the budget. If not even the first line plus the
++    marker fit, the first line is hard-cut by characters.
++    """
++    text = chunk.get("text") or ""
++    if estimate_tokens(text) <= max_tokens:
++        return chunk
++    lines = text.split("\n")
++    kept: list[str] = []
++    for line in lines:
++        candidate = "\n".join(kept + [line, _TRUNC_MARKER])
++        if estimate_tokens(candidate) > max_tokens:
++            break
++        kept.append(line)
++    if kept:
++        new_text = "\n".join(kept + [_TRUNC_MARKER])
++    else:
++        budget_chars = max(0, max_tokens * 4 - len(_TRUNC_MARKER) - 1)
++        new_text = lines[0][:budget_chars] + "\n" + _TRUNC_MARKER
++        if estimate_tokens(new_text) > max_tokens:
++            new_text = lines[0][: max_tokens * 4 - 1]
++    out = dict(chunk)
++    out["text"] = new_text
++    return out  # type: ignore[return-value]
++
++
+ def _neighbor_structural_score(item: dict) -> float:
+     """Score a graph neighbour purely by its structural relationship to the seed.
+ 
+@@ -815,7 +849,17 @@ def prune_context_graph_aware(
+             continue
+         t = estimate_tokens(chunk["text"])
+         if neighbor_tokens + t > neighbor_budget:
+-            continue
++            # Do not silently drop a neighbour that is bigger than what is left
++            # of the reserve (gold-loss mode seen on Nov 8 data: the best
++            # neighbour was larger than the whole reserve). Keep its leading
++            # lines instead, provided a meaningful amount of room remains.
++            room = neighbor_budget - neighbor_tokens
++            if room < NEIGHBOR_MIN_TRUNC_TOKENS:
++                continue
++            chunk = _truncate_chunk_to_tokens(chunk, room)
++            t = estimate_tokens(chunk["text"])
++            if t > room:
++                continue
+         neighbor_chunks.append(chunk)
+         neighbor_tokens += t
+ 
+diff --git a/backend/retrieval/chunk_select.py b/backend/retrieval/chunk_select.py
+new file mode 100644
+index 0000000..51e61b9
+--- /dev/null
++++ b/backend/retrieval/chunk_select.py
+@@ -0,0 +1,80 @@
++"""Per-file chunk selection for late-chunking parent context (pure, no I/O)."""
++
++from __future__ import annotations
++
++
++def _chunk_line_span(meta: dict) -> tuple[int, int]:
++    """(start, end) line span of a chunk, tolerant of missing/garbled metadata."""
++    try:
++        start = int(meta.get("start_line", 0) or 0)
++    except (TypeError, ValueError):
++        start = 0
++    try:
++        end = int(meta.get("end_line", start) or start)
++    except (TypeError, ValueError):
++        end = start
++    return start, max(start, end)
++
++
++def _select_chunks_for_file(
++    paired: list[tuple[str, dict]],
++    retrieved_spans: list[tuple[int, int]],
++    cap: int = 10,
++) -> list[tuple[str, dict]]:
++    """Pick at most ``cap`` chunks of one file, keeping those nearest the hits.
++
++    ``paired``          all (document, metadata) chunks of the file.
++    ``retrieved_spans`` (start, end) line spans of the chunks retrieval actually
++                        returned for this file, best-ranked first.
++
++    Rules:
++      1. Files with <= ``cap`` chunks are returned whole (line order).
++      2. The retrieved chunks themselves are always kept first (best-ranked
++         first if they alone exceed ``cap``).
++      3. Remaining slots go to the siblings closest, in line distance, to any
++         retrieved chunk (ties: earlier in the file).
++      4. The result is returned in line order so the stitched text still reads
++         top-to-bottom.
++    With no usable ``retrieved_spans`` this degrades to the old behaviour
++    (first ``cap`` chunks in line order).
++    """
++    ordered = sorted(paired, key=lambda x: _chunk_line_span(x[1]))
++    if cap <= 0:
++        return []
++    if len(ordered) <= cap:
++        return ordered
++    if not retrieved_spans:
++        return ordered[:cap]
++
++    span_to_idx: dict[tuple[int, int], int] = {}
++    for i, (_doc, meta) in enumerate(ordered):
++        span_to_idx.setdefault(_chunk_line_span(meta), i)
++
++    chosen: list[int] = []
++    for span in retrieved_spans:
++        idx = span_to_idx.get(span)
++        if idx is not None and idx not in chosen:
++            chosen.append(idx)
++        if len(chosen) >= cap:
++            break
++    if not chosen:
++        return ordered[:cap]
++
++    anchors = [_chunk_line_span(ordered[i][1]) for i in chosen]
++
++    def distance(i: int) -> tuple[int, int]:
++        s, e = _chunk_line_span(ordered[i][1])
++        d = min(
++            0 if (s <= ae and as_ <= e) else (as_ - e if as_ > e else s - ae)
++            for as_, ae in anchors
++        )
++        return d, i
++
++    taken = set(chosen)
++    rest = sorted((i for i in range(len(ordered)) if i not in taken), key=distance)
++    for i in rest:
++        if len(chosen) >= cap:
++            break
++        chosen.append(i)
++
++    return [ordered[i] for i in sorted(chosen)]
+diff --git a/backend/retrieval/graph_expand.py b/backend/retrieval/graph_expand.py
+index ec29384..536b12a 100644
+--- a/backend/retrieval/graph_expand.py
++++ b/backend/retrieval/graph_expand.py
+@@ -19,6 +19,21 @@ except ImportError:
+     from graphify_adapter import CodeGraphAdapter, get_adapter  # type: ignore
+ 
+ 
++# Neighbour ordering used before the ``max_neighbors`` cap. Mirrors the relative
++# order of ``pruning.file._RELATION_PRIORITY`` (a test keeps them in sync).
++_REL_ORDER: dict[str, float] = {
++    "callee": 1.00,
++    "calls": 1.00,
++    "inherits": 0.95,
++    "inherits_from": 0.95,
++    "caller": 0.85,
++    "import": 0.75,
++    "imports": 0.75,
++    "contains": 0.70,
++    "default": 0.65,
++}
++
++
+ def _chroma_collection():
+     """Lazy Chroma open — avoid importing retrieval_tool (heavy MiniLM side effects)."""
+     if os.environ.get("GASR_OFFLINE", "").strip() in ("1", "true", "yes"):
+@@ -186,16 +201,29 @@ def graph_expand(
+             "hops": hops,
+             "graph_backend": adapter.backend,
+             "edge_counts": {"neighbors": 0},
++            "neighbor_relations": {},
+         }
+ 
+-    neighbor_ids = adapter.neighbors(
++    triples = adapter.neighbors_with_relations(
+         seed_keys,
+         hops=hops,
+         extracted_only=extracted_only,
+         edge_types=("contains",) if os.environ.get("ABL_CONTAINS_ONLY", "0") == "1" else None,
+     )
+-    if max_neighbors and len(neighbor_ids) > max_neighbors:
+-        neighbor_ids = neighbor_ids[:max_neighbors]
++    # Rank neighbours before the cap so the cap drops the least useful ones
++    # (callee > inherits > caller > imports > contains > other; nearer hop first;
++    # BFS order breaks ties) instead of whichever BFS happened to find last.
++    triples = [
++        t
++        for _i, t in sorted(
++            enumerate(triples),
++            key=lambda it: (-_REL_ORDER.get(it[1][1], _REL_ORDER["default"]), it[1][2], it[0]),
++        )
++    ]
++    if max_neighbors and len(triples) > max_neighbors:
++        triples = triples[:max_neighbors]
++    neighbor_ids = [n for n, _r, _d in triples]
++    relation_of = {n: r for n, r, _d in triples}
+ 
+     collection = _chroma_collection()
+     new_chunks: list[dict[str, Any]] = []
+@@ -208,6 +236,8 @@ def graph_expand(
+             if cid in seen_chunk:
+                 continue
+             seen_chunk.add(cid)
++            # Keep the edge type: the graph-aware pruner scores neighbours on it.
++            chunk["relation_type"] = relation_of.get(nid, "default")
+             new_chunks.append(chunk)
+ 
+     return {
+@@ -218,6 +248,7 @@ def graph_expand(
+         "hops": hops,
+         "graph_backend": adapter.backend,
+         "edge_counts": {"neighbors": len(neighbor_ids)},
++        "neighbor_relations": relation_of,
+     }
+ 
+ 
+diff --git a/backend/retrieval/retrieval_tool.py b/backend/retrieval/retrieval_tool.py
+index 465bd07..0ba3214 100644
+--- a/backend/retrieval/retrieval_tool.py
++++ b/backend/retrieval/retrieval_tool.py
+@@ -10,6 +10,7 @@ from pathlib import Path
+ from typing import Any, Optional
+ 
+ from indexing.sentence_model import get_sentence_transformer
++from .chunk_select import _chunk_line_span, _select_chunks_for_file  # noqa: F401
+ 
+ try:
+     from retrieval.hybrid_retrieval import enhance_ranking_with_structure
+@@ -913,12 +914,24 @@ def rank_chunks(query: str, candidates: list[dict]) -> list[dict]:
+ 
+ def reconstruct_file_context(ranked_chunks: list[dict]) -> list[dict]:
+     """
+-    For each matched chunk, fetch all sibling chunks from the same file,
+-    sort by start_line, and stitch into a single expanded context string.
+-    Results from the same file share a cached fetch — only one DB call per file.
++    For each matched chunk, fetch all sibling chunks from the same file and
++    stitch them, in line order, into a single expanded context string.
++
++    Files with more than ``MAX_CONTEXT_CHUNKS_PER_FILE`` chunks are capped, but
++    the kept chunks are the retrieved ones plus their nearest siblings (see
++    ``_select_chunks_for_file``), not simply the first N in line order.
++    Results from the same file share a cached fetch — one DB call per file.
+     """
+     file_context_cache = {}  # file_path → stitched string (avoids duplicate fetches)
+ 
++    # Spans of the chunks retrieval returned, per file, in rank order.
++    retrieved_by_file: dict[str, list[tuple[int, int]]] = {}
++    for item in ranked_chunks:
++        meta = item.get("metadata") or {}
++        fp = meta.get("file") or meta.get("file_path")
++        if fp:
++            retrieved_by_file.setdefault(fp, []).append(_chunk_line_span(meta))
++
+     for item in ranked_chunks:
+         file_path = item["metadata"]["file"]
+ 
+@@ -938,15 +951,14 @@ def reconstruct_file_context(ranked_chunks: list[dict]) -> list[dict]:
+                 file_context_cache[file_path] = None
+                 continue
+ 
+-            # Sort chunks by start_line to reconstruct original file order
+-            paired = sorted(
+-                zip(results["documents"], results["metadatas"]),
+-                key=lambda x: x[1].get("start_line", 0)
++            # Cap to avoid token explosion on very large files, keeping the
++            # chunks nearest the retrieved ones; result is in line order.
++            paired = _select_chunks_for_file(
++                list(zip(results["documents"], results["metadatas"])),
++                retrieved_by_file.get(file_path, []),
++                MAX_CONTEXT_CHUNKS_PER_FILE,
+             )
+ 
+-            # Cap to avoid token explosion on very large files
+-            paired = paired[:MAX_CONTEXT_CHUNKS_PER_FILE]
+-
+             # Stitch with a header showing chunk type and line range
+             stitched_parts = []
+             for doc, meta in paired:

@@ -78,6 +78,9 @@ class PromptBuilder:
     estimate_tokens: Callable[[str], int] = field(default=default_token_estimate)
     add_line_numbers_when_no_start_line: bool = False
     """If True, number lines starting at 1 even when ``start_line`` is omitted."""
+    file_order: str = "rank"
+    """``"rank"`` (default): files ordered by first appearance in ``chunks`` (caller's
+    priority order). ``"sorted"``: legacy alphabetical order."""
 
     @staticmethod
     def _add_line_numbers(text: str, start_line: int = 1) -> str:
@@ -125,11 +128,20 @@ class PromptBuilder:
 
         budget = max_context_tokens if max_context_tokens is not None else self.max_context_tokens
         grouped = self._group_chunks_by_path(chunks)
-        # Stable order: sorted paths so output is reproducible
-        paths_sorted = sorted(grouped.keys(), key=lambda p: (p == "(unknown path)", p))
+        if self.file_order == "sorted":
+            # Legacy: alphabetical path order (reproducible, but ignores rank).
+            paths_ordered = sorted(grouped.keys(), key=lambda p: (p == "(unknown path)", p))
+        else:
+            # Rank order: files appear in the order the caller supplied chunks
+            # (first appearance of each path), so the budget keeps the
+            # highest-priority files rather than the alphabetically-first ones.
+            # "(unknown path)" is always last.
+            paths_ordered = sorted(
+                grouped.keys(), key=lambda p: p == "(unknown path)"
+            )  # stable sort keeps first-appearance order for everything else
 
         file_blocks: list[str] = []
-        for path in paths_sorted:
+        for path in paths_ordered:
             file_blocks.append(self._file_block(path, grouped[path]))
 
         body = "\n\n\n".join(file_blocks)
@@ -139,13 +151,22 @@ class PromptBuilder:
         return self._truncate_file_blocks(file_blocks, budget)
 
     def _truncate_file_blocks(self, file_blocks: list[str], max_tokens: int) -> str:
-        """Keep leading file blocks until token budget; append truncation notice if needed."""
+        """Greedy rank-order packing under the token budget.
+
+        Blocks are considered in the given (priority) order. A block that does
+        not fit is *skipped* and lower-priority blocks that do fit are still
+        considered. If the very first block alone exceeds the budget it is
+        hard-truncated (and nothing else is added, as it already fills the
+        budget). A truncation notice is prepended whenever anything was
+        dropped or truncated.
+        """
         if not file_blocks:
             return "(no context chunks — retrieval/pruning may not have run yet)"
 
         kept: list[str] = []
         total = 0
         est = self.estimate_tokens
+        skipped_any = False
 
         for block in file_blocks:
             t = est(block)
@@ -162,11 +183,12 @@ class PromptBuilder:
                 kept.append(block)
                 total += t
             else:
-                break
+                skipped_any = True  # skip, don't stop: a later, smaller file may fit
+                continue
 
         out = "\n\n\n".join(kept)
         first_was_oversized = bool(file_blocks) and est(file_blocks[0]) > max_tokens
-        dropped_files = len(kept) < len(file_blocks)
+        dropped_files = skipped_any or len(kept) < len(file_blocks)
         if dropped_files or (len(kept) >= 1 and first_was_oversized):
             notice = (
                 f"{CONTEXT_TRUNCATED_TAG}\n{CONTEXT_TRUNCATED_MSG}\n"

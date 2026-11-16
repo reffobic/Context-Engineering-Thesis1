@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from indexing.sentence_model import get_sentence_transformer
+from .chunk_select import _chunk_line_span, _select_chunks_for_file  # noqa: F401
 
 try:
     from retrieval.hybrid_retrieval import enhance_ranking_with_structure
@@ -913,11 +914,23 @@ def rank_chunks(query: str, candidates: list[dict]) -> list[dict]:
 
 def reconstruct_file_context(ranked_chunks: list[dict]) -> list[dict]:
     """
-    For each matched chunk, fetch all sibling chunks from the same file,
-    sort by start_line, and stitch into a single expanded context string.
-    Results from the same file share a cached fetch — only one DB call per file.
+    For each matched chunk, fetch all sibling chunks from the same file and
+    stitch them, in line order, into a single expanded context string.
+
+    Files with more than ``MAX_CONTEXT_CHUNKS_PER_FILE`` chunks are capped, but
+    the kept chunks are the retrieved ones plus their nearest siblings (see
+    ``_select_chunks_for_file``), not simply the first N in line order.
+    Results from the same file share a cached fetch — one DB call per file.
     """
     file_context_cache = {}  # file_path → stitched string (avoids duplicate fetches)
+
+    # Spans of the chunks retrieval returned, per file, in rank order.
+    retrieved_by_file: dict[str, list[tuple[int, int]]] = {}
+    for item in ranked_chunks:
+        meta = item.get("metadata") or {}
+        fp = meta.get("file") or meta.get("file_path")
+        if fp:
+            retrieved_by_file.setdefault(fp, []).append(_chunk_line_span(meta))
 
     for item in ranked_chunks:
         file_path = item["metadata"]["file"]
@@ -938,14 +951,13 @@ def reconstruct_file_context(ranked_chunks: list[dict]) -> list[dict]:
                 file_context_cache[file_path] = None
                 continue
 
-            # Sort chunks by start_line to reconstruct original file order
-            paired = sorted(
-                zip(results["documents"], results["metadatas"]),
-                key=lambda x: x[1].get("start_line", 0)
+            # Cap to avoid token explosion on very large files, keeping the
+            # chunks nearest the retrieved ones; result is in line order.
+            paired = _select_chunks_for_file(
+                list(zip(results["documents"], results["metadatas"])),
+                retrieved_by_file.get(file_path, []),
+                MAX_CONTEXT_CHUNKS_PER_FILE,
             )
-
-            # Cap to avoid token explosion on very large files
-            paired = paired[:MAX_CONTEXT_CHUNKS_PER_FILE]
 
             # Stitch with a header showing chunk type and line range
             stitched_parts = []

@@ -664,6 +664,40 @@ _RELATION_PRIORITY: dict[str, float] = {
 }
 
 
+# A neighbour that overflows the reserve is truncated (not dropped) only when at
+# least this many tokens of reserve remain.
+NEIGHBOR_MIN_TRUNC_TOKENS: int = 64   # constant (not env) so the frozen env list stays complete
+_TRUNC_MARKER = "# [... truncated ...]"
+
+
+def _truncate_chunk_to_tokens(chunk: ContextChunk, max_tokens: int) -> ContextChunk:
+    """Return a copy of ``chunk`` whose text fits ``max_tokens`` (whole leading lines).
+
+    The marker line is counted in the budget. If not even the first line plus the
+    marker fit, the first line is hard-cut by characters.
+    """
+    text = chunk.get("text") or ""
+    if estimate_tokens(text) <= max_tokens:
+        return chunk
+    lines = text.split("\n")
+    kept: list[str] = []
+    for line in lines:
+        candidate = "\n".join(kept + [line, _TRUNC_MARKER])
+        if estimate_tokens(candidate) > max_tokens:
+            break
+        kept.append(line)
+    if kept:
+        new_text = "\n".join(kept + [_TRUNC_MARKER])
+    else:
+        budget_chars = max(0, max_tokens * 4 - len(_TRUNC_MARKER) - 1)
+        new_text = lines[0][:budget_chars] + "\n" + _TRUNC_MARKER
+        if estimate_tokens(new_text) > max_tokens:
+            new_text = lines[0][: max_tokens * 4 - 1]
+    out = dict(chunk)
+    out["text"] = new_text
+    return out  # type: ignore[return-value]
+
+
 def _neighbor_structural_score(item: dict) -> float:
     """Score a graph neighbour purely by its structural relationship to the seed.
 
@@ -815,7 +849,17 @@ def prune_context_graph_aware(
             continue
         t = estimate_tokens(chunk["text"])
         if neighbor_tokens + t > neighbor_budget:
-            continue
+            # Do not silently drop a neighbour that is bigger than what is left
+            # of the reserve (gold-loss mode seen on Nov 8 data: the best
+            # neighbour was larger than the whole reserve). Keep its leading
+            # lines instead, provided a meaningful amount of room remains.
+            room = neighbor_budget - neighbor_tokens
+            if room < NEIGHBOR_MIN_TRUNC_TOKENS:
+                continue
+            chunk = _truncate_chunk_to_tokens(chunk, room)
+            t = estimate_tokens(chunk["text"])
+            if t > room:
+                continue
         neighbor_chunks.append(chunk)
         neighbor_tokens += t
 
