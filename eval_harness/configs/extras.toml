@@ -16,4 +16,6 @@ answer_stop = []            # stop sequences for the answer call only, e.g. ["EN
 
 [text]
 # Appended (after a blank line) to the task at answer-prompt build only when answer_locations_instruction is on.
-answer_locations_instruction = "Begin your answer with a section titled LOCATIONS. List, one per line and most likely first, each file that should be edited to resolve this issue, written as path, or as path::Class.method where a function applies. Then write the line END_LOCATIONS and continue with a short explanation of the fix."
+# Phase 2: explicit format with a worked example. Models often wrote path::method without the class, which strict scoring marks wrong
+# (handover Fix 5). The instruction text differs from the Nov 3 runs, so localization numbers are not comparable with Nov 3 on this axis.
+answer_locations_instruction = "Begin your answer with a section titled LOCATIONS. List, one per line and most likely first, each place that should be edited to resolve this issue. Write a file as path, a module-level function as path::function, and a method as path::Class.method (always include the class name for a method). Example:\nLOCATIONS\nsrc/pkg/models.py::Order.total_price\nsrc/pkg/utils.py::parse_date\nsrc/pkg/settings.py\nEND_LOCATIONS\nAfter the line END_LOCATIONS, continue with a short explanation of the fix."

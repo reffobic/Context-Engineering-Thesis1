@@ -202,7 +202,21 @@ def test_every_ablation_differs_from_full_gapa(on_runs):
     full = {cid: signature(o) for cid, o in on_runs["full"].items()}
     differs = {}
     for key, s in ABL["settings"].items():
-        if key == "full" or s.get("control"):
-            continue
+        if key == "full" or s.get("control") or "GAPA" not in s.get("arms", ["GAPA"]):
+            continue                                   # GASR-only settings are not meaningful on GAPA cases
         differs[key] = [cid for cid, o in on_runs[key].items() if signature(o) != full[cid]]
     assert all(differs.values()), differs
+
+
+def test_arm_lists_in_the_ablation_config():
+    s = ABL["settings"]
+    shared = ("full", "no_graph_expansion", "contains_only", "truncation", "no_keyword_channel")
+    for key in shared:
+        assert set(s[key]["arms"]) == {"GAPA", "GASR"}, key
+    for key in ("gasr_gate_off", "gasr_gate_no_shortcut"):
+        assert s[key]["arms"] == ["GASR"], key
+    for key in ("gate_no_scores", "gate_no_deps", "gate_no_scores_headings", "gate_no_deps_headings"):
+        assert "arms" not in s[key], key               # GAPA-only by default, as before Phase 2
+    declared = set(ABL["switches"])
+    for key, v in s.items():
+        assert set(v["env"]) <= declared, key

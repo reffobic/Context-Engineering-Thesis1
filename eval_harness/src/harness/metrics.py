@@ -30,7 +30,8 @@ from .common import load_toml
 from .instrument import gapa_gate_summary, seed_tier_shares, stub_shares
 
 STAGES = [("after_retrieval", "After retrieval"), ("after_expansion", "After graph expansion"), ("final_context", "After pruning")]
-LEVELS = [("file", "files", (1, 3, 5)), ("module", "modules", (5, 10)), ("function", "functions", (5, 10))]
+# k=10 (file) and k=15 (module, function) are LocAgent Table 7 columns, reported for Loc-Bench only; the original columns are unchanged
+LEVELS = [("file", "files", (1, 3, 5, 10)), ("module", "modules", (5, 10, 15)), ("function", "functions", (5, 10, 15))]
 ARM_ORDER = ["ALWAYS_GRAPH", "GASR", "GAPA", "SELF_ROUTE"]
 ARM_LABEL = {"ALWAYS_GRAPH": "Always-GRAPH", "GASR": "GASR", "GAPA": "GAPA", "SELF_ROUTE": "Self-Route"}
 QUALITY_ARMS = ["ALWAYS_GRAPH", "GASR", "GAPA"]                      # Tables IV / V
@@ -364,11 +365,15 @@ def build_tables(jobs: list[dict], data_dir: Path, out: Path, warnings: list[str
             return f"{NOT_RUN} (incomplete: {len({r['task_id'] for r in j['rows']})}/{j['n_tasks']} tasks)"
         return None
 
-    qhead = [f"File Acc@{k}" for k in (1, 3, 5)] + [f"Module Acc@{k}" for k in (5, 10)] + [f"Function Acc@{k}" for k in (5, 10)] + ["File Recall@5"]
-    qkeys = [f"file_acc@{k}" for k in (1, 3, 5)] + [f"module_acc@{k}" for k in (5, 10)] + [f"function_acc@{k}" for k in (5, 10)] + ["file_recall@5"]
+    qhead_swe = [f"File Acc@{k}" for k in (1, 3, 5)] + [f"Module Acc@{k}" for k in (5, 10)] + [f"Function Acc@{k}" for k in (5, 10)] + ["File Recall@5"]
+    qkeys_swe = [f"file_acc@{k}" for k in (1, 3, 5)] + [f"module_acc@{k}" for k in (5, 10)] + [f"function_acc@{k}" for k in (5, 10)] + ["file_recall@5"]
+    # Loc-Bench tables also carry File@10, Module@15, Function@15 (LocAgent Table 7); SWE-Bench-Lite tables keep the original columns
+    qhead_loc = qhead_swe[:3] + ["File Acc@10"] + qhead_swe[3:5] + ["Module Acc@15"] + qhead_swe[5:7] + ["Function Acc@15"] + qhead_swe[7:]
+    qkeys_loc = qkeys_swe[:3] + ["file_acc@10"] + qkeys_swe[3:5] + ["module_acc@15"] + qkeys_swe[5:7] + ["function_acc@15"] + qkeys_swe[7:]
     summary = {"tables": []}
     for model in models:
         for tname, ds in (("table_iv_context_quality_swe-bench-lite", "swe-bench-lite"), ("table_v_context_quality_loc-bench", "loc-bench")):
+            qhead, qkeys = (qhead_loc, qkeys_loc) if ds == "loc-bench" else (qhead_swe, qkeys_swe)
             for variant, A in (("", aggs), ("_sensitivity", aggs_sens)):
                 rows = []
                 for arm in QUALITY_ARMS:
@@ -398,37 +403,46 @@ def build_tables(jobs: list[dict], data_dir: Path, out: Path, warnings: list[str
                       ["Dataset", "Arm", "Total tokens per task", "Quality per cost", "%RAG", "%GRAPH", "%LC", "Gate error rate", "Tasks", "Failed (primary)", "Failed (hard)"], rows)
         # Tables VII / VIII: after graph expansion, external baselines not run
         for tname, ds in (("table_vii_baselines_swe-bench-lite", "swe-bench-lite"), ("table_viii_baselines_loc-bench", "loc-bench")):
-            rows = [[m, NOT_RUN] + [""] * 6 for m in ("BM25", "CodeRankEmbed", "LocAgent + fine-tuned Qwen2.5-Coder-7B")]
+            qhead, qkeys = (qhead_loc, qkeys_loc) if ds == "loc-bench" else (qhead_swe, qkeys_swe)
+            rows = [[m, NOT_RUN] + [""] * (len(qkeys) - 1) for m in ("BM25", "CodeRankEmbed", "LocAgent + fine-tuned Qwen2.5-Coder-7B")]
             for arm in ("GASR", "GAPA"):
                 st_ = cell_state(model, ds, arm)
                 if st_:
-                    rows.append([ARM_LABEL[arm] + " (ours)", st_] + [""] * 6)
+                    rows.append([ARM_LABEL[arm] + " (ours)", st_] + [""] * (len(qkeys) - 1))
                 else:
                     a = aggs[(model, ds, arm, "full")]
                     rows.append([ARM_LABEL[arm] + " (ours)", "our run"] + [fmt(a[f"after_expansion.{k}"]) for k in qkeys if k != "file_recall@5"])
             write_csv(out / f"{tname}_{model.replace(':', '-')}.csv", ["Method", "Source"] + [h for h in qhead if h != "File Recall@5"], rows)
         # Table IX ablation
-        for variant, A in (("", aggs), ("_sensitivity", aggs_sens)):
-            rows = []
-            full = A.get((model, "swe-bench-lite", "GAPA", "full"))
-            abl_cfg = load_toml(Path(__file__).resolve().parents[2] / "configs" / "ablations.toml")["settings"]
-            for key, s in abl_cfg.items():
-                if s.get("control"):
-                    continue
-                st_ = cell_state(model, "swe-bench-lite", "GAPA", key)
-                if st_:
-                    rows.append([s["label"], st_] + [""] * 9)
-                    continue
-                a = A[(model, "swe-bench-lite", "GAPA", key)]
-                f_ = "final_context"
-                df = (a[f"{f_}.function_acc@10"] - full[f"{f_}.function_acc@10"]) if full and key != "full" else None
-                dt = (a["tokens_total_mean"] - full["tokens_total_mean"]) if full and key != "full" and a["tokens_total_mean"] is not None and full["tokens_total_mean"] is not None else None
-                rows.append([s["label"], "run", fmt(a[f"{f_}.file_acc@5"]), fmt(a[f"{f_}.function_acc@10"]), fmt(a[f"{f_}.file_recall@5"]),
-                             fmt(a["tokens_total_mean"], 0), fmt(a["quality_per_cost"], 3), "–" if key == "no_graph_expansion" else fmt(a["pct_GRAPH"], 1),
-                             fmt(a["gate_error_rate"], 3), "–" if key == "full" else fmt(df), "–" if key == "full" else fmt(dt, 0)])
-            write_csv(out / f"table_ix_ablation_{model.replace(':', '-')}{variant}.csv",
-                      ["Setting", "State", "File Acc@5", "Function Acc@10", "File Recall@5", "Total tokens per task", "Quality per cost", "%GRAPH",
-                       "Gate error rate", "Δ Func. Acc@10 vs full", "Δ Tokens vs full"], rows)
+        # One table per (arm, dataset). The original GAPA / SWE-Bench-Lite file keeps its name; every other combination gets arm and
+        # dataset in the name and is written only when at least one job of that combination exists.
+        abl_all = load_toml(Path(__file__).resolve().parents[2] / "configs" / "ablations.toml")["settings"]
+        for t_arm, t_ds in (("GAPA", "swe-bench-lite"), ("GAPA", "loc-bench"), ("GASR", "swe-bench-lite"), ("GASR", "loc-bench")):
+            abl_cfg = {k: s for k, s in abl_all.items() if t_arm in s.get("arms", ["GAPA"])}
+            if (t_arm, t_ds) != ("GAPA", "swe-bench-lite") and not any((model, t_ds, t_arm, k) in aggs for k in abl_cfg):
+                continue
+            tag = "" if (t_arm, t_ds) == ("GAPA", "swe-bench-lite") else f"_{t_arm.lower()}_{t_ds}"
+            for variant, A in (("", aggs), ("_sensitivity", aggs_sens)):
+                rows = []
+                full = A.get((model, t_ds, t_arm, "full"))
+                for key, s in abl_cfg.items():
+                    if s.get("control"):
+                        continue
+                    label = s["label"].replace("GAPA", t_arm)
+                    st_ = cell_state(model, t_ds, t_arm, key)
+                    if st_:
+                        rows.append([label, st_] + [""] * 9)
+                        continue
+                    a = A[(model, t_ds, t_arm, key)]
+                    f_ = "final_context"
+                    df = (a[f"{f_}.function_acc@10"] - full[f"{f_}.function_acc@10"]) if full and key != "full" else None
+                    dt = (a["tokens_total_mean"] - full["tokens_total_mean"]) if full and key != "full" and a["tokens_total_mean"] is not None and full["tokens_total_mean"] is not None else None
+                    rows.append([label, "run", fmt(a[f"{f_}.file_acc@5"]), fmt(a[f"{f_}.function_acc@10"]), fmt(a[f"{f_}.file_recall@5"]),
+                                 fmt(a["tokens_total_mean"], 0), fmt(a["quality_per_cost"], 3), "–" if key == "no_graph_expansion" else fmt(a["pct_GRAPH"], 1),
+                                 fmt(a["gate_error_rate"], 3), "–" if key == "full" else fmt(df), "–" if key == "full" else fmt(dt, 0)])
+                write_csv(out / f"table_ix_ablation{tag}_{model.replace(':', '-')}{variant}.csv",
+                          ["Setting", "State", "File Acc@5", "Function Acc@10", "File Recall@5", "Total tokens per task", "Quality per cost", "%GRAPH",
+                           "Gate error rate", "Δ Func. Acc@10 vs full", "Δ Tokens vs full"], rows)
     # gate tokens, seed tiers, stubs, gapa summary, failures
     gt = gate_token_rows(done)
     write_csv(out / "gate_tokens.csv", ["model", "dataset", "arm", "ablation", "path", "n", "mean_gate_tokens"],

@@ -266,9 +266,16 @@ def test_ablation_is_logged_hashed_and_part_of_the_job_identity(mini, fake):
 
 
 def test_ablation_refused_on_other_arms(mini, fake):
-    r = subprocess.run(cmd(mini, mini["root"] / "out_abl_gasr", arm="GASR", extra=["--ablation", "truncation"]),
+    # a GAPA-only setting (no `arms` key in ablations.toml) is still refused on GASR
+    r = subprocess.run(cmd(mini, mini["root"] / "out_abl_gasr", arm="GASR", extra=["--ablation", "gate_no_scores"]),
                        capture_output=True, text=True, env=env_for(fake), cwd=mini["root"])
-    assert r.returncode == 2 and "only allowed on the GAPA arm" in r.stdout
+    assert r.returncode == 2 and "only allowed on GAPA, not GASR" in r.stdout
+
+
+def test_gasr_gate_ablation_refused_on_gapa(mini, fake):
+    r = subprocess.run(cmd(mini, mini["root"] / "out_abl_gapa_gasrgate", arm="GAPA", extra=["--ablation", "gasr_gate_off"]),
+                       capture_output=True, text=True, env=env_for(fake), cwd=mini["root"])
+    assert r.returncode == 2 and "only allowed on GASR, not GAPA" in r.stdout
 
 
 def test_prefix_mismatch_stub_aborts_the_job(mini, fake, tmp_path):

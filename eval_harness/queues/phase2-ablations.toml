@@ -1,0 +1,298 @@
+# Phase 2 ablation queue (new freeze, branch phase2-next): GAPA ablation rerun and GASR ablation, qwen3.5:9b,
+# SWE-Bench-Lite (27 tasks) + Loc-Bench (56 tasks), location instruction ON, stop sequence OFF (as Nov 3).
+# Per arm and dataset: "full" (needed for the deltas), the four shared switches, and the arm's two gate rows
+#   GAPA: gate_no_scores, gate_no_deps          GASR: gasr_gate_off (always expand), gasr_gate_no_shortcut
+# 7 jobs x 2 arms x 2 datasets = 28 jobs. Optional heading controls are not queued.
+# Needs: indexes for both datasets built under this SHA (preflight fails the job otherwise), a clean worktree and
+# data/queue/record_authorisation.json for this SHA and the harness commit that is checked out.
+# Launch:
+#   PYTHONPATH=eval_harness/src python3 -m harness.queue \
+#     --profile eval_harness/profiles/ubuntu-4080.toml \
+#     --queue eval_harness/queues/phase2-ablations.toml \
+#     --pipeline-config eval_harness/configs/pipeline_phase2.toml \
+#     --configs eval_harness/configs --cwd .
+# Estimates are minutes for the whole job; a job is started only if estimate x safety_factor fits before the hard stop.
+# Do not run this while a LocAgent or other Ollama job holds the GPU (see docs/handover/phase2_next_runs.md).
+
+[queue]
+enabled = true
+frozen_sha = "cacecedb1862539822e2009e0b17cb5406fee8b4"
+hard_stop = "2026-12-01T08:00:00"
+hard_stop_tz = "Africa/Cairo"
+safety_factor = 1.25
+
+[[job]]
+id = "p2-abl-01-qwen3.5-9b-GAPA-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "swe-bench-lite"
+tasks = 27
+estimated_minutes = 10
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-02-qwen3.5-9b-GAPA-no_graph_expansion-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "swe-bench-lite"
+ablation = "no_graph_expansion"
+tasks = 27
+estimated_minutes = 10
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-03-qwen3.5-9b-GAPA-contains_only-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "swe-bench-lite"
+ablation = "contains_only"
+tasks = 27
+estimated_minutes = 10
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-04-qwen3.5-9b-GAPA-truncation-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "swe-bench-lite"
+ablation = "truncation"
+tasks = 27
+estimated_minutes = 10
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-05-qwen3.5-9b-GAPA-no_keyword_channel-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "swe-bench-lite"
+ablation = "no_keyword_channel"
+tasks = 27
+estimated_minutes = 10
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-06-qwen3.5-9b-GAPA-gate_no_scores-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "swe-bench-lite"
+ablation = "gate_no_scores"
+tasks = 27
+estimated_minutes = 10
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-07-qwen3.5-9b-GAPA-gate_no_deps-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "swe-bench-lite"
+ablation = "gate_no_deps"
+tasks = 27
+estimated_minutes = 10
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-08-qwen3.5-9b-GASR-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GASR"
+dataset = "swe-bench-lite"
+tasks = 27
+estimated_minutes = 10
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-09-qwen3.5-9b-GASR-no_graph_expansion-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GASR"
+dataset = "swe-bench-lite"
+ablation = "no_graph_expansion"
+tasks = 27
+estimated_minutes = 10
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-10-qwen3.5-9b-GASR-contains_only-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GASR"
+dataset = "swe-bench-lite"
+ablation = "contains_only"
+tasks = 27
+estimated_minutes = 10
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-11-qwen3.5-9b-GASR-truncation-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GASR"
+dataset = "swe-bench-lite"
+ablation = "truncation"
+tasks = 27
+estimated_minutes = 10
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-12-qwen3.5-9b-GASR-no_keyword_channel-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GASR"
+dataset = "swe-bench-lite"
+ablation = "no_keyword_channel"
+tasks = 27
+estimated_minutes = 10
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-13-qwen3.5-9b-GASR-gasr_gate_off-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GASR"
+dataset = "swe-bench-lite"
+ablation = "gasr_gate_off"
+tasks = 27
+estimated_minutes = 10
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-14-qwen3.5-9b-GASR-gasr_gate_no_shortcut-swe-bench-lite"
+model = "qwen3.5:9b"
+arm = "GASR"
+dataset = "swe-bench-lite"
+ablation = "gasr_gate_no_shortcut"
+tasks = 27
+estimated_minutes = 10
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-15-qwen3.5-9b-GAPA-loc-bench"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "loc-bench"
+tasks = 56
+estimated_minutes = 22
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-16-qwen3.5-9b-GAPA-no_graph_expansion-loc-bench"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "loc-bench"
+ablation = "no_graph_expansion"
+tasks = 56
+estimated_minutes = 22
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-17-qwen3.5-9b-GAPA-contains_only-loc-bench"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "loc-bench"
+ablation = "contains_only"
+tasks = 56
+estimated_minutes = 22
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-18-qwen3.5-9b-GAPA-truncation-loc-bench"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "loc-bench"
+ablation = "truncation"
+tasks = 56
+estimated_minutes = 22
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-19-qwen3.5-9b-GAPA-no_keyword_channel-loc-bench"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "loc-bench"
+ablation = "no_keyword_channel"
+tasks = 56
+estimated_minutes = 22
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-20-qwen3.5-9b-GAPA-gate_no_scores-loc-bench"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "loc-bench"
+ablation = "gate_no_scores"
+tasks = 56
+estimated_minutes = 22
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-21-qwen3.5-9b-GAPA-gate_no_deps-loc-bench"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "loc-bench"
+ablation = "gate_no_deps"
+tasks = 56
+estimated_minutes = 22
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-22-qwen3.5-9b-GASR-loc-bench"
+model = "qwen3.5:9b"
+arm = "GASR"
+dataset = "loc-bench"
+tasks = 56
+estimated_minutes = 22
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-23-qwen3.5-9b-GASR-no_graph_expansion-loc-bench"
+model = "qwen3.5:9b"
+arm = "GASR"
+dataset = "loc-bench"
+ablation = "no_graph_expansion"
+tasks = 56
+estimated_minutes = 22
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-24-qwen3.5-9b-GASR-contains_only-loc-bench"
+model = "qwen3.5:9b"
+arm = "GASR"
+dataset = "loc-bench"
+ablation = "contains_only"
+tasks = 56
+estimated_minutes = 22
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-25-qwen3.5-9b-GASR-truncation-loc-bench"
+model = "qwen3.5:9b"
+arm = "GASR"
+dataset = "loc-bench"
+ablation = "truncation"
+tasks = 56
+estimated_minutes = 22
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-26-qwen3.5-9b-GASR-no_keyword_channel-loc-bench"
+model = "qwen3.5:9b"
+arm = "GASR"
+dataset = "loc-bench"
+ablation = "no_keyword_channel"
+tasks = 56
+estimated_minutes = 22
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-27-qwen3.5-9b-GASR-gasr_gate_off-loc-bench"
+model = "qwen3.5:9b"
+arm = "GASR"
+dataset = "loc-bench"
+ablation = "gasr_gate_off"
+tasks = 56
+estimated_minutes = 22
+answer_locations_instruction = true
+
+[[job]]
+id = "p2-abl-28-qwen3.5-9b-GASR-gasr_gate_no_shortcut-loc-bench"
+model = "qwen3.5:9b"
+arm = "GASR"
+dataset = "loc-bench"
+ablation = "gasr_gate_no_shortcut"
+tasks = 56
+estimated_minutes = 22
+answer_locations_instruction = true

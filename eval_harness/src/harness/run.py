@@ -143,8 +143,9 @@ class Job:
         on = dict(settings[a.ablation]["env"])
         if set(on) - set(switches) or any(v not in ("0", "1") for v in on.values()):
             raise JobAbort(f"ablation {a.ablation}: only the declared switches with values 0/1 are allowed")
-        if on and self.arm != "GAPA":
-            raise JobAbort(f"ablation {a.ablation} is only allowed on the GAPA arm, not {self.arm}")
+        allowed_arms = list(settings[a.ablation].get("arms", ["GAPA"]))      # no `arms` key = GAPA-only, as before
+        if on and self.arm not in allowed_arms:
+            raise JobAbort(f"ablation {a.ablation} is only allowed on {'/'.join(allowed_arms)}, not {self.arm}")
         self.abl_env = {k: "0" for k in switches} | on
         self.ablation = {"key": a.ablation, "label": settings[a.ablation]["label"], "env": self.abl_env}
 

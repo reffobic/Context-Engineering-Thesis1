@@ -1,6 +1,7 @@
-# Table VIII settings. Each switch is an environment variable of the pipeline, default "0" (off).
-# A setting turns on exactly the listed switches; "full" turns none on. Hashed into every log line.
-# Ablations are allowed on the GAPA arm only (Table VIII is a GAPA ablation).
+# Ablation settings (Table VIII in this file; the report CSVs call it Table IX). Each switch is an environment variable of the pipeline,
+# default "0" (off). A setting turns on exactly the listed switches; "full" turns none on. Hashed into every log line.
+# Each setting lists the arms it may run on in `arms`; a setting without `arms` is GAPA-only (the original rule).
+# Phase 2 adds GASR: the four shared switches run on both GAPA and GASR, and two GASR gate switches run on GASR only.
 
 [switches]
 # name -> what it removes
@@ -11,25 +12,32 @@ ABL_DENSE_ONLY = "BM25 stream, exact-match stream and keyword-overlap score term
 ABL_GATE_NO_SCORES = "GAPA entry gate input without top_score, score_margin, candidate_files"
 ABL_GATE_NO_DEPS = "GAPA entry gate input without the dependency count"
 ABL_GATE_DROP_HEADINGS = "control: also remove the step headings whose input lines were removed (off by default)"
+ABL_GASR_GATE_OFF = "GASR gate switched off: no gate call, always 'insufficient, STRUCTURE', so GASR always expands"
+ABL_GASR_GATE_NO_SHORTCUT = "GASR gate without its top-score shortcut (top score < 0.30 -> LC); the LLM judge always decides"
 
 [settings.full]
 label = "full GAPA"
+arms = ["GAPA", "GASR"]
 env = {}
 
 [settings.no_graph_expansion]
 label = "no graph expansion"
+arms = ["GAPA", "GASR"]
 env = { ABL_NO_GRAPH_EXPAND = "1" }
 
 [settings.contains_only]
 label = "contains-edges-only walk"
+arms = ["GAPA", "GASR"]
 env = { ABL_CONTAINS_ONLY = "1" }
 
 [settings.truncation]
 label = "pruning replaced by truncation to the same token budget"
+arms = ["GAPA", "GASR"]
 env = { ABL_TRUNCATE_PRUNING = "1" }
 
 [settings.no_keyword_channel]
 label = "no keyword channel (BM25, exact match, keyword overlap)"
+arms = ["GAPA", "GASR"]
 env = { ABL_DENSE_ONLY = "1" }
 
 [settings.gate_no_scores]
@@ -41,6 +49,18 @@ needs_gate_diagnosis = true
 label = "without dependency count"
 env = { ABL_GATE_NO_DEPS = "1" }
 needs_gate_diagnosis = true
+
+# GASR gate rows (Phase 2). GASR's gate is the merged rag_gate: it sees the query and the chunk text only, so there is no
+# dependency-count row for GASR; its score signal is the deterministic top-score shortcut.
+[settings.gasr_gate_off]
+label = "GASR gate off (always expand)"
+arms = ["GASR"]
+env = { ABL_GASR_GATE_OFF = "1" }
+
+[settings.gasr_gate_no_shortcut]
+label = "GASR gate without the top-score shortcut"
+arms = ["GASR"]
+env = { ABL_GASR_GATE_NO_SHORTCUT = "1" }
 
 # Optional controls (not Table VIII rows, not queued unless asked for).
 [settings.gate_no_scores_headings]

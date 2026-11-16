@@ -4,18 +4,23 @@
 [pipeline]
 # Frozen SHA for all arms: 3bbc52f (cd84fad merge + CHROMA_PATH env override) + patches/0002
 # (GRAPHIFY_PATH_PREFIX env override and the Table VIII ablation switches, all default off).
-frozen_sha = "a2cfcec312626b4b50f743c4af91a6d118c79d0e"
-previous_frozen_sha = "2350c0b2e064e4fd808e941731366e6cc71a9551"   # Phase 1 Nov3 freeze
-earlier_frozen_shas = ["3bbc52f220addbc648d4802dab6b1c658d427612", "cd84fad1c13d8e7783bff39389cfb195e0cbac5b"]
+# Second Phase 2 freeze (branch phase2-next): a2cfcec + backend fixes B/C/D (patch 0003: nearest-chunk per-file cap, rank-order LC
+# packing, graph-expand edge types and oversized-neighbour truncation) + GASR gate ablation switches (patch 0004).
+# File order in the prompt is rank order by decision (the earlier alphabetical order was an accident, no switch is kept).
+frozen_sha = "cacecedb1862539822e2009e0b17cb5406fee8b4"
+previous_frozen_sha = "a2cfcec312626b4b50f743c4af91a6d118c79d0e"   # first Phase 2 freeze (Wave 1 and SWE-QA rest runs)
+earlier_frozen_shas = ["2350c0b2e064e4fd808e941731366e6cc71a9551", "3bbc52f220addbc648d4802dab6b1c658d427612", "cd84fad1c13d8e7783bff39389cfb195e0cbac5b"]   # 2350c0b = Phase 1 Nov 3 freeze
 chroma_path_patch = "patches/0001-retrieval-tool-chroma-path-env.patch"
 ablation_patch = "patches/0002-graphify-prefix-env-and-ablation-switches.patch"
+lc_rank_patch = "patches/0003-lc-rank-order-chunk-cap-graph-edge-types.patch"
+gasr_gate_patch = "patches/0004-gasr-gate-ablation-switches.patch"
 base_commit = "166dbd01e126cdfe91524534a172498746a49cc2"          # origin/main as frozen by the team
 seed_alignment_commit = "50cf149efd6180b41098210b234efef81685ceaf"  # GAPA expands from GASR's seeds
 # Results are recorded only for this pipeline SHA and for the harness commit named in the untracked file
 # <data_dir>/queue/record_authorisation.json (written by the launcher at the user's confirmation). Both are
 # part of the job identity and of every log line. Without a matching authorisation only --smoke runs are allowed.
 record_results = true
-record_results_pipeline_sha = "a2cfcec312626b4b50f743c4af91a6d118c79d0e"
+record_results_pipeline_sha = "cacecedb1862539822e2009e0b17cb5406fee8b4"
 mode_names = ["SELF_ROUTE", "GASR", "GAPA", "RAG", "LC"]
 structure_rerank_expected = true     # retrieval_tool._STRUCTURE_RERANK (module flag, not an env var)
 require_call_graph_json = true       # every index must ship call_graph.json; the job fails otherwise
@@ -54,7 +59,7 @@ HF_HUB_OFFLINE = "1"                 # models are cached; no network access at l
 TRANSFORMERS_OFFLINE = "1"
 GASR_HARD_CAP = "2"
 GASR_MAX_NEIGHBORS = "8"
-GASR_NEIGHBOR_BUDGET_FRACTION = "0.30"
+GASR_NEIGHBOR_BUDGET_FRACTION = "0.42"   # was 0.30 (about 390 tokens at the 1300 budget). 0.42 gives about 546, the absolute reserve Nov 3 measured (540). Env only: revert here, no SHA change.
 OLLAMA_THINK = "0"
 GRAPHIFY_PATH_PREFIX = ""            # indexes use repo-relative paths; the pipeline default "superset/" is for the Superset repo
 # Table VIII ablation switches: all off here; a job turns on the ones of its setting (configs/ablations.toml).
@@ -65,6 +70,8 @@ ABL_DENSE_ONLY = "0"
 ABL_GATE_NO_SCORES = "0"
 ABL_GATE_NO_DEPS = "0"
 ABL_GATE_DROP_HEADINGS = "0"
+ABL_GASR_GATE_OFF = "0"
+ABL_GASR_GATE_NO_SHORTCUT = "0"
 
 [assert_unset]
 # These change the pipeline when set. The launcher refuses to start if any is present in the environment.
@@ -79,6 +86,8 @@ ABL_DENSE_ONLY = "0"
 ABL_GATE_NO_SCORES = "0"
 ABL_GATE_NO_DEPS = "0"
 ABL_GATE_DROP_HEADINGS = "0"
+ABL_GASR_GATE_OFF = "0"
+ABL_GASR_GATE_NO_SHORTCUT = "0"
 GRAPHIFY_PATH_PREFIX = "superset/"
 # Every environment variable the pipeline reads at the frozen SHA, with its code default
 # ("" = read without default). Each log line records the effective value of all of them.
