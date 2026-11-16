@@ -1,0 +1,29 @@
+pipeline frozen_sha=a2cfcec312626b4b50f743c4af91a6d118c79d0e (base 166dbd0, seed alignment 50cf149); record_results=True; graphify=graphify 0.9.65; 12 indexes
+[1/12] 20:23:30 astropy/astropy@0a041d38 built wall_s=460.16 chunks=22431 files=1133
+[2/12] 20:25:56 conan-io/conan@52f43d98 built wall_s=145.42 chunks=8203 files=1056
+[3/12] 20:54:21 django/django@14fc2e97 error wall_s=None chunks=None files=None
+{
+ "status": "error",
+ "rc": -9,
+ "stderr_tail": ":   0%|          | 0/1 [00:00<?, ?it/s]\nBatches: 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 1/1 [00:00<00:00, 551.52it/s]\n\nBatches:   0%|          | 0/1 [00:00<?, ?it/s]\nBatches: 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 1/1 [00:00<00:00, 560.21it/s]\n\nBatches:   0%|          | 0/1 [00:00<?, ?it/s]\nBatches: 100%|\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2588| 1/1 [00:00<00:00, 553.70it/s]\n2026-11-15 20:41:05,177 [INFO] code_indexer: BM25 index updated at /home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/cache/indexes/django__django__14fc2e97036f__c5025aed9c103e40.partial/chroma/bm25_index.json (42808 chunks)\n2026-11-15 20:41:27,657 [INFO] graph_builder: Call graph saved -> /home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/cache/indexes/django__django__14fc2e97036f__c5025aed9c103e40.partial/chroma/call_graph.json (35424 nodes, 535979 edges)\n2026-11-15 20:41:27,659 [INFO] code_indexer: Indexing complete: {'files_scanned': 3036, 'files_considered': 3036, 'files_indexed': 3036, 'chunks_added': 42808, 'chunks_skipped': 0, 'files_skipped': 0, 'max_files': 1000000, 'limited_run': True, 'include_dirs': [], 'index_schema_version': 'contextual-dual-v1', 'hybrid_embeddings': True, 'dual_collections': True, 'meta_collection': 'code_meta_embeddings', 'dense_alpha': 0.4, 'graph_nodes': 35424, 'graph_edges': 535979, 'embeddings_cached': 0, 'bm25_chunks': 42808, 'graph_path': '/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/cache/indexes/django__django__14fc2e97036f__c5025aed9c103e40.partial/chroma/call_graph.json'}\n",
+ "repo": "django/django",
+ "base_commit": "14fc2e97036fc9d7acb55ada4f16f1aa3bdc5ec7",
+ "pipeline_sha": "a2cfcec312626b4b50f743c4af91a6d118c79d0e",
+ "graphify": "graphify 0.9.65",
+ "pythonhashseed": "0",
+ "key": "c5025aed9c103e40"
+}
+pipeline frozen_sha=a2cfcec312626b4b50f743c4af91a6d118c79d0e (base 166dbd0, seed alignment 50cf149); record_results=True; graphify=graphify 0.9.65; 12 indexes
+[1/12] 20:55:23 astropy/astropy@0a041d38 cached wall_s=None chunks=None files=None
+[2/12] 20:55:23 conan-io/conan@52f43d98 cached wall_s=None chunks=None files=None
+[3/12] 20:55:23 django/django@14fc2e97 cached wall_s=None chunks=None files=None
+[4/12] 21:00:01 matplotlib/matplotlib@a5e1f608 built wall_s=278.26 chunks=15351 files=1180
+[5/12] 21:02:13 pylint-dev/pylint@44740e5e built wall_s=131.55 chunks=10432 files=2370
+[6/12] 21:03:30 reflex-dev/reflex@fe0f946d built wall_s=77.29 chunks=5291 files=453
+[7/12] 21:07:54 scikit-learn/scikit-learn@adb1ae76 built wall_s=264.17 chunks=12709 files=1092
+[8/12] 21:10:13 sphinx-doc/sphinx@6c9e3209 built wall_s=138.44 chunks=9155 files=913
+[9/12] 21:11:48 sqlfluff/sqlfluff@db9801b7 built wall_s=94.92 chunks=6663 files=2591
+[10/12] 21:13:04 streamlink/streamlink@ab1f3656 built wall_s=76.6 chunks=5299 files=535
+[11/12] 21:38:22 sympy/sympy@3c817ed8 built wall_s=1518.01 chunks=39174 files=1629
+[12/12] 21:40:48 pydata/xarray@40119bf3 built wall_s=145.49 chunks=8998 files=288
+build finished: 12 ok, 0 failed, 2725s total

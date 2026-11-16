@@ -1,0 +1,4 @@
+# Local clones and agent outputs (do not commit)
+repos/
+output/
+*.env
