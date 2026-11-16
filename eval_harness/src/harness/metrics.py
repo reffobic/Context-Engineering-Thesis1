@@ -405,6 +405,12 @@ def build_tables(jobs: list[dict], data_dir: Path, out: Path, warnings: list[str
         for tname, ds in (("table_vii_baselines_swe-bench-lite", "swe-bench-lite"), ("table_viii_baselines_loc-bench", "loc-bench")):
             qhead, qkeys = (qhead_loc, qkeys_loc) if ds == "loc-bench" else (qhead_swe, qkeys_swe)
             rows = [[m, NOT_RUN] + [""] * (len(qkeys) - 1) for m in ("BM25", "CodeRankEmbed", "LocAgent + fine-tuned Qwen2.5-Coder-7B")]
+            # LocAgent's own run, scored by harness.locagent_baseline (own indexes and model server, not pinned to a pipeline SHA)
+            la_file = data_dir / "baselines" / f"locagent_{ds}.json"
+            if la_file.is_file():
+                la = json.loads(la_file.read_text(encoding="utf-8"))
+                rows[2] = [la.get("label", rows[2][0]), f"own run, {la['n_with_output']}/{la['n_tasks']} tasks (own indexes)"] + \
+                          [fmt(la["metrics"][k]) for k in qkeys if k != "file_recall@5"]
             for arm in ("GASR", "GAPA"):
                 st_ = cell_state(model, ds, arm)
                 if st_:
