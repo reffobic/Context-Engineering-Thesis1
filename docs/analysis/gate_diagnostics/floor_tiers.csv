@@ -1,0 +1,37 @@
+all_equal_positive,all_zero,arm,dataset,differ,match,metric,no_route,over,scope,tasks,under
+5,20,,swe-bench-lite,2,,function_acc@10,,,,27,
+12,14,,swe-bench-lite,1,,file_acc@5,,,,27,
+10,40,,loc-bench,6,,function_acc@10,,,,56,
+26,24,,loc-bench,6,,file_acc@5,,,,56,
+,,GASR,swe-bench-lite,,1,function_acc@10,0,26,All,27,0
+,,GASR,swe-bench-lite,,0,function_acc@10,0,2,Differing only,2,0
+,,GAPA,swe-bench-lite,,2,function_acc@10,0,25,All,27,0
+,,GAPA,swe-bench-lite,,0,function_acc@10,0,2,Differing only,2,0
+,,SELF_ROUTE,swe-bench-lite,,8,function_acc@10,0,19,All,27,0
+,,SELF_ROUTE,swe-bench-lite,,1,function_acc@10,0,1,Differing only,2,0
+,,PREASSESS,swe-bench-lite,,2,function_acc@10,0,25,All,27,0
+,,PREASSESS,swe-bench-lite,,0,function_acc@10,0,2,Differing only,2,0
+,,GASR,loc-bench,,14,function_acc@10,0,41,All,56,1
+,,GASR,loc-bench,,2,function_acc@10,0,3,Differing only,6,1
+,,GAPA,loc-bench,,9,function_acc@10,0,45,All,56,2
+,,GAPA,loc-bench,,2,function_acc@10,0,2,Differing only,6,2
+,,SELF_ROUTE,loc-bench,,13,function_acc@10,0,43,All,56,0
+,,SELF_ROUTE,loc-bench,,3,function_acc@10,0,3,Differing only,6,0
+,,PREASSESS,loc-bench,,11,function_acc@10,0,45,All,56,0
+,,PREASSESS,loc-bench,,4,function_acc@10,0,2,Differing only,6,0
+,,GASR,swe-bench-lite,,1,file_acc@5,0,26,All,27,0
+,,GASR,swe-bench-lite,,0,file_acc@5,0,1,Differing only,1,0
+,,GAPA,swe-bench-lite,,2,file_acc@5,0,25,All,27,0
+,,GAPA,swe-bench-lite,,0,file_acc@5,0,1,Differing only,1,0
+,,SELF_ROUTE,swe-bench-lite,,8,file_acc@5,0,19,All,27,0
+,,SELF_ROUTE,swe-bench-lite,,1,file_acc@5,0,0,Differing only,1,0
+,,PREASSESS,swe-bench-lite,,2,file_acc@5,0,25,All,27,0
+,,PREASSESS,swe-bench-lite,,0,file_acc@5,0,1,Differing only,1,0
+,,GASR,loc-bench,,13,file_acc@5,0,43,All,56,0
+,,GASR,loc-bench,,1,file_acc@5,0,5,Differing only,6,0
+,,GAPA,loc-bench,,9,file_acc@5,0,47,All,56,0
+,,GAPA,loc-bench,,2,file_acc@5,0,4,Differing only,6,0
+,,SELF_ROUTE,loc-bench,,11,file_acc@5,0,45,All,56,0
+,,SELF_ROUTE,loc-bench,,1,file_acc@5,0,5,Differing only,6,0
+,,PREASSESS,loc-bench,,9,file_acc@5,0,47,All,56,0
+,,PREASSESS,loc-bench,,2,file_acc@5,0,4,Differing only,6,0
