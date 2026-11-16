@@ -1,0 +1,10 @@
+{
+ "candidate": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/reports/phase2_sweqa_candidates/GAPA_answers.jsonl",
+ "output": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/reports/phase2_sweqa_scores/GAPA_answers_score.jsonl",
+ "n_candidates": 144,
+ "n_scored": 144,
+ "n_failed_or_skipped": 0,
+ "mean_overall": 35.67,
+ "judge_model": "qwen-7B:latest",
+ "label": "local-judge single-judge"
+}

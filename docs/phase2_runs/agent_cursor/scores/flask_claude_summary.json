@@ -1,0 +1,18 @@
+{
+  "n": 48,
+  "mean_overall": 69.5,
+  "dim_means": {
+    "correctness": 15.06,
+    "completeness": 10.19,
+    "relevance": 16.62,
+    "clarity": 15.58,
+    "reasoning": 12.04
+  },
+  "min_overall": 51,
+  "max_overall": 83,
+  "label": "cursor-cli-agent \u00b7 claude-subagent-judge \u00b7 single-judge \u00b7 flask-only \u00b7 n=48",
+  "judge_model": "claude-sonnet-5-5-high",
+  "generator": "cursor agent 2026.11.13-eacade1 model=auto",
+  "repo_sha": "85c5d93cbd049c4bd0679c36fd1ddcae8c37b642",
+  "stamp": "2026-11-15T06:48:44Z"
+}

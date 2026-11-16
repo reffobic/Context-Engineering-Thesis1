@@ -1,0 +1,58 @@
+{
+ "flask-016": {
+  "correctness": 16,
+  "completeness": 10,
+  "relevance": 17,
+  "clarity": 17,
+  "reasoning": 13
+ },
+ "flask-017": {
+  "correctness": 17,
+  "completeness": 14,
+  "relevance": 18,
+  "clarity": 18,
+  "reasoning": 16
+ },
+ "flask-018": {
+  "correctness": 17,
+  "completeness": 13,
+  "relevance": 18,
+  "clarity": 18,
+  "reasoning": 15
+ },
+ "flask-019": {
+  "correctness": 15,
+  "completeness": 11,
+  "relevance": 17,
+  "clarity": 16,
+  "reasoning": 14
+ },
+ "flask-020": {
+  "correctness": 17,
+  "completeness": 13,
+  "relevance": 18,
+  "clarity": 18,
+  "reasoning": 16
+ },
+ "flask-021": {
+  "correctness": 17,
+  "completeness": 14,
+  "relevance": 18,
+  "clarity": 18,
+  "reasoning": 16
+ },
+ "flask-022": {
+  "correctness": 15,
+  "completeness": 14,
+  "relevance": 16,
+  "clarity": 15,
+  "reasoning": 16
+ },
+ "flask-023": {
+  "correctness": 17,
+  "completeness": 12,
+  "relevance": 18,
+  "clarity": 18,
+  "reasoning": 15
+ }
+}

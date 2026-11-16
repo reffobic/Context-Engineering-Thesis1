@@ -1,0 +1,71 @@
+# Phase 2 SWE-QA Wave 1: 144 Q × 7 arms, free-form (no answer_locations_instruction).
+# Generator locked: qwen3.5:9b. Launch with:
+#   PYTHONPATH=eval_harness/src python3 -m harness.queue \
+#     --profile eval_harness/profiles/ubuntu-4080.toml \
+#     --queue eval_harness/queues/phase2-sweqa-w1.toml \
+#     --pipeline-config eval_harness/configs/pipeline_phase2.toml \
+#     --configs eval_harness/configs --cwd .
+
+[queue]
+enabled = true
+frozen_sha = "a2cfcec312626b4b50f743c4af91a6d118c79d0e"
+hard_stop = "2026-11-22T08:00:00"
+hard_stop_tz = "Africa/Cairo"
+safety_factor = 1.25
+allow_dirty = true
+
+[[job]]
+id = "p2-sweqa-ALWAYS_LC-w1"
+model = "qwen3.5:9b"
+arm = "ALWAYS_LC"
+dataset = "swe-qa-w1"
+tasks = 144
+estimated_minutes = 180
+
+[[job]]
+id = "p2-sweqa-ALWAYS_RAG-w1"
+model = "qwen3.5:9b"
+arm = "ALWAYS_RAG"
+dataset = "swe-qa-w1"
+tasks = 144
+estimated_minutes = 200
+
+[[job]]
+id = "p2-sweqa-ALWAYS_GRAPH-w1"
+model = "qwen3.5:9b"
+arm = "ALWAYS_GRAPH"
+dataset = "swe-qa-w1"
+tasks = 144
+estimated_minutes = 220
+
+[[job]]
+id = "p2-sweqa-SELF_ROUTE-w1"
+model = "qwen3.5:9b"
+arm = "SELF_ROUTE"
+dataset = "swe-qa-w1"
+tasks = 144
+estimated_minutes = 240
+
+[[job]]
+id = "p2-sweqa-PREASSESS-w1"
+model = "qwen3.5:9b"
+arm = "PREASSESS"
+dataset = "swe-qa-w1"
+tasks = 144
+estimated_minutes = 240
+
+[[job]]
+id = "p2-sweqa-GASR-w1"
+model = "qwen3.5:9b"
+arm = "GASR"
+dataset = "swe-qa-w1"
+tasks = 144
+estimated_minutes = 260
+
+[[job]]
+id = "p2-sweqa-GAPA-w1"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "swe-qa-w1"
+tasks = 144
+estimated_minutes = 260

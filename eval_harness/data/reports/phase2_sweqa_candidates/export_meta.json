@@ -1,0 +1,40 @@
+{
+ "arms": {
+  "ALWAYS_LC": {
+   "dir": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/runs/a2cfcec/p2-sweqa-ALWAYS_LC-w1",
+   "n": 144,
+   "candidate": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/reports/phase2_sweqa_candidates/ALWAYS_LC_answers.jsonl"
+  },
+  "ALWAYS_RAG": {
+   "dir": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/runs/a2cfcec/p2-sweqa-ALWAYS_RAG-w1",
+   "n": 144,
+   "candidate": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/reports/phase2_sweqa_candidates/ALWAYS_RAG_answers.jsonl"
+  },
+  "ALWAYS_GRAPH": {
+   "dir": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/runs/a2cfcec/p2-sweqa-ALWAYS_GRAPH-w1",
+   "n": 144,
+   "candidate": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/reports/phase2_sweqa_candidates/ALWAYS_GRAPH_answers.jsonl"
+  },
+  "SELF_ROUTE": {
+   "dir": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/runs/a2cfcec/p2-sweqa-SELF_ROUTE-w1",
+   "n": 144,
+   "candidate": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/reports/phase2_sweqa_candidates/SELF_ROUTE_answers.jsonl"
+  },
+  "PREASSESS": {
+   "dir": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/runs/a2cfcec/p2-sweqa-PREASSESS-w1",
+   "n": 144,
+   "candidate": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/reports/phase2_sweqa_candidates/PREASSESS_answers.jsonl"
+  },
+  "GASR": {
+   "dir": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/runs/a2cfcec/p2-sweqa-GASR-w1",
+   "n": 144,
+   "candidate": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/reports/phase2_sweqa_candidates/GASR_answers.jsonl"
+  },
+  "GAPA": {
+   "dir": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/runs/a2cfcec/p2-sweqa-GAPA-w1",
+   "n": 144,
+   "candidate": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/reports/phase2_sweqa_candidates/GAPA_answers.jsonl"
+  }
+ },
+ "missing": []
+}

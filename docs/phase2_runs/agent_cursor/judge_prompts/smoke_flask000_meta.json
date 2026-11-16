@@ -1,0 +1,7 @@
+{
+ "task_id": "flask-000",
+ "question": "What is the relationship between the ASCII-only encoding control parameter in the framework's JSON serialization provider and Unicode character representation in serialized output?",
+ "candidate_answer": "The DefaultJSONProvider's ensure_ascii attribute (default True) controls Unicode in JSON output: when True, non-ASCII characters are replaced with \\uXXXX escape sequences; when False, they are emitted as literal Unicode characters. It is passed through to json.dumps during serialization.",
+ "reference_len": 1223,
+ "candidate_len": 288
+}

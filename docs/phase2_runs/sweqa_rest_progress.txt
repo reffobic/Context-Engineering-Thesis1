@@ -1,0 +1,3783 @@
+2026-11-15T20:26:56+02:00 waiting for 12 rest indexes...
+2026-11-15T20:48:28+02:00 waiting for 12 rest indexes...
+2026-11-15T20:48:28+02:00 indexes DONE=2 / 12
+2026-11-15T20:49:28+02:00 indexes DONE=2 / 12
+2026-11-15T20:50:28+02:00 indexes DONE=2 / 12
+2026-11-15T20:51:28+02:00 indexes DONE=2 / 12
+2026-11-15T20:52:28+02:00 indexes DONE=2 / 12
+2026-11-15T20:53:28+02:00 indexes DONE=2 / 12
+2026-11-15T20:54:28+02:00 indexes DONE=2 / 12
+2026-11-15T20:54:28+02:00 index processes exited early DONE=2
+2026-11-15T20:55:23+02:00 waiting for 12 rest indexes...
+2026-11-15T20:55:23+02:00 indexes DONE=3 / 12
+2026-11-15T20:56:23+02:00 indexes DONE=3 / 12
+2026-11-15T20:57:23+02:00 indexes DONE=3 / 12
+2026-11-15T20:58:23+02:00 indexes DONE=3 / 12
+2026-11-15T20:59:23+02:00 indexes DONE=3 / 12
+2026-11-15T21:00:23+02:00 indexes DONE=4 / 12
+2026-11-15T21:01:23+02:00 indexes DONE=4 / 12
+2026-11-15T21:02:23+02:00 indexes DONE=5 / 12
+2026-11-15T21:03:23+02:00 indexes DONE=5 / 12
+2026-11-15T21:04:23+02:00 indexes DONE=6 / 12
+2026-11-15T21:05:23+02:00 indexes DONE=6 / 12
+2026-11-15T21:06:23+02:00 indexes DONE=6 / 12
+2026-11-15T21:07:23+02:00 indexes DONE=6 / 12
+2026-11-15T21:08:23+02:00 indexes DONE=7 / 12
+2026-11-15T21:09:23+02:00 indexes DONE=7 / 12
+2026-11-15T21:10:23+02:00 indexes DONE=8 / 12
+2026-11-15T21:11:23+02:00 indexes DONE=8 / 12
+2026-11-15T21:12:23+02:00 indexes DONE=9 / 12
+2026-11-15T21:13:23+02:00 indexes DONE=10 / 12
+2026-11-15T21:14:23+02:00 indexes DONE=10 / 12
+2026-11-15T21:15:23+02:00 indexes DONE=10 / 12
+2026-11-15T21:16:23+02:00 indexes DONE=10 / 12
+2026-11-15T21:17:24+02:00 indexes DONE=10 / 12
+2026-11-15T21:18:24+02:00 indexes DONE=10 / 12
+2026-11-15T21:19:24+02:00 indexes DONE=10 / 12
+2026-11-15T21:20:24+02:00 indexes DONE=10 / 12
+2026-11-15T21:21:24+02:00 indexes DONE=10 / 12
+2026-11-15T21:22:24+02:00 indexes DONE=10 / 12
+2026-11-15T21:23:24+02:00 indexes DONE=10 / 12
+2026-11-15T21:24:24+02:00 indexes DONE=10 / 12
+2026-11-15T21:25:24+02:00 indexes DONE=10 / 12
+2026-11-15T21:26:24+02:00 indexes DONE=10 / 12
+2026-11-15T21:27:24+02:00 indexes DONE=10 / 12
+2026-11-15T21:28:24+02:00 indexes DONE=10 / 12
+2026-11-15T21:29:24+02:00 indexes DONE=10 / 12
+2026-11-15T21:30:24+02:00 indexes DONE=10 / 12
+2026-11-15T21:31:24+02:00 indexes DONE=10 / 12
+2026-11-15T21:32:24+02:00 indexes DONE=10 / 12
+2026-11-15T21:33:24+02:00 indexes DONE=10 / 12
+2026-11-15T21:34:24+02:00 indexes DONE=10 / 12
+2026-11-15T21:35:24+02:00 indexes DONE=10 / 12
+2026-11-15T21:36:24+02:00 indexes DONE=10 / 12
+2026-11-15T21:37:24+02:00 indexes DONE=10 / 12
+2026-11-15T21:38:24+02:00 indexes DONE=11 / 12
+2026-11-15T21:39:24+02:00 indexes DONE=11 / 12
+2026-11-15T21:40:24+02:00 indexes DONE=11 / 12
+2026-11-15T21:41:24+02:00 indexes DONE=12 / 12
+2026-11-15T21:41:24+02:00 launching queue phase2-sweqa-rest.toml
+2026-11-15T21:41:24+02:00 queue pid=944351
+2026-11-15T21:41:24+02:00 judge-watcher pid=944356
+2026-11-15T21:41:24+02:00 waiting for 7 rest generation jobs (576 each)...
+2026-11-15T21:41:24+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: (no results yet)
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T21:43:24+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: (no results yet)
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T21:43:24+02:00 queue STOPPED marker present
+2026-11-15T21:43:54+02:00 queue/run exited early complete=0 — attempting resume
+2026-11-15T21:45:54+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: (no results yet)
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T21:45:54+02:00 queue STOPPED marker present
+2026-11-15T21:46:24+02:00 queue/run exited early complete=0 — attempting resume
+2026-11-15T21:48:24+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: (no results yet)
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T21:48:24+02:00 queue STOPPED marker present
+2026-11-15T21:48:54+02:00 queue/run exited early complete=0 — attempting resume
+2026-11-15T21:50:54+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: (no results yet)
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T21:50:54+02:00 queue STOPPED marker present
+2026-11-15T21:51:24+02:00 queue/run exited early complete=0 — attempting resume
+2026-11-15T21:53:24+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: (no results yet)
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T21:53:24+02:00 queue STOPPED marker present
+2026-11-15T21:53:54+02:00 queue/run exited early complete=0 — attempting resume
+2026-11-15T21:55:54+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: (no results yet)
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T21:55:54+02:00 queue STOPPED marker present
+2026-11-15T21:56:24+02:00 queue/run exited early complete=0 — attempting resume
+2026-11-15T21:57:26+02:00 waiting for 7 rest generation jobs (576 each)...
+2026-11-15T21:57:26+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: (no results yet)
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T21:58:17+02:00 waiting for 7 rest generation jobs (576 each)...
+2026-11-15T21:58:17+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: (no results yet)
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:00:17+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 7 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:02:18+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 16 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:04:18+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 25 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:06:18+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 34 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:08:18+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 43 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:10:18+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 53 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:12:18+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 64 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:14:18+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 74 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:16:18+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 85 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:18:18+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 96 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:20:18+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 100 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:22:18+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 104 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:24:18+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 109 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:26:18+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 114 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:28:18+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 120 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:30:18+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 125 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:32:18+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 131 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:34:18+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 135 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:36:18+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 140 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:38:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 145 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:40:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 155 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:42:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 166 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:44:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 176 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:46:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 185 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:48:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 194 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:50:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 205 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:52:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 216 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:54:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 227 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:56:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 239 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T22:58:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 252 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:00:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 263 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:02:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 275 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:04:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 287 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:06:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 295 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:08:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 304 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:10:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 313 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:12:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 322 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:14:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 330 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:16:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 340 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:18:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 351 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:20:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 364 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:22:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 378 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:24:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 390 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:26:19+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 403 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:28:20+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 415 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:30:20+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 428 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:32:20+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 439 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:34:20+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 449 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:36:20+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 459 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:38:20+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 470 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:40:20+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 480 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:42:20+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 486 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:44:20+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 492 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:46:20+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 499 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:48:20+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 505 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:50:20+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 511 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:52:20+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 518 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:54:20+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 523 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:56:20+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 531 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-15T23:58:20+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 541 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:00:20+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 551 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:02:20+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 562 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:04:20+02:00 gen arms complete=0 / 7
+  ALWAYS_LC: 574 / 576
+  ALWAYS_RAG: (no results yet)
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:06:21+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 8 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:08:21+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 19 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:10:21+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 30 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:12:21+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 41 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:14:21+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 53 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:16:21+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 68 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:18:21+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 83 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:20:21+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 96 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:22:21+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 100 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:24:21+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 104 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:26:21+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 109 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:28:21+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 113 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:30:21+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 118 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:32:21+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 122 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:34:21+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 127 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:36:21+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 132 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:38:21+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 137 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:40:21+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 141 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:42:21+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 148 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:44:21+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 159 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:46:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 169 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:48:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 181 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:50:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 192 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:52:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 206 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:54:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 221 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:56:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 237 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T00:58:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 252 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:00:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 269 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:02:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 287 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:04:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 298 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:06:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 308 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:08:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 320 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:10:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 331 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:12:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 344 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:14:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 359 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:16:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 375 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:18:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 391 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:20:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 408 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:22:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 425 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:24:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 441 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:26:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 456 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:28:22+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 473 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:30:23+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 483 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:32:23+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 490 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:34:23+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 496 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:36:23+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 503 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:38:23+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 508 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:40:23+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 515 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:42:23+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 521 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:44:23+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 529 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:46:23+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 542 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:48:23+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 555 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:50:23+02:00 gen arms complete=1 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 568 / 576
+  ALWAYS_GRAPH: (no results yet)
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:52:23+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 4 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:54:23+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 15 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:56:23+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 26 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T01:58:23+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 37 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:00:23+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 48 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:02:24+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 63 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:04:24+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 77 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:06:24+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 93 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:08:24+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 99 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:10:24+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 104 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:12:24+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 108 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:14:24+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 112 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:16:24+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 116 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:18:24+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 121 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:20:24+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 126 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:22:24+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 131 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:24:24+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 135 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:26:24+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 139 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:28:24+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 143 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:30:24+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 154 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:32:25+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 164 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:34:25+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 175 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:36:25+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 185 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:38:25+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 199 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:40:25+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 213 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:42:25+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 228 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:44:25+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 244 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:46:25+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 259 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:48:25+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 276 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:50:25+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 291 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:52:25+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 302 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:54:25+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 312 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:56:25+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 322 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T02:58:25+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 333 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:00:25+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 346 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:02:25+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 361 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:04:25+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 377 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:06:25+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 392 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:08:25+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 408 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:10:26+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 425 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:12:26+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 441 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:14:26+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 455 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:16:26+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 473 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:18:26+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 483 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:20:26+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 490 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:22:26+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 497 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:24:26+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 503 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:26:26+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 510 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:28:26+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 516 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:30:26+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 522 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:32:26+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 531 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:34:27+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 544 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:36:27+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 556 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:38:27+02:00 gen arms complete=2 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 569 / 576
+  SELF_ROUTE: (no results yet)
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:40:27+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 3 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:42:27+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 12 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:44:27+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 20 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:46:27+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 29 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:48:27+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 37 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:50:27+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 46 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:52:27+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 55 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:54:27+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 65 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:56:27+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 75 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T03:58:27+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 85 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:00:27+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 95 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:02:28+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 99 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:04:28+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 103 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:06:28+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 106 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:08:28+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 110 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:10:28+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 114 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:12:28+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 119 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:14:28+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 123 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:16:28+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 127 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:18:28+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 132 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:20:28+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 135 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:22:29+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 140 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:24:29+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 144 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:26:29+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 153 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:28:29+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 162 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:30:29+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 172 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:32:29+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 181 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:34:29+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 190 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:36:29+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 199 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:38:29+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 210 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:40:29+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 220 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:42:29+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 231 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:44:29+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 242 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:46:30+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 254 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:48:30+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 264 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:50:30+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 275 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:52:30+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 287 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:54:30+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 295 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:56:30+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 303 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T04:58:30+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 312 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:00:30+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 320 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:02:30+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 328 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:04:30+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 338 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:06:30+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 348 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:08:30+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 359 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:10:30+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 371 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:12:30+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 384 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:14:30+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 394 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:16:30+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 405 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:18:31+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 417 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:20:31+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 428 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:22:31+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 439 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:24:31+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 449 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:26:31+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 458 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:28:31+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 469 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:30:31+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 479 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:32:31+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 484 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:34:31+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 490 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:36:31+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 495 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:38:31+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 501 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:40:32+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 507 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:42:32+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 513 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:44:32+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 519 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:46:32+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 524 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:48:32+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 530 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:50:32+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 540 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:52:32+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 549 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:54:32+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 559 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:56:32+02:00 gen arms complete=3 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 569 / 576
+  PREASSESS: (no results yet)
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T05:58:33+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 2 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:00:33+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 10 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:02:33+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 18 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:04:33+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 26 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:06:33+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 34 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:08:33+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 42 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:10:33+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 51 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:12:33+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 61 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:14:33+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 70 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:16:33+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 80 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:18:33+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 91 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:20:33+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 98 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:22:33+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 101 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:24:34+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 105 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:26:34+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 109 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:28:34+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 113 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:30:34+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 117 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:32:34+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 122 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:34:34+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 126 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:36:34+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 132 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:38:35+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 136 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:40:35+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 140 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:42:35+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 145 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:44:35+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 154 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:46:35+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 164 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:48:35+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 173 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:50:35+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 182 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:52:35+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 190 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:54:35+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 200 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:56:35+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 210 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T06:58:35+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 221 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:00:36+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 232 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:02:36+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 243 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:04:36+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 255 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:06:36+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 265 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:08:36+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 276 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:10:36+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 287 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:12:36+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 295 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:14:36+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 303 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:16:36+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 311 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:18:36+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 320 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:20:36+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 328 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:22:36+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 337 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:24:36+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 347 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:26:37+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 359 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:28:37+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 371 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:30:37+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 384 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:32:37+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 395 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:34:37+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 406 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:36:37+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 418 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:38:37+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 429 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:40:37+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 439 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:42:37+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 449 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:44:37+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 459 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:46:37+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 469 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:48:37+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 479 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:50:37+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 484 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:52:38+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 490 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:54:38+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 496 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:56:38+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 502 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T07:58:38+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 508 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T08:00:39+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 514 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T08:02:39+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 519 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T08:04:39+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 524 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T08:06:39+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 531 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T08:08:39+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 540 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T08:10:39+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 550 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T08:12:40+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 559 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T08:14:40+02:00 gen arms complete=4 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 570 / 576
+  GASR: (no results yet)
+  GAPA: (no results yet)
+2026-11-16T08:16:40+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 2 / 576
+  GAPA: (no results yet)
+2026-11-16T08:18:40+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 11 / 576
+  GAPA: (no results yet)
+2026-11-16T08:20:40+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 19 / 576
+  GAPA: (no results yet)
+2026-11-16T08:22:40+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 27 / 576
+  GAPA: (no results yet)
+2026-11-16T08:24:40+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 36 / 576
+  GAPA: (no results yet)
+2026-11-16T08:26:40+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 44 / 576
+  GAPA: (no results yet)
+2026-11-16T08:28:40+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 54 / 576
+  GAPA: (no results yet)
+2026-11-16T08:30:41+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 65 / 576
+  GAPA: (no results yet)
+2026-11-16T08:32:41+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 75 / 576
+  GAPA: (no results yet)
+2026-11-16T08:34:41+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 86 / 576
+  GAPA: (no results yet)
+2026-11-16T08:36:41+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 96 / 576
+  GAPA: (no results yet)
+2026-11-16T08:38:41+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 100 / 576
+  GAPA: (no results yet)
+2026-11-16T08:40:41+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 104 / 576
+  GAPA: (no results yet)
+2026-11-16T08:42:41+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 107 / 576
+  GAPA: (no results yet)
+2026-11-16T08:44:42+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 111 / 576
+  GAPA: (no results yet)
+2026-11-16T08:46:42+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 115 / 576
+  GAPA: (no results yet)
+2026-11-16T08:48:42+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 119 / 576
+  GAPA: (no results yet)
+2026-11-16T08:50:42+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 123 / 576
+  GAPA: (no results yet)
+2026-11-16T08:52:42+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 127 / 576
+  GAPA: (no results yet)
+2026-11-16T08:54:42+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 131 / 576
+  GAPA: (no results yet)
+2026-11-16T08:56:42+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 135 / 576
+  GAPA: (no results yet)
+2026-11-16T08:58:42+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 139 / 576
+  GAPA: (no results yet)
+2026-11-16T09:00:42+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 143 / 576
+  GAPA: (no results yet)
+2026-11-16T09:02:42+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 150 / 576
+  GAPA: (no results yet)
+2026-11-16T09:04:42+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 159 / 576
+  GAPA: (no results yet)
+2026-11-16T09:06:42+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 168 / 576
+  GAPA: (no results yet)
+2026-11-16T09:08:43+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 177 / 576
+  GAPA: (no results yet)
+2026-11-16T09:10:43+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 186 / 576
+  GAPA: (no results yet)
+2026-11-16T09:12:43+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 196 / 576
+  GAPA: (no results yet)
+2026-11-16T09:14:43+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 207 / 576
+  GAPA: (no results yet)
+2026-11-16T09:16:43+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 217 / 576
+  GAPA: (no results yet)
+2026-11-16T09:18:43+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 227 / 576
+  GAPA: (no results yet)
+2026-11-16T09:20:43+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 238 / 576
+  GAPA: (no results yet)
+2026-11-16T09:22:43+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 250 / 576
+  GAPA: (no results yet)
+2026-11-16T09:24:43+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 261 / 576
+  GAPA: (no results yet)
+2026-11-16T09:26:43+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 272 / 576
+  GAPA: (no results yet)
+2026-11-16T09:28:43+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 284 / 576
+  GAPA: (no results yet)
+2026-11-16T09:30:44+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 293 / 576
+  GAPA: (no results yet)
+2026-11-16T09:32:44+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 301 / 576
+  GAPA: (no results yet)
+2026-11-16T09:34:44+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 309 / 576
+  GAPA: (no results yet)
+2026-11-16T09:36:44+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 318 / 576
+  GAPA: (no results yet)
+2026-11-16T09:38:44+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 326 / 576
+  GAPA: (no results yet)
+2026-11-16T09:40:44+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 334 / 576
+  GAPA: (no results yet)
+2026-11-16T09:42:44+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 344 / 576
+  GAPA: (no results yet)
+2026-11-16T09:44:44+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 355 / 576
+  GAPA: (no results yet)
+2026-11-16T09:46:44+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 366 / 576
+  GAPA: (no results yet)
+2026-11-16T09:48:44+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 378 / 576
+  GAPA: (no results yet)
+2026-11-16T09:50:44+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 390 / 576
+  GAPA: (no results yet)
+2026-11-16T09:52:44+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 402 / 576
+  GAPA: (no results yet)
+2026-11-16T09:54:44+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 413 / 576
+  GAPA: (no results yet)
+2026-11-16T09:56:45+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 425 / 576
+  GAPA: (no results yet)
+2026-11-16T09:58:45+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 436 / 576
+  GAPA: (no results yet)
+2026-11-16T10:00:45+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 447 / 576
+  GAPA: (no results yet)
+2026-11-16T10:02:45+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 457 / 576
+  GAPA: (no results yet)
+2026-11-16T10:04:45+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 469 / 576
+  GAPA: (no results yet)
+2026-11-16T10:06:45+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 479 / 576
+  GAPA: (no results yet)
+2026-11-16T10:08:45+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 484 / 576
+  GAPA: (no results yet)
+2026-11-16T10:10:45+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 489 / 576
+  GAPA: (no results yet)
+2026-11-16T10:12:45+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 494 / 576
+  GAPA: (no results yet)
+2026-11-16T10:14:46+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 501 / 576
+  GAPA: (no results yet)
+2026-11-16T10:16:46+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 506 / 576
+  GAPA: (no results yet)
+2026-11-16T10:18:46+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 511 / 576
+  GAPA: (no results yet)
+2026-11-16T10:20:46+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 516 / 576
+  GAPA: (no results yet)
+2026-11-16T10:22:46+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 521 / 576
+  GAPA: (no results yet)
+2026-11-16T10:24:47+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 526 / 576
+  GAPA: (no results yet)
+2026-11-16T10:26:47+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 535 / 576
+  GAPA: (no results yet)
+2026-11-16T10:28:47+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 544 / 576
+  GAPA: (no results yet)
+2026-11-16T10:30:47+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 555 / 576
+  GAPA: (no results yet)
+2026-11-16T10:32:47+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 564 / 576
+  GAPA: (no results yet)
+2026-11-16T10:34:47+02:00 gen arms complete=5 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 574 / 576
+  GAPA: (no results yet)
+2026-11-16T10:36:48+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 6 / 576
+2026-11-16T10:38:48+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 14 / 576
+2026-11-16T10:40:48+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 22 / 576
+2026-11-16T10:42:48+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 30 / 576
+2026-11-16T10:44:48+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 38 / 576
+2026-11-16T10:46:48+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 47 / 576
+2026-11-16T10:48:48+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 56 / 576
+2026-11-16T10:50:48+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 66 / 576
+2026-11-16T10:52:48+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 76 / 576
+2026-11-16T10:54:48+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 86 / 576
+2026-11-16T10:56:49+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 96 / 576
+2026-11-16T10:58:49+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 100 / 576
+2026-11-16T11:00:49+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 103 / 576
+2026-11-16T11:02:49+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 107 / 576
+2026-11-16T11:04:49+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 110 / 576
+2026-11-16T11:06:49+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 114 / 576
+2026-11-16T11:08:49+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 118 / 576
+2026-11-16T11:10:49+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 121 / 576
+2026-11-16T11:12:50+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 124 / 576
+2026-11-16T11:14:50+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 128 / 576
+2026-11-16T11:16:50+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 132 / 576
+2026-11-16T11:18:50+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 135 / 576
+2026-11-16T11:20:51+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 139 / 576
+2026-11-16T11:22:51+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 142 / 576
+2026-11-16T11:24:51+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 147 / 576
+2026-11-16T11:26:51+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 155 / 576
+2026-11-16T11:28:51+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 162 / 576
+2026-11-16T11:30:52+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 170 / 576
+2026-11-16T11:32:52+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 179 / 576
+2026-11-16T11:34:52+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 187 / 576
+2026-11-16T11:36:52+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 196 / 576
+2026-11-16T11:38:52+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 206 / 576
+2026-11-16T11:40:52+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 217 / 576
+2026-11-16T11:42:52+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 228 / 576
+2026-11-16T11:44:52+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 238 / 576
+2026-11-16T11:46:52+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 249 / 576
+2026-11-16T11:48:53+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 259 / 576
+2026-11-16T11:50:53+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 271 / 576
+2026-11-16T11:52:53+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 282 / 576
+2026-11-16T11:54:53+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 292 / 576
+2026-11-16T11:56:53+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 299 / 576
+2026-11-16T11:58:53+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 307 / 576
+2026-11-16T12:00:54+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 315 / 576
+2026-11-16T12:02:54+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 322 / 576
+2026-11-16T12:04:54+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 330 / 576
+2026-11-16T12:06:54+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 339 / 576
+2026-11-16T12:08:54+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 350 / 576
+2026-11-16T12:10:54+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 360 / 576
+2026-11-16T12:12:55+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 371 / 576
+2026-11-16T12:14:55+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 381 / 576
+2026-11-16T12:16:55+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 392 / 576
+2026-11-16T12:18:55+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 403 / 576
+2026-11-16T12:20:55+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 415 / 576
+2026-11-16T12:22:55+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 426 / 576
+2026-11-16T12:24:55+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 437 / 576
+2026-11-16T12:26:55+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 447 / 576
+2026-11-16T12:28:55+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 457 / 576
+2026-11-16T12:30:55+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 468 / 576
+2026-11-16T12:32:56+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 479 / 576
+2026-11-16T12:34:56+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 484 / 576
+2026-11-16T12:36:56+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 489 / 576
+2026-11-16T12:38:56+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 493 / 576
+2026-11-16T12:40:56+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 498 / 576
+2026-11-16T12:42:56+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 502 / 576
+2026-11-16T12:44:57+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 506 / 576
+2026-11-16T12:46:57+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 510 / 576
+2026-11-16T12:48:57+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 515 / 576
+2026-11-16T12:50:57+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 519 / 576
+2026-11-16T12:52:57+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 523 / 576
+2026-11-16T12:54:57+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 527 / 576
+2026-11-16T12:56:57+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 536 / 576
+2026-11-16T12:58:57+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 545 / 576
+2026-11-16T13:00:57+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 554 / 576
+2026-11-16T13:02:58+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 563 / 576
+2026-11-16T13:04:58+02:00 gen arms complete=6 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 572 / 576
+2026-11-16T13:06:58+02:00 gen arms complete=7 / 7
+  ALWAYS_LC: 576 / 576
+  ALWAYS_RAG: 576 / 576
+  ALWAYS_GRAPH: 576 / 576
+  SELF_ROUTE: 576 / 576
+  PREASSESS: 576 / 576
+  GASR: 576 / 576
+  GAPA: 576 / 576
+2026-11-16T13:06:58+02:00 generation complete — export + judge
+2026-11-16T13:45:37+02:00 judge finished — writing INDEXES_REST + progress note
+2026-11-16T13:45:37+02:00 C4–C5 automation done (C6 merge table may still need fill_table_b update)

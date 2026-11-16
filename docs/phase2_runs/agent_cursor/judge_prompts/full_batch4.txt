@@ -1,0 +1,328 @@
+You are a STRICT and RIGOROUS evaluator. You must rate the candidate answer STRICTLY against the reference answer. Be CONSERVATIVE with high scores - only award high scores (16-20) when the candidate answer is truly excellent and closely matches the reference answer in quality and content.
+
+CRITICAL EVALUATION PRINCIPLES:
+1. Compare the candidate answer DIRECTLY with the reference answer point by point
+2. Any deviation, omission, or inaccuracy should result in score reduction
+3. High scores (16-20) should be RARE - reserve them only for answers that are nearly perfect
+4. Be strict about factual accuracy - even minor errors should lower the correctness score
+5. Missing key points from the reference answer should significantly reduce completeness score
+6. Vague or imprecise language should lower clarity scores
+7. When in doubt between two score ranges, choose the LOWER one
+
+Evaluation Criteria and Scoring Guidelines (each scored 1 to 20, total score 100):
+        1. Correctness (STRICT - penalize any inaccuracies):
+            20 — ONLY if completely correct with ALL core points and details accurate, matching reference answer precisely
+            16-19 — Mostly correct but must have only TRIVIAL inaccuracies; any noticeable error reduces to 15 or below
+            12-15 — Partially correct; has some errors or omissions that affect understanding; main points may be accurate but details are wrong
+            8-11 — Several errors or ambiguities that significantly affect understanding of core information
+            4-7 — Many errors; misleading or fails to convey key information correctly
+            1-3 — Serious errors; completely wrong or misleading
+        2. Completeness (STRICT - penalize missing information):
+            20 — ONLY if covers ALL key points from reference answer without ANY omission; must match reference in depth
+            16-19 — Covers most key points but missing some non-trivial information; minor omissions are acceptable
+            12-15 — Missing several important key points; content is noticeably incomplete compared to reference
+            8-11 — Important information largely missing; content is one-sided or superficial
+            4-7 — Covers very little relevant information; seriously incomplete
+            1-3 — Covers almost no relevant information; completely incomplete
+        3. Relevance (STRICT - penalize off-topic content):
+            20 — ONLY if content is fully focused on question topic with NO irrelevant information whatsoever
+            16-19 — Mostly focused but may have minor peripheral information; any significant off-topic content reduces score
+            12-15 — Generally on topic but contains some off-topic content that detracts from answer
+            8-11 — Topic not sufficiently focused; contains considerable off-topic or tangential content
+            4-7 — Content deviates from topic; includes excessive irrelevant information
+            1-3 — Majority of content irrelevant to the question
+        4. Clarity (STRICT - penalize unclear expression):
+            20 — ONLY if language is exceptionally fluent, clear, and precise; very easy to understand without any ambiguity
+            16-19 — Mostly fluent and clear but may have minor unclear points; any significant ambiguity reduces score
+            12-15 — Generally clear but some expressions are unclear or not concise; may require effort to understand
+            8-11 — Expression somewhat awkward; has ambiguity or lacks fluency that hinders understanding
+            4-7 — Language obscure; sentences are not smooth; significantly hinders understanding
+            1-3 — Expression confusing; very difficult to understand
+        5. Reasoning (STRICT - penalize weak logic):
+            20 — ONLY if reasoning is exceptionally clear, logical, and well-structured; argumentation is excellent and matches reference quality
+            16-19 — Reasoning is clear and logical with solid argumentation; minor logical gaps may exist
+            12-15 — Reasoning generally reasonable but has noticeable logical jumps or organization issues
+            8-11 — Reasoning is average; has logical jumps or organization problems that affect understanding
+            4-7 — Reasoning unclear; lacks logical order; difficult to follow
+            1-3 — No clear reasoning; logic is chaotic
+
+Score EACH item independently against its reference. Output ONLY a JSON object mapping task_id -> {correctness,completeness,relevance,clarity,reasoning} integers 1-20. No prose.
+
+
+===== ITEM flask-024 =====
+Question: Why does the class that handles UUID serialization in the tagged JSON serialization system enable bidirectional conversion between UUID instances and their hexadecimal string representations?
+
+Reference Answer:
+The class that handles UUID serialization in the tagged JSON serialization system (TagUUID) enables bidirectional conversion between UUID instances and hexadecimal string representations by implementing the JSONTag interface with two complementary methods that ensure lossless round-trip conversion.
+
+**Implementation Details:**
+
+TagUUID is defined in `src/flask/json/tag.py` (lines 191-202) as a subclass of JSONTag. It implements bidirectional serialization through:
+
+1. **Serialization (to_json method)**: Converts a UUID instance to its hexadecimal string representation using `value.hex` (line 199). This produces a JSON-compatible string that can be safely serialized.
+
+2. **Deserialization (to_python method)**: Reconstructs a UUID instance from the hexadecimal string using `UUID(value)` (line 202), ensuring the original UUID object type is restored.
+
+3. **Type checking (check method)**: Uses `isinstance(value, UUID)` (line 196) to identify UUID objects that need tagging.
+
+4. **Tagging mechanism**: Uses the tag key `" u"` (line 193) to mark serialized UUID objects in the JSON structure, allowing the TaggedJSONSerializer to identify and properly deserialize them.
+
+**How Bidirectional Conversion Works:**
+
+The TaggedJSONSerializer orchestrates the process:
+- During serialization (`dumps` method, line 321-323), it calls `tag()` which iterates through registered tags (line 291-293). When TagUUID's `check()` returns True, it wraps the hex string in a tagged structure: `{" u": "hexadecimal_string"}`.
+- During deserialization (`loads` method, line 325-327), it calls `_untag_scan()` which recursively processes the JSON structure. When it encounters a dict with the `" u"` key, it calls TagUUID's `to_python()` method to reconstruct the UUID instance.
+
+**Type Safety:**
+
+The bidirectional conversion maintains type safety because:
+- The `check()` method ensures only UUID instances are processed by TagUUID
+- The `to_python()` method always returns a UUID instance, preserving the original type
+- The tag key `" u"` uniquely identifies UUID objects, preventing confusion with other string types
+- The test in `tests/test_json_tag.py` (line 23, 27-29) demonstrates that UUID objects can be round-tripped: `s.loads(s.dumps(uuid4())) == uuid4()` returns True, proving the conversion is lossless
+
+This design ensures that UUID objects stored in Flask's session data (which uses TaggedJSONSerializer, as seen in `src/flask/sessions.py` line 14) can be serialized to JSON and deserialized back to their original UUID type without data loss or type confusion.
+
+--- Candidate ---
+Because the tagged JSON system provides lossless serialization of types JSON does not support natively. `TagUUID` converts a `UUID` to a hex string so it can be stored as JSON, and converts that hex string back to a `UUID` on load so the original type and value are restored (for example when session data is round-tripped through signed cookies).
+
+
+===== ITEM flask-025 =====
+Question: Why does the asynchronous HTTP method view class inherit from the synchronous HTTP method dispatch base class rather than implementing async dispatch independently?
+
+Reference Answer:
+The asynchronous HTTP method view class inherits from the synchronous HTTP method dispatch base class because the base class already supports asynchronous methods through Flask's `ensure_sync` mechanism, eliminating the need for a separate implementation.
+
+In `src/flask/views.py`, the `MethodView` class (lines 138-192) overrides `dispatch_request()` to route HTTP requests to method-specific handlers. At line 191, it uses `current_app.ensure_sync(meth)(**kwargs)` to invoke the handler method. The `ensure_sync` method (defined in `src/flask/app.py` at lines 966-978) automatically detects whether a function is a coroutine and wraps it using `async_to_sync` if needed, which uses the `asgiref` library to run async functions in an event loop.
+
+This design means `MethodView` already handles both synchronous and asynchronous method handlers transparently. When `AsyncMethodView` (defined in `tests/test_async.py` at line 30) inherits from `MethodView` and defines `async def get()` and `async def post()` methods, the inherited `dispatch_request()` method automatically routes to these async methods and `ensure_sync` ensures they execute correctly.
+
+By inheriting rather than implementing independently, `AsyncMethodView` reuses:
+1. The method discovery logic in `__init_subclass__` (lines 165-180) that automatically sets the `methods` attribute based on defined handlers
+2. The HEAD request fallback logic (lines 187-188) that routes HEAD to GET if no HEAD handler exists
+3. The integration with Flask's view registration system through the inherited `as_view()` method from `View`
+
+The architectural constraint is that Flask's async support runs each async view in a thread with an event loop (as documented in `docs/async-await.rst` lines 36-45), meaning each request still ties up one WSGI worker. This limits true concurrency compared to ASGI frameworks, but the inheritance design allows async methods to work seamlessly within Flask's existing WSGI architecture without requiring a separate implementation.
+
+--- Candidate ---
+Because Flask makes MethodView’s existing synchronous dispatch async-aware via `current_app.ensure_sync` on the selected HTTP handler (and on `dispatch_request` in `View.as_view`). Async get/post/etc. handlers therefore work through the same method-lookup, HEAD→GET fallback, and `methods` discovery path, so a separate async dispatch class would only duplicate that logic.
+
+
+===== ITEM flask-026 =====
+Question: Why does the CLI helper class that manages Flask application loading provide both a direct callable factory parameter and an import path parameter as alternative instantiation mechanisms?
+
+Reference Answer:
+The CLI helper class (`ScriptInfo` in `src/flask/cli.py`) provides both mechanisms to support different use cases and levels of control in Flask's application loading system.
+
+**Direct callable factory parameter (`create_app`):**
+- Used when you have programmatic control over app creation, such as in custom Click scripts or testing scenarios
+- Allows passing the factory function directly to `ScriptInfo` or `FlaskGroup` (see lines 566, 589, 671)
+- Provides immediate, explicit control without requiring import path resolution
+- Example from tests (line 268): `ScriptInfo(create_app=create_app)` where `create_app` is a function defined in the same scope
+
+**Import path parameter (`app_import_path`):**
+- Used when the app location is specified via command-line (`--app` option) or environment variables (`FLASK_APP`)
+- Supports the discovery-based approach where Flask automatically finds apps or factories in modules
+- Enables the CLI to work with apps defined in separate modules without requiring direct function references
+- The `--app` option callback (line 440-446) sets `app_import_path`, which then gets processed by `locate_app()` (lines 344-349) to find apps or factory functions like `create_app` or `make_app` in the target module
+
+**Priority and fallback logic:**
+The `load_app()` method (lines 333-372) implements a priority system:
+1. First checks if `create_app` callable is provided (line 341) - highest priority for programmatic control
+2. Then checks if `app_import_path` is provided (line 344) - for command-line/environment-based discovery
+3. Finally falls back to searching for `wsgi.py` or `app.py` files (lines 351-356) - for convention-based discovery
+
+**Reflection of Flask's philosophy:**
+This dual-path approach reflects Flask's philosophy of providing flexibility and choice:
+- **Programmatic control** for advanced users who want explicit control (custom scripts, testing frameworks)
+- **Discovery-based loading** for convenience and convention-over-configuration (standard CLI usage)
+- **Backward compatibility** with existing patterns while supporting the application factory pattern
+
+The application factory pattern (documented in `docs/patterns/appfactories.rst`) allows creating multiple app instances with different configurations. The dual mechanisms support this by:
+- Allowing direct factory functions for programmatic instantiation
+- Supporting import-based discovery that can locate and call factory functions in modules
+- Enabling both patterns to coexist, giving developers the choice of how to structure and load their applications
+
+This design allows Flask to serve both simple use cases (automatic discovery) and complex scenarios (custom scripts, testing, multiple instances) without forcing a single approach on all users.
+
+--- Candidate ---
+They serve two different ways of obtaining the app. The import-path parameter supports the generic `flask` CLI, where the app is named later as a string (`--app` / `FLASK_APP`) and must be dynamically imported. The callable factory parameter supports custom Click scripts and programmatic use (especially the app-factory pattern), so a known Python function can be passed directly and `--app` discovery is unnecessary. `load_app` prefers the callable when set, otherwise falls back to the import path (then default file discovery).
+
+
+===== ITEM flask-027 =====
+Question: Why does the method that opens application package resources relative to the root path restrict file opening to read-only modes?
+
+Reference Answer:
+The method that opens application package resources relative to the root path restricts file opening to read-only modes for security and architectural separation.
+
+**Implementation Details:**
+
+The method only accepts read modes: `"r"`, `"rt"`, and `"rb"`. If any other mode is provided, it raises a `ValueError` with the message "Resources can only be opened for reading." This validation occurs at line 353-354 in `src/flask/app.py`:
+
+```python
+if mode not in {"r", "rt", "rb"}:
+    raise ValueError("Resources can only be opened for reading.")
+```
+
+**Architectural Separation:**
+
+Flask separates two types of file access:
+
+1. **Application resources** (via this method): Files relative to `root_path` (the application package root). These are part of the application code/package and should remain immutable.
+
+2. **Instance resources** (via `open_instance_resource`): Files relative to `instance_path` (deployment-specific folder). These can be opened for writing, as documented in `src/flask/app.py` line 367-368: "Unlike :meth:`open_resource`, files in the instance folder can be opened for writing."
+
+**Security Rationale:**
+
+1. **Prevents code modification**: Application package resources (templates, static files, SQL schemas, etc.) are part of the deployed application code. Allowing write access could enable malicious or accidental modification of application code during runtime.
+
+2. **Immutability principle**: Application resources should be immutable at runtime. They're typically bundled with the application package, version-controlled, and deployed as a unit. Runtime modifications would break this model.
+
+3. **Separation of concerns**: The design enforces a clear boundary between immutable application code (read-only via `root_path`) and mutable instance data (read-write via `instance_path`). As documented in `docs/config.rst` (lines 765-776), the instance folder is "designed to not be under version control and be deployment specific" and is "the perfect place to drop things that either change at runtime or configuration files."
+
+**Design Benefits:**
+
+- **Security**: Prevents runtime modification of application code/resources
+- **Reliability**: Ensures application resources remain consistent with the deployed package
+- **Clarity**: Forces developers to use `open_instance_resource` for any files that need writing, making the intent explicit
+- **Deployment safety**: Application code can be deployed as read-only filesystems or containers, while instance data can be stored separately with appropriate write permissions
+
+This design choice aligns with Flask's philosophy of explicit separation between application code and runtime data, as outlined in the design documentation.
+
+--- Candidate ---
+Because those files live in the application package (`root_path`), which is meant for shipped, package-owned assets—not runtime-writable data. When the app is installed (e.g. under site-packages), that location may be system-wide and unsuitable for writes. Flask therefore allows only read modes (`r`/`rt`/`rb`) on `open_resource`, and directs writable files to the instance folder via `open_instance_resource`.
+
+
+===== ITEM flask-028 =====
+Question: Why does the CLI helper class that manages Flask application discovery implement lazy loading through a cached instance attribute rather than during initialization?
+
+Reference Answer:
+The CLI helper class (ScriptInfo) implements lazy loading through a cached instance attribute (`_loaded_app`) rather than loading during initialization to enable several critical architectural benefits in the interaction with the Click command group (FlaskGroup):
+
+**1. Enables built-in commands without app loading:**
+The FlaskGroup's `get_command()` method (lines 609-634 in cli.py) first checks for built-in and plugin commands through `super().get_command(ctx, name)` before attempting to load the application. This allows commands like `--help`, `--version`, and plugin commands to work even when the Flask application cannot be loaded or doesn't exist yet. If the app were loaded during ScriptInfo initialization, any import errors or configuration issues would prevent these essential commands from functioning.
+
+**2. Graceful error handling for command listing:**
+In `list_commands()` (lines 636-655), the method starts with built-in commands, then attempts to load the app to discover application-defined commands. If loading fails, it displays an error message but continues to show available built-in commands. This graceful degradation would not be possible if the app were loaded eagerly during initialization.
+
+**3. Performance optimization:**
+Lazy loading defers the potentially expensive operations of importing modules, locating applications, and executing factory functions until they are actually needed. This is particularly important for operations like `flask --help` or `flask --version` that don't require the application to be loaded.
+
+**4. Supports flexible initialization timing:**
+The `load_app()` method (lines 333-372) can be called multiple times and will return the cached instance if already loaded (line 338-339), ensuring idempotency. The lazy loading pattern allows ScriptInfo to be created in `make_context()` (line 670) without immediately triggering application loading, giving FlaskGroup control over when the app is actually needed.
+
+**5. Enables environment variable processing:**
+The eager options like `--env-file` and `--app` (lines 449-465, 515-528) are processed before app loading, allowing environment variables to be set up properly before the application factory is called. This sequencing would be disrupted if the app loaded during ScriptInfo initialization.
+
+The cached attribute pattern (`_loaded_app: Flask | None = None` initialized in `__init__` at line 331, checked at line 338, and set at line 371) ensures that once loaded, the application instance is reused across multiple calls to `load_app()`, avoiding redundant loading operations while maintaining the flexibility of deferred initialization.
+
+--- Candidate ---
+Because `ScriptInfo` is created in `FlaskGroup.make_context` before Click processes options, and the eager `--app` callback (plus related setup like `--env-file`/`--debug`) only sets `app_import_path` and environment afterward. Loading at `__init__` would run too early—often without knowing which app to load or with incomplete env. `_loaded_app` defers discovery until the first `load_app()` call and reuses that instance on later calls.
+
+
+===== ITEM flask-029 =====
+Question: Why does unconditionally setting the session access tracking attribute in dictionary access methods impact signed cookie string conversion performance during frequent read operations?
+
+Reference Answer:
+The unconditional setting of the session access tracking attribute in dictionary access methods impacts signed cookie string conversion performance because it triggers unnecessary serialization operations during read-only requests.
+
+**Technical Details:**
+
+In `SecureCookieSession` (`src/flask/sessions.py`, lines 84-94), the `__getitem__`, `get`, and `setdefault` methods unconditionally set `self.accessed = True` whenever they are called, even for read-only operations:
+
+```84:94:src/flask/sessions.py
+    def __getitem__(self, key: str) -> t.Any:
+        self.accessed = True
+        return super().__getitem__(key)
+
+    def get(self, key: str, default: t.Any = None) -> t.Any:
+        self.accessed = True
+        return super().get(key, default)
+
+    def setdefault(self, key: str, default: t.Any = None) -> t.Any:
+        self.accessed = True
+        return super().setdefault(key, default)
+```
+
+**Performance Impact:**
+
+When `save_session` is called at the end of each request (lines 351-399), it checks `should_set_cookie()` (line 383), which returns `True` if either:
+1. The session was modified (`session.modified`), OR
+2. The session is permanent AND `SESSION_REFRESH_EACH_REQUEST` is `True` (lines 259-261)
+
+If `should_set_cookie()` returns `True`, the method executes `self.get_signing_serializer(app).dumps(dict(session))` (line 387), which serializes the entire session dictionary into a signed cookie string. This serialization involves:
+- Converting the session dictionary to a JSON-like format using `TaggedJSONSerializer`
+- Signing the serialized data using HMAC with SHA-1
+- Encoding the result as a URL-safe base64 string
+
+**The Problem in High-Frequency Read Scenarios:**
+
+When `SESSION_REFRESH_EACH_REQUEST` is `True` (the default for permanent sessions) and the session is permanent, every request that accesses the session (even read-only) will:
+1. Set `accessed = True` via the dictionary access methods
+2. Trigger `should_set_cookie()` to return `True` (because the session is permanent and refresh is enabled)
+3. Execute the expensive `dumps(dict(session))` serialization operation (line 387)
+4. Set the cookie in the response (lines 388-398)
+
+In high-frequency read scenarios where the session is only read (not modified), this causes unnecessary serialization on every request, even when the session data hasn't changed. The unconditional setting of `accessed = True` means that even checking for a key's existence with `get()` will mark the session as accessed, potentially triggering this expensive serialization when combined with the refresh-each-request behavior.
+
+**Additional Context:**
+
+The `accessed` attribute is also used to add a `Vary: Cookie` header (line 363-364), which is necessary for proper HTTP caching behavior, but the main performance impact comes from the cookie serialization that occurs when `should_set_cookie()` returns `True`.
+
+--- Candidate ---
+Because `SecureCookieSession` dictionary reads (`__getitem__`, `get`, `setdefault`) always set `accessed = True`, so even read-only use marks the session as touched. At request end, `save_session` still runs the cookie-save path; when the session is permanent and `SESSION_REFRESH_EACH_REQUEST` is true (the default), `should_set_cookie` returns true and forces `dumps(dict(session))`—JSON tagging, HMAC signing, and URL-safe encoding—on every such request even though nothing changed, making frequent reads pay repeated signed-cookie conversion cost.
+
+
+===== ITEM flask-030 =====
+Question: Why would performance degradation occur if the custom template filter registration mechanism used in blueprint test cases were repeated across multiple distinct blueprint objects during application startup?
+
+Reference Answer:
+Performance degradation occurs because the `record_once` mechanism in Flask's blueprint system only prevents re-registration when the same blueprint instance is registered multiple times, not when different blueprint instances register the same template filter.
+
+When a blueprint registers a template filter using `add_app_template_filter()` or the `@app_template_filter()` decorator (found in `src/flask/sansio/blueprints.py` lines 461-475), it uses `record_once()` which wraps the registration function. The `record_once` method (lines 233-244) ensures the registration callback only executes when `state.first_registration` is `True`. However, `first_registration` is determined by checking if the blueprint instance (`self`) has been registered before (line 316: `first_bp_registration = not any(bp is self for bp in app.blueprints.values())`).
+
+If multiple distinct blueprint objects are created (even with the same name), each is a different Python object. When each blueprint instance is registered, `first_bp_registration` will be `True` for each one because the identity check (`bp is self`) fails for different instances. This causes each blueprint's filter registration callback to execute, repeatedly assigning to the same dictionary key: `state.app.jinja_env.filters[name or f.__name__] = f` (line 473).
+
+During application startup, this results in:
+1. **Unnecessary dictionary operations**: Each blueprint instance overwrites the same filter entry in `app.jinja_env.filters`, causing redundant dictionary assignments
+2. **Wasted initialization time**: The deferred function execution and dictionary updates occur multiple times when they only need to happen once
+3. **Potential memory churn**: While Python dictionaries handle overwrites efficiently, repeated assignments during startup add unnecessary overhead
+
+The impact on `render_template` execution time during concurrent requests is minimal because:
+- Filter registration happens during application initialization, not during request handling
+- Once registered, filter lookup during template rendering is a simple O(1) dictionary lookup from `jinja_env.filters`
+- Flask uses thread-local storage for request contexts, so concurrent requests don't interfere with each other's template rendering
+
+However, the performance degradation primarily affects application startup time, which can be significant if many blueprint instances are created and registered, each attempting to register the same filters. This is particularly problematic in test scenarios where multiple blueprint instances might be created for different test cases.
+
+The test case `test_blueprint_url_defaults` (lines 131-148 in `tests/test_blueprints.py`) demonstrates this scenario where the same blueprint instance is registered twice with different names, but the issue would be more pronounced if different blueprint instances were created for each registration.
+
+--- Candidate ---
+Performance degradation occurs because `record_once` only skips re-registration for the same blueprint instance (identity check via `first_registration` / `bp is self`), not for distinct blueprint objects. Each distinct blueprint therefore still runs its deferred `add_app_template_filter` callback at registration and repeatedly writes the same key in `app.jinja_env.filters`, causing redundant deferred-callback execution and dictionary overwrites during application startup.
+
+
+===== ITEM flask-031 =====
+Question: Why does the test that validates blueprint names cannot contain dots ensure that creating a modular route component with names containing dot characters raises a ValueError?
+
+Reference Answer:
+The test ensures that creating a modular route component (Blueprint) with a name containing dot characters raises a ValueError to preserve Flask's hierarchical endpoint naming convention used for nested blueprints.
+
+The validation occurs in the `Blueprint.__init__` method in `src/flask/sansio/blueprints.py` at lines 198-199:
+
+```python
+if "." in name:
+    raise ValueError("'name' may not contain a dot '.' character.")
+```
+
+Flask uses dots (`.`) as delimiters to construct hierarchical endpoint names when blueprints are nested. When a blueprint registers routes, the endpoint name is constructed using the pattern `"{name_prefix}.{blueprint_name}.{endpoint}"` (see `BlueprintSetupState.add_url_rule` at line 112 in `src/flask/sansio/blueprints.py`). When blueprints are nested, the parent blueprint's name becomes the `name_prefix` for child blueprints (line 376: `bp_options["name_prefix"] = name`).
+
+For example, when a blueprint named "bp" contains a nested blueprint registered with name "sub", the resulting endpoint becomes "bp.sub.index2" (as demonstrated in `test_blueprint_renaming` at lines 1043-1044 of `tests/test_blueprints.py`).
+
+If blueprint names themselves could contain dots (e.g., "app.ui"), Flask would be unable to distinguish between:
+- A blueprint name that contains a dot (e.g., "app.ui")
+- A nested blueprint hierarchy (e.g., a blueprint "app" containing a blueprint "ui")
+
+This would break the endpoint naming convention and make it impossible to correctly resolve endpoint names for nested blueprints. The constraint ensures that dots are reserved exclusively as delimiters in the hierarchical naming system, maintaining the integrity of Flask's blueprint endpoint resolution mechanism.
+
+--- Candidate ---
+Because the dot (`.`) is reserved in Flask’s endpoint naming scheme: it separates nested blueprint names from each other and from the endpoint. Blueprint names are prepended to endpoints (e.g. `blueprint.endpoint`), so a name containing a dot would make that composition ambiguous and break routing/`url_for` resolution. The test therefore asserts that constructing a Blueprint with a dotted name raises `ValueError`.

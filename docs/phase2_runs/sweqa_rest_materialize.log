@@ -1,0 +1,29 @@
+resolving commits for swe-qa-rest...
+  resolved astropy/astropy@0a041d3 -> 0a041d38fbd0
+  resolved conan-io/conan@52f43d9 -> 52f43d98fe44
+  resolved django/django@14fc2e9 -> 14fc2e97036f
+  resolved matplotlib/matplotlib@a5e1f60 -> a5e1f6086e92
+  resolved pylint-dev/pylint@44740e5 -> 44740e5e5cdd
+  resolved reflex-dev/reflex@fe0f946 -> fe0f946dc0c2
+  resolved scikit-learn/scikit-learn@adb1ae7 -> adb1ae76d798
+  resolved sphinx-doc/sphinx@6c9e320 -> 6c9e3209c4eb
+  resolved sqlfluff/sqlfluff@db9801b -> db9801b7eb7f
+  resolved streamlink/streamlink@ab1f365 -> ab1f36560005
+  resolved sympy/sympy@3c817ed -> 3c817ed8ab55
+  resolved pydata/xarray@40119bf -> 40119bf35c53
+[PASS] swe-qa-rest: 576 tasks -> /home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/datasets/swe-qa-rest
+       sample: /home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/samples/swe-qa-rest.sample.json
+       by_repo: {'astropy': 48, 'conan': 48, 'django': 48, 'matplotlib': 48, 'pylint': 48, 'reflex': 48, 'scikit-learn': 48, 'sphinx': 48, 'sqlfluff': 48, 'streamlink': 48, 'sympy': 48, 'xarray': 48}
+  checkout [1/12] astropy/astropy@0a041d38fb fetched
+  checkout [2/12] conan-io/conan@52f43d98fe fetched
+  checkout [3/12] django/django@14fc2e9703 fetched
+  checkout [4/12] matplotlib/matplotlib@a5e1f6086e fetched
+  checkout [5/12] pydata/xarray@40119bf35c fetched
+  checkout [6/12] pylint-dev/pylint@44740e5e5c fetched
+  checkout [7/12] reflex-dev/reflex@fe0f946dc0 fetched
+  checkout [8/12] scikit-learn/scikit-learn@adb1ae76d7 fetched
+  checkout [9/12] sphinx-doc/sphinx@6c9e3209c4 fetched
+  checkout [10/12] sqlfluff/sqlfluff@db9801b7eb fetched
+  checkout [11/12] streamlink/streamlink@ab1f365600 fetched
+  checkout [12/12] sympy/sympy@3c817ed8ab fetched
+[PASS] checkouts: {'fetched': 12, 'exists': 0, 'errors': []}

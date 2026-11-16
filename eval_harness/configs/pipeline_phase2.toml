@@ -1,0 +1,138 @@
+# Phase 2 pipeline freeze (phase2-eval). Same pins as pipeline.toml; frozen_sha = Wave-1 HEAD.
+# Which pipeline code is evaluated, and the environment it runs in. Hashed into every log line.
+
+[pipeline]
+# Frozen SHA for all arms: 3bbc52f (cd84fad merge + CHROMA_PATH env override) + patches/0002
+# (GRAPHIFY_PATH_PREFIX env override and the Table VIII ablation switches, all default off).
+frozen_sha = "a2cfcec312626b4b50f743c4af91a6d118c79d0e"
+previous_frozen_sha = "2350c0b2e064e4fd808e941731366e6cc71a9551"   # Phase 1 Nov3 freeze
+earlier_frozen_shas = ["3bbc52f220addbc648d4802dab6b1c658d427612", "cd84fad1c13d8e7783bff39389cfb195e0cbac5b"]
+chroma_path_patch = "patches/0001-retrieval-tool-chroma-path-env.patch"
+ablation_patch = "patches/0002-graphify-prefix-env-and-ablation-switches.patch"
+base_commit = "166dbd01e126cdfe91524534a172498746a49cc2"          # origin/main as frozen by the team
+seed_alignment_commit = "50cf149efd6180b41098210b234efef81685ceaf"  # GAPA expands from GASR's seeds
+# Results are recorded only for this pipeline SHA and for the harness commit named in the untracked file
+# <data_dir>/queue/record_authorisation.json (written by the launcher at the user's confirmation). Both are
+# part of the job identity and of every log line. Without a matching authorisation only --smoke runs are allowed.
+record_results = true
+record_results_pipeline_sha = "a2cfcec312626b4b50f743c4af91a6d118c79d0e"
+mode_names = ["SELF_ROUTE", "GASR", "GAPA", "RAG", "LC"]
+structure_rerank_expected = true     # retrieval_tool._STRUCTURE_RERANK (module flag, not an env var)
+require_call_graph_json = true       # every index must ship call_graph.json; the job fails otherwise
+
+# Harness commits whose bundles/builds must not be used for runs (predate the frozen merge).
+# Pipeline commits runs must not use.
+revoked_pipeline_shas = ["cd84fad1c13d8e7783bff39389cfb195e0cbac5b", "3bbc52f220addbc648d4802dab6b1c658d427612"]
+revoked_harness_commits = [
+  "2c22f5ddf2acf31675a112d96c3f73d548014901",
+  "cd84fad1c13d8e7783bff39389cfb195e0cbac5b",   # configured frozen_sha cd84fad
+  "ca03191ecd0bdaa8a74647b3b922383f3607f210",
+  "b23415c1757d7f725c213d1257d42bf8b6c537f1",
+  "bb5dbc1bad1449facac28a3aa42e89e0717900a3",
+  "9516d84e59b848a950fc35329af9d970880c918e",
+  "3bbc52f220addbc648d4802dab6b1c658d427612",   # holds the patched backend but a stale harness config
+  "311f9069f33f3c0807ba18cc97cd734e85496525",
+  "0d94581eab09c8a0b98991f2440b52e620e17915",   # configured frozen_sha 3bbc52f
+  "065542e751d1b13a6b88770caf73dc13bdf984ba",
+  "5053af59085b7abee5f0918531f4386191b4aebc",
+  "f43b8efcfd5cdb6fcfa5bbb8f39381ae4680413e",
+  "81bcfd2dc1a9a848f40759ab4f0c253cdae4bdab",
+  "765d016d01809d6bcf4f59564f0a0d07093bdc07",
+]
+
+[env_pinned]
+# Set in every pipeline process. "@model" is replaced by the run model tag (one LLM for all roles).
+PYTHONHASHSEED = "0"
+OLLAMA_NUM_CTX = "32768"             # must equal experiment.toml [ollama].num_ctx
+MAX_CONTEXT_TOKENS = "24000"         # pipeline default, recorded explicitly
+OLLAMA_MODEL = "@model"
+ASSESSOR_MODEL = "@model"
+EVAL_JUDGE_MODEL = "@model"
+EMBEDDING_DEVICE = "cpu"             # query-time embedding on CPU on both machines
+ANONYMIZED_TELEMETRY = "False"       # Chroma telemetry off; no effect on results
+HF_HUB_OFFLINE = "1"                 # models are cached; no network access at load time
+TRANSFORMERS_OFFLINE = "1"
+GASR_HARD_CAP = "2"
+GASR_MAX_NEIGHBORS = "8"
+GASR_NEIGHBOR_BUDGET_FRACTION = "0.30"
+OLLAMA_THINK = "0"
+GRAPHIFY_PATH_PREFIX = ""            # indexes use repo-relative paths; the pipeline default "superset/" is for the Superset repo
+# Table VIII ablation switches: all off here; a job turns on the ones of its setting (configs/ablations.toml).
+ABL_NO_GRAPH_EXPAND = "0"
+ABL_CONTAINS_ONLY = "0"
+ABL_TRUNCATE_PRUNING = "0"
+ABL_DENSE_ONLY = "0"
+ABL_GATE_NO_SCORES = "0"
+ABL_GATE_NO_DEPS = "0"
+ABL_GATE_DROP_HEADINGS = "0"
+
+[assert_unset]
+# These change the pipeline when set. The launcher refuses to start if any is present in the environment.
+vars = ["GAPA_COMPACT_PROMPT", "GAPA_NEED", "GAPA_GRAPHMETA", "GAPA_META", "INDEX_CONTEXT_OLLAMA",
+        "GASR_OFFLINE", "RERANKER_ENABLED", "PREROUTE_DEBUG", "OLLAMA_SKIP"]
+
+[known_env]
+ABL_NO_GRAPH_EXPAND = "0"
+ABL_CONTAINS_ONLY = "0"
+ABL_TRUNCATE_PRUNING = "0"
+ABL_DENSE_ONLY = "0"
+ABL_GATE_NO_SCORES = "0"
+ABL_GATE_NO_DEPS = "0"
+ABL_GATE_DROP_HEADINGS = "0"
+GRAPHIFY_PATH_PREFIX = "superset/"
+# Every environment variable the pipeline reads at the frozen SHA, with its code default
+# ("" = read without default). Each log line records the effective value of all of them.
+ASSESSOR_MODEL = ""
+BM25_TOP_N = "120"
+BM25_WEIGHT = "0.30304975850615135"
+CHROMA_COLLECTION = "code_embeddings"
+CHROMA_META_COLLECTION = "code_meta_embeddings"
+CHROMA_PATH = ""
+CLASS_DEF_WEIGHT = "0.14213806413377017"
+DENSE_ALPHA = "0.40"
+DENSE_WEIGHT = "0.36116489734850177"
+EMBEDDING_DEVICE = ""
+EVAL_JUDGE_MODEL = ""
+EVAL_OLLAMA_NUM_CTX = ""
+EXACT_TOP_N = "400"
+EXACT_WEIGHT = "0.12353950364432467"
+FINAL_W_FUNCTION = "0"
+FINAL_W_HYBRID = "1"
+FINAL_W_PROXIMITY = "0"
+FINAL_W_SYMBOL = "0"
+GASR_HARD_CAP = "2"
+GASR_MAX_NEIGHBORS = "8"
+GASR_NEIGHBOR_BUDGET_FRACTION = "0.30"
+GASR_OFFLINE = ""
+GRAPHIFY_OUT = ""
+INDEX_CACHE_SAVE_INTERVAL = "50"
+INDEX_CONTEXT_MODEL = ""
+INDEX_CONTEXT_OLLAMA = "0"
+INDEX_CONTEXT_TIMEOUT = "20"
+INDEX_CPU_THREADS = "2"
+INDEX_EMBED_BATCH_SIZE = "16"
+INDEX_MAX_FILES = "600"
+INDEX_SITUATING_MAX_CHARS = "700"
+KEYWORD_WEIGHT = "0.09538879448754434"
+MAX_CONTEXT_TOKENS = "24000"
+OLLAMA_ASSESSOR_MODEL = ""
+OLLAMA_BASE_URL = "http://localhost:11434"
+OLLAMA_HOST = "http://127.0.0.1:11434"
+OLLAMA_MODEL = ""
+OLLAMA_NUM_CTX = "0"
+OLLAMA_NUM_GPU = "99"
+OLLAMA_NUM_PREDICT = "8192"
+OLLAMA_SKIP = ""
+OLLAMA_THINK = "0"
+PATH_MATCH_WEIGHT = "0.20500050082771293"
+PREROUTE_DEBUG = ""
+PRUNE_W_FUNCTION = "0.824755791189501"
+PRUNE_W_QUERY_MATCH = "0.2887302647124196"
+PRUNE_W_RETRIEVAL = "0.7741918328343507"
+PRUNE_W_STRUCTURE = "0.42360256074513347"
+RERANKER_ENABLED = "0"
+RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+RERANK_TOP_N = "80"
+SOURCE_WEIGHT = "0.10461575657334723"
+USE_HYBRID_EMBEDDINGS = "1"
+PYTHONHASHSEED = ""

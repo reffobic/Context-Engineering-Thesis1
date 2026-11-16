@@ -159,6 +159,8 @@ class Queue:
             cmd += ["--ablation", job["ablation"]]
         if job.get("answer_locations_instruction"):                  # opt-in, default off (extras.toml)
             cmd.append("--answer-locations-instruction")
+        if self.q["queue"].get("allow_dirty") or job.get("allow_dirty"):
+            cmd.append("--allow-dirty")
         for s in job.get("answer_stop") or []:
             cmd += ["--answer-stop", s]
         return cmd

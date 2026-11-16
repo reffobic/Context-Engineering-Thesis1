@@ -1,0 +1,321 @@
+You are a STRICT and RIGOROUS evaluator. You must rate the candidate answer STRICTLY against the reference answer. Be CONSERVATIVE with high scores - only award high scores (16-20) when the candidate answer is truly excellent and closely matches the reference answer in quality and content.
+
+CRITICAL EVALUATION PRINCIPLES:
+1. Compare the candidate answer DIRECTLY with the reference answer point by point
+2. Any deviation, omission, or inaccuracy should result in score reduction
+3. High scores (16-20) should be RARE - reserve them only for answers that are nearly perfect
+4. Be strict about factual accuracy - even minor errors should lower the correctness score
+5. Missing key points from the reference answer should significantly reduce completeness score
+6. Vague or imprecise language should lower clarity scores
+7. When in doubt between two score ranges, choose the LOWER one
+
+Evaluation Criteria and Scoring Guidelines (each scored 1 to 20, total score 100):
+        1. Correctness (STRICT - penalize any inaccuracies):
+            20 — ONLY if completely correct with ALL core points and details accurate, matching reference answer precisely
+            16-19 — Mostly correct but must have only TRIVIAL inaccuracies; any noticeable error reduces to 15 or below
+            12-15 — Partially correct; has some errors or omissions that affect understanding; main points may be accurate but details are wrong
+            8-11 — Several errors or ambiguities that significantly affect understanding of core information
+            4-7 — Many errors; misleading or fails to convey key information correctly
+            1-3 — Serious errors; completely wrong or misleading
+        2. Completeness (STRICT - penalize missing information):
+            20 — ONLY if covers ALL key points from reference answer without ANY omission; must match reference in depth
+            16-19 — Covers most key points but missing some non-trivial information; minor omissions are acceptable
+            12-15 — Missing several important key points; content is noticeably incomplete compared to reference
+            8-11 — Important information largely missing; content is one-sided or superficial
+            4-7 — Covers very little relevant information; seriously incomplete
+            1-3 — Covers almost no relevant information; completely incomplete
+        3. Relevance (STRICT - penalize off-topic content):
+            20 — ONLY if content is fully focused on question topic with NO irrelevant information whatsoever
+            16-19 — Mostly focused but may have minor peripheral information; any significant off-topic content reduces score
+            12-15 — Generally on topic but contains some off-topic content that detracts from answer
+            8-11 — Topic not sufficiently focused; contains considerable off-topic or tangential content
+            4-7 — Content deviates from topic; includes excessive irrelevant information
+            1-3 — Majority of content irrelevant to the question
+        4. Clarity (STRICT - penalize unclear expression):
+            20 — ONLY if language is exceptionally fluent, clear, and precise; very easy to understand without any ambiguity
+            16-19 — Mostly fluent and clear but may have minor unclear points; any significant ambiguity reduces score
+            12-15 — Generally clear but some expressions are unclear or not concise; may require effort to understand
+            8-11 — Expression somewhat awkward; has ambiguity or lacks fluency that hinders understanding
+            4-7 — Language obscure; sentences are not smooth; significantly hinders understanding
+            1-3 — Expression confusing; very difficult to understand
+        5. Reasoning (STRICT - penalize weak logic):
+            20 — ONLY if reasoning is exceptionally clear, logical, and well-structured; argumentation is excellent and matches reference quality
+            16-19 — Reasoning is clear and logical with solid argumentation; minor logical gaps may exist
+            12-15 — Reasoning generally reasonable but has noticeable logical jumps or organization issues
+            8-11 — Reasoning is average; has logical jumps or organization problems that affect understanding
+            4-7 — Reasoning unclear; lacks logical order; difficult to follow
+            1-3 — No clear reasoning; logic is chaotic
+
+Score EACH item independently against its reference. Output ONLY a JSON object mapping task_id -> {correctness,completeness,relevance,clarity,reasoning} integers 1-20. No prose.
+
+
+===== ITEM flask-008 =====
+Question: What is the dependency chain between the application loading helper, the Flask application instance, and the base Click testing runner that ensures proper CLI command execution in isolation?
+
+Reference Answer:
+The dependency chain works as follows:
+
+1. **FlaskCliRunner** (the base Click testing runner) is initialized with a Flask application instance, which it stores as `self.app` (see `src/flask/testing.py:271-273`).
+
+2. When **invoke()** is called on FlaskCliRunner, if no `obj` parameter is provided, it creates a **ScriptInfo** instance (the application loading helper) with `create_app=lambda: self.app` (see `src/flask/testing.py:295-296`). This ScriptInfo object knows how to load the Flask application through its `create_app` callback.
+
+3. The ScriptInfo is then passed as the `obj` parameter to Click's **CliRunner.invoke()** method via `super().invoke(cli, args, **kwargs)` (see `src/flask/testing.py:298`). Click's CliRunner uses this `obj` as the context object that is made available to CLI commands during execution.
+
+4. During command execution, CLI commands can access the ScriptInfo through Click's context mechanism (e.g., using `@pass_script_info` decorator or `ctx.ensure_object(ScriptInfo)`). The ScriptInfo's `load_app()` method can then be called to retrieve the Flask application instance (see `src/flask/cli.py:333-372`).
+
+5. Click's **CliRunner** provides the isolated testing environment by running commands in a controlled context, capturing output, and managing the execution environment separately from the main process.
+
+This chain ensures that:
+- The Flask app instance is accessible to the testing runner
+- The app loading mechanism (ScriptInfo) is properly connected
+- Commands can access the Flask app through the ScriptInfo context object
+- All execution happens in Click's isolated testing environment
+
+The isolation is provided by Click's CliRunner base class, which creates a separate execution context for each command invocation, preventing side effects between test runs.
+
+--- Candidate ---
+Flask.test_cli_runner() creates a FlaskCliRunner bound to the Flask app; FlaskCliRunner subclasses Click’s CliRunner and, on invoke(), injects a ScriptInfo(create_app=lambda: self.app) so ScriptInfo.load_app() returns that same app during isolated CLI command execution.
+
+
+===== ITEM flask-009 =====
+Question: What is the dependency chain from recursive type tagging method calls within the tuple-to-JSON conversion method that could lead to infinite recursion when serializing nested tuples with circular references?
+
+Reference Answer:
+The dependency chain that can lead to infinite recursion when serializing nested tuples with circular references follows this sequence:
+
+1. **Tuple-to-JSON conversion method** (`TagTuple.to_json()`, lines 140-141 in `src/flask/json/tag.py`): When processing a tuple, this method iterates through each item and calls `self.serializer.tag(item)` for each element.
+
+2. **Type tagging method** (`TaggedJSONSerializer.tag()`, lines 289-295): This method iterates through all registered tags in order. When it encounters a nested tuple, `TagTuple.check()` returns `True`, so it calls `tag.tag(value)`, which invokes `TagTuple.tag()`.
+
+3. **Tag application method** (`JSONTag.tag()`, lines 87-90): The base class method wraps the tagged value by calling `self.to_json(value)`, which for tuples is again `TagTuple.to_json()`.
+
+This creates a recursive cycle: `TagTuple.to_json()` → `TaggedJSONSerializer.tag()` → `TagTuple.tag()` → `TagTuple.to_json()` → ...
+
+When a tuple contains itself (circular reference) or deeply nested tuples, this recursion continues indefinitely, eventually causing a stack overflow. The chain lacks cycle detection, so any circular reference in tuple structures will trigger infinite recursion during serialization.
+
+The same pattern exists for other container types like `PassDict` (line 128) and `PassList` (line 154), which also call `self.serializer.tag()` recursively on their elements, but the question specifically asks about the tuple serialization path.
+
+--- Candidate ---
+TagTuple.to_json → TaggedJSONSerializer.tag → TagTuple.tag (JSONTag.tag) → TagTuple.to_json (cycle)
+
+
+===== ITEM flask-010 =====
+Question: What is the architectural pattern of the test class that isolates request context lifecycle management from streaming response generation logic?
+
+Reference Answer:
+The architectural pattern used by the test class that isolates request context lifecycle management from streaming response generation logic is the **Context Manager Wrapper Pattern** combined with **Generator Delegation**.
+
+**Pattern Implementation:**
+
+The pattern is implemented through the `stream_with_context` function in `src/flask/helpers.py` (lines 62-136). This function:
+
+1. **Wraps generators with a context manager**: When a generator is passed to `stream_with_context`, it creates a new generator function that uses a `with ctx:` statement to preserve the `RequestContext`:
+
+```python
+def generator() -> t.Iterator[t.AnyStr | None]:
+    ctx = _cv_request.get(None)  # Get current RequestContext
+    if ctx is None:
+        raise RuntimeError(...)
+    with ctx:  # Context manager preserves the request context
+        yield None  # Dummy sentinel
+        try:
+            yield from gen  # Delegate to original generator
+        finally:
+            if hasattr(gen, "close"):
+                gen.close()
+```
+
+2. **Early execution trick**: The wrapper generator is immediately started with `next(wrapped_g)` (line 135), which executes until the first `yield None`. At this point, the `with ctx:` block has already been entered, so the `RequestContext` is pushed and remains active. The dummy `None` value is discarded, and subsequent iterations delegate to the original generator.
+
+3. **Separation of concerns**: 
+   - **Lifecycle management** is handled by the `RequestContext` class (`src/flask/ctx.py`, lines 287-449), which manages push/pop operations and uses Python's `contextvars.ContextVar` (`_cv_request`) to store context state
+   - **Streaming generation** remains in the user's generator function, which can now safely access `flask.request` and `flask.session` during lazy evaluation
+
+**Abstraction Layer:**
+
+The abstraction that ensures `flask.request` and `flask.session` remain accessible across generator boundaries is a **three-layer system**:
+
+1. **ContextVar layer** (`src/flask/globals.py`, lines 42-50): Python's `contextvars.ContextVar` (`_cv_request`) stores the current `RequestContext` in a thread-safe, context-local manner
+2. **LocalProxy layer**: Werkzeug's `LocalProxy` objects (`flask.request` and `flask.session`) provide transparent access to attributes of the context-bound objects by dynamically resolving to the current context's values
+3. **RequestContext context manager** (`src/flask/ctx.py`, lines 433-443): Implements `__enter__` and `__exit__` methods, allowing it to be used with `with` statements to manage the context lifecycle
+
+**How it works in TestStreaming:**
+
+The `TestStreaming` class (`tests/test_helpers.py`, lines 236-307) demonstrates this pattern through tests like `test_streaming_with_context`, where a generator accesses `flask.request.args["name"]` during iteration. The `stream_with_context` wrapper ensures the `RequestContext` remains active throughout the generator's execution, even though the view function has already returned and the response has started streaming.
+
+This pattern isolates concerns by keeping context management (push/pop, session handling) separate from the business logic of generating streaming content, while ensuring that context-bound proxies remain functional during lazy evaluation.
+
+--- Candidate ---
+Context Manager Wrapper Pattern combined with Generator Delegation (via `stream_with_context` wrapping generators in a `with RequestContext` block and `yield from` delegation, as exercised by `TestStreaming`).
+
+
+===== ITEM flask-011 =====
+Question: What hidden coupling exists between the decorator's state management and response lifecycle that causes issues with nested or conditional registration?
+
+Reference Answer:
+The hidden coupling is between the decorator's direct access to the request context via context variables and the response processing lifecycle. The decorator (`after_this_request` in `src/flask/ctx.py`, lines 117-149) retrieves the current request context using `_cv_request.get(None)` and appends functions to `ctx._after_request_functions`, a list stored in the `RequestContext` instance (initialized at line 331).
+
+This creates several coupling issues:
+
+1. **Tight binding to context lifecycle**: The decorator requires an active request context at registration time. If called outside a request context, it raises a `RuntimeError` (lines 142-146). This couples registration timing to the request lifecycle.
+
+2. **Shared mutable state**: All registered functions are appended to the same `_after_request_functions` list in the `RequestContext` (line 148), regardless of where or when they're registered. Nested handlers (one handler registering another) or conditionally registered handlers all modify the same shared list, creating implicit dependencies.
+
+3. **Execution order dependency**: Functions execute in registration order (FIFO) during `process_response` in `src/flask/app.py` (lines 1313-1314). The order depends on when each decorator is called during request handling, not on explicit dependencies. This can cause issues if handlers are conditionally registered or nested, as the execution order may not match logical dependencies.
+
+4. **No explicit clearing**: The list is not explicitly cleared after execution; it relies on `RequestContext` destruction when the context is popped. If the context is copied (via `RequestContext.copy()` at line 337), the new context has an empty list, losing any previously registered functions.
+
+5. **Response object chaining**: Each function receives the response object and must return it (or a new one), creating a chain where each function modifies the response before passing it to the next. This chain is implicit and depends on registration order, not explicit dependencies.
+
+The mechanism maintains its dependency chain through sequential execution in registration order, with each function receiving and returning the response object, but this creates hidden coupling between registration timing, context state, and execution order that can break with nested or conditional registration patterns.
+
+--- Candidate ---
+`after_this_request` couples registration to the active request context: it reads `_cv_request` and appends callbacks onto that context’s shared `_after_request_functions` list, which `process_response` later runs in registration order, each taking and returning the response. Registration therefore requires a live request context, nests/conditionals all mutate the same FIFO list (so order depends on when decorators run, not on declared dependencies), and the list is only cleared when the context is destroyed—`RequestContext.copy()` starts empty and drops prior registrations—so nested or conditional registration yields fragile, implicit ordering and response-chaining behavior.
+
+
+===== ITEM flask-012 =====
+Question: How does the wrapper function that defers hash algorithm access until execution delay cryptographic availability validation until runtime to prevent import-time failures in restricted environments?
+
+Reference Answer:
+The wrapper function that defers hash algorithm access until execution is `_lazy_sha1`, defined in `src/flask/sessions.py` at lines 290-295. It implements lazy initialization by wrapping the `hashlib.sha1()` call inside a function body rather than accessing it at module import time.
+
+The function is assigned as a `staticmethod` to the `digest_method` attribute of the `SecureCookieSessionInterface` class (line 307). When Flask imports the sessions module, `_lazy_sha1` is defined but not executed—the actual `hashlib.sha1()` call only happens when the function is invoked at runtime, specifically when `get_signing_serializer()` creates a `URLSafeTimedSerializer` instance (lines 317-335).
+
+This deferral mechanism delays cryptographic availability validation because:
+1. **Import time**: Only the function definition is evaluated; no hash algorithm access occurs, so no validation happens.
+2. **Runtime**: When a session needs to be signed/verified, `get_signing_serializer()` is called, which passes `self.digest_method` (the `_lazy_sha1` function) to `URLSafeTimedSerializer`, which then calls it, triggering the `hashlib.sha1()` access.
+
+In FIPS-compliant builds where SHA-1 may not be available, accessing `hashlib.sha1` at import time would immediately raise an exception, preventing the module from loading. By deferring access until runtime, developers can:
+- Successfully import Flask even in restricted environments
+- Configure an alternative digest method (e.g., SHA-256) by overriding `digest_method` before sessions are actually used
+- Handle the error gracefully at runtime if needed, rather than failing at import time
+
+This pattern is documented in the function's docstring (lines 291-293) and was introduced to address issue #5448, as noted in `CHANGES.rst` (lines 62-64).
+
+--- Candidate ---
+In `SecureCookieSessionInterface`, the default `digest_method` is not bound to `hashlib.sha1` at class definition/import time. Instead it uses `_lazy_sha1`, a thin wrapper assigned via `staticmethod` that only calls `hashlib.sha1(...)` when the digest method is actually invoked during signing. That defers FIPS/SHA-1 availability checks until session crypto runs, so importing Flask succeeds in restricted environments and developers can replace the digest method before use.
+</start_of_answer>
+
+
+===== ITEM flask-013 =====
+Question: How does the decorator that copies request contexts handle isolation of lightweight concurrent execution contexts while preserving session data across execution boundaries?
+
+Reference Answer:
+The decorator that copies request contexts (`copy_current_request_context` in `src/flask/ctx.py`) handles isolation of lightweight concurrent execution contexts while preserving session data through a combination of Python's `contextvars` module and explicit session object copying.
+
+**Isolation Mechanism:**
+Flask uses Python's `contextvars.ContextVar` to provide automatic isolation between execution contexts. The request context is stored in `_cv_request` (defined in `src/flask/globals.py` line 42), which is a `ContextVar` that automatically maintains separate values for each execution context (thread, greenlet, or async task). When a greenlet switches contexts, Python's `contextvars` ensures each greenlet has its own isolated context space, preventing data leakage between concurrent executions.
+
+**Context Copying Process:**
+The `copy_current_request_context` decorator (lines 155-193 in `src/flask/ctx.py`) works by:
+1. Retrieving the current request context using `_cv_request.get(None)` (line 179)
+2. Creating a copy via `ctx.copy()` (line 187), which calls `RequestContext.copy()` (lines 337-355)
+3. Wrapping the decorated function to push the copied context when called (lines 189-191)
+
+**Session Preservation:**
+The `RequestContext.copy()` method (lines 337-355) explicitly includes the current session object in the copied context:
+```python
+return self.__class__(
+    self.app,
+    environ=self.request.environ,
+    request=self.request,
+    session=self.session,  # Current session object is included
+)
+```
+
+This design (introduced in Flask 1.1, as noted in `CHANGES.rst` lines 676-677) prevents `flask.session` from pointing to an out-of-date object. By copying the session object reference rather than reloading it, the copied context maintains access to the same session state that was active when the copy was created, even when executed in a different greenlet.
+
+**Execution Boundary Handling:**
+When the copied context is pushed in a new greenlet (via the `with ctx:` block in line 190), it creates a new entry in that greenlet's context stack. The `RequestContext.push()` method (lines 367-394) ensures proper isolation by:
+- Creating a new app context if needed (lines 370-376)
+- Storing context tokens in `_cv_tokens` (line 378) for proper cleanup
+- Using `contextvars.ContextVar.set()` to bind the context to the current execution context
+
+This ensures that each greenlet has its own isolated request context copy, while the session object reference is preserved across the boundary, allowing the greenlet to access the same session data that was available in the original context.
+
+The test cases in `tests/test_reqctx.py` (lines 148-202) demonstrate this behavior: they show that session data set in the original context (`flask.session["fizz"] = "buzz"`) is accessible in the greenlet after the context is copied and pushed, confirming that session state is preserved across execution boundaries while maintaining proper isolation.
+
+--- Candidate ---
+`copy_current_request_context` snapshots the active `RequestContext` at decoration time via `RequestContext.copy()`, then the wrapper pushes that copy (`with ctx`) when the decorated function runs in another greenlet. Isolation comes from contextvars (`_cv_request`): each greenlet gets its own bound context while sharing the same request object. Session continuity is preserved because `copy()` passes the live `session` object into the new context instead of reopening/reloading it, so `flask.session` stays current across the execution boundary.
+
+
+===== ITEM flask-014 =====
+Question: How does the certificate parameter conversion method for the CLI certificate option implement a fallback chain to handle file paths, adhoc certificate strings, and SSLContext object imports?
+
+Reference Answer:
+The certificate parameter conversion method implements a fallback chain using exception-driven control flow to handle three distinct input types in sequence. The implementation is found in the `CertParamType.convert` method in `src/flask/cli.py` (lines 791-825).
+
+**Fallback Chain Implementation:**
+
+1. **First attempt - File path validation** (lines 803-804):
+   ```python
+   try:
+       return self.path_type(value, param, ctx)
+   ```
+   The method first attempts to validate the input as a file path using `click.Path` (which checks for file existence and resolves the path). If successful, it returns the validated path.
+
+2. **Second attempt - Adhoc certificate string** (lines 805-818):
+   ```python
+   except click.BadParameter:
+       value = click.STRING(value, param, ctx).lower()
+       
+       if value == "adhoc":
+           # Check for cryptography library
+           return value
+   ```
+   If the file path validation fails (raises `click.BadParameter`), the exception is caught and the method converts the value to a lowercase string. If it equals "adhoc", it verifies the cryptography library is available (required for ad-hoc certificate generation) and returns the string "adhoc".
+
+3. **Third attempt - SSLContext import** (lines 820-825):
+   ```python
+   obj = import_string(value, silent=True)
+   
+   if isinstance(obj, ssl.SSLContext):
+       return obj
+   
+   raise
+   ```
+   If the value is not "adhoc", the method attempts to import it as a module/object using `werkzeug.utils.import_string`. If the imported object is an instance of `ssl.SSLContext`, it returns that object. Otherwise, it re-raises the original `click.BadParameter` exception.
+
+**Exception-Driven Control Flow Pattern:**
+
+The algorithmic significance of this exception-driven pattern is that it uses exceptions as a control flow mechanism to implement a prioritized fallback chain. Each attempt is tried in order of specificity:
+- Most specific: File paths (direct file system validation)
+- Medium: Literal string "adhoc" (explicit keyword)
+- Most general: Dynamic imports (flexible but requires runtime evaluation)
+
+The pattern allows the method to:
+- Avoid expensive operations (like import attempts) when simpler validations (file path checks) succeed
+- Provide clear error messages at each stage (each validation can raise specific `click.BadParameter` exceptions)
+- Maintain a single entry point that handles multiple input types without requiring the caller to know the input format in advance
+
+This design is used by the `--cert` option in Flask's `run` command (line 887), allowing users to specify certificates as file paths, use ad-hoc certificates for development, or import pre-configured SSLContext objects from their code.
+
+--- Candidate ---
+`CertParamType.convert` in `src/flask/cli.py` first requires Python SSL support. It then tries a fallback chain: (1) treat the value as an existing file via `click.Path`; (2) if that fails, lowercase the string and, if it is `"adhoc"`, require the cryptography library and return `"adhoc"`; (3) otherwise import the value with `import_string(..., silent=True)` and return it only if it is an `ssl.SSLContext`; otherwise re-raise the original path `BadParameter`.
+
+
+===== ITEM flask-015 =====
+Question: How does the deferred registration mechanism ensure that custom template filters registered through the blueprint's application-level filter registration method are accessible in the template rendering environment when the blueprint is mounted with a URL path prefix?
+
+Reference Answer:
+The deferred registration mechanism ensures custom template filters are accessible in the template rendering environment regardless of URL prefix by registering them directly on the application's shared Jinja2 environment during blueprint registration.
+
+Implementation details:
+
+1. **Deferred Registration Pattern**: When `add_app_template_filter` is called on a blueprint, it creates a `register_template` function that registers the filter on `state.app.jinja_env.filters` (line 472-473 in `src/flask/sansio/blueprints.py`). This function is stored via `self.record_once(register_template)` (line 475), which ensures it only executes once during the first blueprint registration.
+
+2. **Registration Execution**: When the blueprint is registered with the application via `register()` (line 273), it creates a `BlueprintSetupState` object (line 321) that provides access to the Flask application instance through `state.app`. All deferred functions stored in `self.deferred_functions` are then executed with this state object (lines 334-335).
+
+3. **Global Environment Registration**: The filter registration function directly modifies `state.app.jinja_env.filters[name or f.__name__] = f` (line 473), which registers the filter on the application's shared Jinja2 environment. This environment is used for all template rendering across the entire application, regardless of which blueprint or URL prefix handled the request.
+
+4. **URL Prefix Independence**: The URL prefix does not affect filter scoping because:
+   - Filters are registered on the application-level Jinja2 environment (`app.jinja_env`), not on blueprint-specific environments
+   - Flask uses a single shared Jinja2 environment for all templates (as seen in `src/flask/templating.py`, where `render_template` uses `app.jinja_env`)
+   - The `BlueprintSetupState` provides access to the application instance, not a blueprint-scoped environment
+
+5. **Once-Only Registration**: The `record_once` method (lines 233-244) wraps the registration function to ensure it only executes when `state.first_registration` is `True`, preventing duplicate registrations if the blueprint is registered multiple times.
+
+This design ensures that filters registered through blueprints are globally available to all templates in the application, making them accessible regardless of the URL prefix used when registering the blueprint. The URL prefix only affects URL routing, not template filter availability.
+
+--- Candidate ---
+`Blueprint.add_app_template_filter` (used by `app_template_filter`) does not register the filter immediately. It stores a deferred callback via `record_once` that, on blueprint registration, assigns the filter to `state.app.jinja_env.filters` using the given or function name. When `register_blueprint` runs (including with a `url_prefix`), `Blueprint.register` builds a `BlueprintSetupState` and executes those deferred functions. The `url_prefix` is applied only when adding URL rules through `BlueprintSetupState.add_url_rule`; the filter callback ignores it and writes directly into the application’s shared Jinja environment. Because rendering uses that same `app.jinja_env`, the filter is available in any template, independent of the blueprint’s URL prefix. `record_once` further ensures the filter is installed only on the first registration of that blueprint.

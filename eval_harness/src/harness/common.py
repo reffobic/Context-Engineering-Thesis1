@@ -6,7 +6,10 @@ import hashlib
 import json
 import subprocess
 import time
-import tomllib
+try:
+    import tomllib  # py311+
+except ModuleNotFoundError:  # pragma: no cover - py310
+    import tomli as tomllib  # type: ignore[no-redef]
 import urllib.error
 import urllib.request
 from pathlib import Path

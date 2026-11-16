@@ -1,0 +1,67 @@
+# Phase 2 RepoProbe Python-8 skeleton (scorer-on-pipeline). Free-form answers.
+# Materialize dataset first: python -m harness.phase2_datasets --only repoprobe-py8 --resolve-commits
+# Task counts filled after materialize — update `tasks` to match sample size before enabling.
+
+[queue]
+enabled = true
+frozen_sha = "a2cfcec312626b4b50f743c4af91a6d118c79d0e"
+hard_stop = "2026-12-01T08:00:00"
+hard_stop_tz = "Africa/Cairo"
+safety_factor = 1.25
+allow_dirty = true
+
+[[job]]
+id = "p2-repoprobe-ALWAYS_LC-py8"
+model = "qwen3.5:9b"
+arm = "ALWAYS_LC"
+dataset = "repoprobe-py8"
+tasks = 108
+estimated_minutes = 200
+
+[[job]]
+id = "p2-repoprobe-ALWAYS_RAG-py8"
+model = "qwen3.5:9b"
+arm = "ALWAYS_RAG"
+dataset = "repoprobe-py8"
+tasks = 108
+estimated_minutes = 220
+
+[[job]]
+id = "p2-repoprobe-ALWAYS_GRAPH-py8"
+model = "qwen3.5:9b"
+arm = "ALWAYS_GRAPH"
+dataset = "repoprobe-py8"
+tasks = 108
+estimated_minutes = 240
+
+[[job]]
+id = "p2-repoprobe-SELF_ROUTE-py8"
+model = "qwen3.5:9b"
+arm = "SELF_ROUTE"
+dataset = "repoprobe-py8"
+tasks = 108
+estimated_minutes = 260
+
+[[job]]
+id = "p2-repoprobe-PREASSESS-py8"
+model = "qwen3.5:9b"
+arm = "PREASSESS"
+dataset = "repoprobe-py8"
+tasks = 108
+estimated_minutes = 260
+
+[[job]]
+id = "p2-repoprobe-GASR-py8"
+model = "qwen3.5:9b"
+arm = "GASR"
+dataset = "repoprobe-py8"
+tasks = 108
+estimated_minutes = 280
+
+[[job]]
+id = "p2-repoprobe-GAPA-py8"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "repoprobe-py8"
+tasks = 108
+estimated_minutes = 280

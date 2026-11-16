@@ -1,0 +1,10 @@
+{
+ "candidate": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/reports/phase2_sweqa_candidates_rest/GASR_answers.jsonl",
+ "output": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/reports/phase2_sweqa_scores_rest/GASR_answers_score.jsonl",
+ "n_candidates": 576,
+ "n_scored": 576,
+ "n_failed_or_skipped": 0,
+ "mean_overall": 27.75,
+ "judge_model": "qwen-7B:latest",
+ "label": "local-judge single-judge"
+}

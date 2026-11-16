@@ -1,0 +1,7 @@
+{
+  "task_id": "flask-000",
+  "label": "claude-subagent · single-judge · cursor-cli-agent-smoke",
+  "judge_model": "claude-sonnet-5-5-high",
+  "score": {"correctness": 17, "completeness": 12, "relevance": 19, "clarity": 18, "reasoning": 13},
+  "overall": 79
+}

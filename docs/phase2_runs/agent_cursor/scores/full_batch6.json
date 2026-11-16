@@ -1,0 +1,10 @@
+{
+  "flask-040": {"correctness": 14, "completeness": 6, "relevance": 15, "clarity": 14, "reasoning": 7},
+  "flask-041": {"correctness": 15, "completeness": 7, "relevance": 16, "clarity": 16, "reasoning": 8},
+  "flask-042": {"correctness": 15, "completeness": 10, "relevance": 17, "clarity": 16, "reasoning": 11},
+  "flask-043": {"correctness": 16, "completeness": 12, "relevance": 17, "clarity": 14, "reasoning": 13},
+  "flask-044": {"correctness": 15, "completeness": 10, "relevance": 16, "clarity": 15, "reasoning": 11},
+  "flask-045": {"correctness": 14, "completeness": 11, "relevance": 16, "clarity": 15, "reasoning": 12},
+  "flask-046": {"correctness": 14, "completeness": 9, "relevance": 16, "clarity": 15, "reasoning": 10},
+  "flask-047": {"correctness": 10, "completeness": 6, "relevance": 14, "clarity": 12, "reasoning": 9}
+}

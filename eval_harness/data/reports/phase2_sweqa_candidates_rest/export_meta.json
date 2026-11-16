@@ -1,0 +1,40 @@
+{
+ "arms": {
+  "ALWAYS_LC": {
+   "dir": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/runs/a2cfcec/p2-sweqa-ALWAYS_LC-rest",
+   "n": 576,
+   "candidate": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/reports/phase2_sweqa_candidates_rest/ALWAYS_LC_answers.jsonl"
+  },
+  "ALWAYS_RAG": {
+   "dir": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/runs/a2cfcec/p2-sweqa-ALWAYS_RAG-rest",
+   "n": 576,
+   "candidate": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/reports/phase2_sweqa_candidates_rest/ALWAYS_RAG_answers.jsonl"
+  },
+  "ALWAYS_GRAPH": {
+   "dir": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/runs/a2cfcec/p2-sweqa-ALWAYS_GRAPH-rest",
+   "n": 576,
+   "candidate": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/reports/phase2_sweqa_candidates_rest/ALWAYS_GRAPH_answers.jsonl"
+  },
+  "SELF_ROUTE": {
+   "dir": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/runs/a2cfcec/p2-sweqa-SELF_ROUTE-rest",
+   "n": 576,
+   "candidate": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/reports/phase2_sweqa_candidates_rest/SELF_ROUTE_answers.jsonl"
+  },
+  "PREASSESS": {
+   "dir": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/runs/a2cfcec/p2-sweqa-PREASSESS-rest",
+   "n": 576,
+   "candidate": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/reports/phase2_sweqa_candidates_rest/PREASSESS_answers.jsonl"
+  },
+  "GASR": {
+   "dir": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/runs/a2cfcec/p2-sweqa-GASR-rest",
+   "n": 576,
+   "candidate": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/reports/phase2_sweqa_candidates_rest/GASR_answers.jsonl"
+  },
+  "GAPA": {
+   "dir": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/runs/a2cfcec/p2-sweqa-GAPA-rest",
+   "n": 576,
+   "candidate": "/home/g7/Documents/HODA/Context-Engineering-Thesis1/eval_harness/data/reports/phase2_sweqa_candidates_rest/GAPA_answers.jsonl"
+  }
+ },
+ "missing": []
+}

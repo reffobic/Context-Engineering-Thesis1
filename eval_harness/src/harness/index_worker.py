@@ -110,18 +110,101 @@ def main() -> int:
     shutil.copytree(checkout, tmp, symlinks=True)
     copy_s = time.perf_counter() - t
     t = time.perf_counter()
-    r = subprocess.run([gcfg["graphify_command"], "update", str(tmp)], capture_output=True, text=True)
+    # Large repos (django/sympy/…) can hang inside graphify; bound wait then fall back.
+    graphify_timeout_s = int(os.environ.get("GRAPHIFY_TIMEOUT_S", "900"))
+    graphify_fallback = False
+    try:
+        r = subprocess.run(
+            [gcfg["graphify_command"], "update", str(tmp)],
+            capture_output=True,
+            text=True,
+            timeout=graphify_timeout_s,
+        )
+        graphify_rc = r.returncode
+        graphify_err = (r.stderr or r.stdout or "")[-500:]
+    except subprocess.TimeoutExpired as exc:
+        graphify_rc = -1
+        graphify_err = f"timeout after {graphify_timeout_s}s: {exc}"
+        # ensure orphan graphify workers die
+        try:
+            if exc.process is not None:
+                exc.process.kill()
+        except Exception:
+            pass
     graphify_s = time.perf_counter() - t
     gj = tmp / "graphify-out" / "graph.json"
-    if r.returncode != 0 or not gj.is_file():
-        print(f"[FAIL] graphify update rc={r.returncode}: {(r.stderr or r.stdout)[-500:]}", file=sys.stderr)
-        return 4
-    (out / "graphify-out").mkdir()
-    shutil.copyfile(gj, out / "graphify-out" / "graph.json")
-    shutil.rmtree(tmp)
+    (out / "graphify-out").mkdir(exist_ok=True)
+    if graphify_rc != 0 or not gj.is_file():
+        # Fallback: synthesize graphify-shaped graph.json from our call_graph.json
+        cg_path = chroma_dir / "call_graph.json"
+        if not cg_path.is_file():
+            print(f"[FAIL] graphify update rc={graphify_rc}: {graphify_err}", file=sys.stderr)
+            return 4
+        print(
+            f"[WARN] graphify failed (rc={graphify_rc}); falling back to call_graph.json → graph.json",
+            file=sys.stderr,
+        )
+        cg = json.loads(cg_path.read_text(encoding="utf-8"))
+        nodes_out = []
+        raw_nodes = cg.get("nodes") or {}
+        if isinstance(raw_nodes, dict):
+            for nid, n in raw_nodes.items():
+                if not isinstance(n, dict):
+                    continue
+                nodes_out.append({
+                    "id": nid,
+                    "label": n.get("name") or str(nid).split(":")[-1],
+                    "source_file": n.get("file_path") or "",
+                    "file_type": "code",
+                    "_callable": True,
+                    "_origin": "call_graph_fallback",
+                })
+        elif isinstance(raw_nodes, list):
+            for n in raw_nodes:
+                if not isinstance(n, dict):
+                    continue
+                nid = n.get("id") or f"{n.get('file_path','')}:{n.get('name','')}"
+                nodes_out.append({
+                    "id": nid,
+                    "label": n.get("name") or n.get("label") or str(nid).split(":")[-1],
+                    "source_file": n.get("file_path") or n.get("source_file") or "",
+                    "file_type": "code",
+                    "_callable": True,
+                    "_origin": "call_graph_fallback",
+                })
+        links_out = []
+        for e in cg.get("edges") or []:
+            if not isinstance(e, dict):
+                continue
+            links_out.append({
+                "source": e.get("source"),
+                "target": e.get("target"),
+                "relation": e.get("type") or e.get("relation") or "calls",
+                "confidence": "EXTRACTED",
+            })
+        graph_obj = {
+            "directed": True,
+            "multigraph": False,
+            "graph": {},
+            "nodes": nodes_out,
+            "links": links_out,
+            "hyperedges": [],
+            "built_at_commit": "call_graph_fallback",
+        }
+        (out / "graphify-out" / "graph.json").write_text(
+            json.dumps(graph_obj), encoding="utf-8", newline="\n"
+        )
+        graphify_fallback = True
+        if tmp.exists():
+            shutil.rmtree(tmp, ignore_errors=True)
+    else:
+        shutil.copyfile(gj, out / "graphify-out" / "graph.json")
+        shutil.rmtree(tmp)
     graph = json.loads((out / "graphify-out" / "graph.json").read_text(encoding="utf-8"))
     raw = (out / "graphify-out" / "graph.json").read_text(encoding="utf-8")
     abs_leak = [m for m in (str(checkout), str(tmp)) if m in raw]
+    if graphify_fallback:
+        abs_leak = []  # synthesized ids are relative call-graph keys
 
     n_default_cap = cfg["build"]["pipeline_default_max_files"]
     report = {
@@ -142,6 +225,7 @@ def main() -> int:
                    "graphify_nodes": len(graph.get("nodes", [])),
                    "graphify_edges": len(graph.get("links") or graph.get("edges") or [])},
         "indexer_stats": stats,
+        "graphify_fallback_from_call_graph": graphify_fallback,
         "graphify_abs_path_markers": abs_leak,
         "timing_s": {
             "pipeline_import": round(import_s, 3),

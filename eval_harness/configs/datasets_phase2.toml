@@ -1,0 +1,77 @@
+# Phase 2 local datasets (not LocAgent HF). Materialized by: python -m harness.phase2_datasets
+
+sweqa_bench_root = "../external/SWE-QA-Bench"
+repoprobe_root = "../external/RepoProbe"
+
+[[dataset]]
+name = "swe-qa-w1"
+kind = "swe-qa"
+repos = ["flask", "requests", "pytest"]
+expected_count = 144
+# owner/name used in harness task.repo + checkout cache key
+repo_map = { flask = "pallets/flask", requests = "psf/requests", pytest = "pytest-dev/pytest" }
+# Full SHAs resolved from SWE-QA-Bench/repo_commit.txt short tips via GitHub API
+commits = { flask = "85c5d93cbd049c4bd0679c36fd1ddcae8c37b642", requests = "46e939b5525d9c72b677340985582b04b128478a", pytest = "5989efe3efec31a9d14f550d89903b6311dfc828" }
+
+[[dataset]]
+name = "swe-qa-rest"
+kind = "swe-qa"
+repos = [
+  "astropy",
+  "conan",
+  "django",
+  "matplotlib",
+  "pylint",
+  "reflex",
+  "scikit-learn",
+  "sphinx",
+  "sqlfluff",
+  "streamlink",
+  "sympy",
+  "xarray",
+]
+expected_count = 576
+repo_map = {
+  astropy = "astropy/astropy",
+  conan = "conan-io/conan",
+  django = "django/django",
+  matplotlib = "matplotlib/matplotlib",
+  pylint = "pylint-dev/pylint",
+  reflex = "reflex-dev/reflex",
+  "scikit-learn" = "scikit-learn/scikit-learn",
+  sphinx = "sphinx-doc/sphinx",
+  sqlfluff = "sqlfluff/sqlfluff",
+  streamlink = "streamlink/streamlink",
+  sympy = "sympy/sympy",
+  xarray = "pydata/xarray",
+}
+# Short tips from SWE-QA-Bench/repo_commit.txt; expand with --resolve-commits
+commits = {
+  astropy = "0a041d38fbd0014298d4cf340d9f891c4522093f",
+  conan = "52f43d98fe44ab92d01317110488d0670c3e9e64",
+  django = "14fc2e97036fc9d7acb55ada4f16f1aa3bdc5ec7",
+  matplotlib = "a5e1f6086e92d5cc0a23f85685d03d85b89a8395",
+  pylint = "44740e5e5cdd2b80321a4f0ed4254213d058b9f6",
+  reflex = "fe0f946dc0c240c6c1e513318c21db407e191c78",
+  "scikit-learn" = "adb1ae76d798e822984d4e312c90c6ca8f01a3df",
+  sphinx = "6c9e3209c4ebc81c7c09f6a30eeaa4651f32f461",
+  sqlfluff = "db9801b7eb7fd014e765117f63ee1b0675fa9f87",
+  streamlink = "ab1f36560005253ca6a290a614730bf18a29a7f9",
+  sympy = "3c817ed8ab551d71e36907ce869afe5e4ca789ff",
+  xarray = "40119bf35c53fc222934894d842cfc07b2e264bf",
+}
+
+[[dataset]]
+name = "repoprobe-py8"
+kind = "repoprobe"
+# short names under RepoProbe/dataset/<name>.csv; heads from repos_info.json
+repos = [
+  "FieldStation42",
+  "adk-python",
+  "agent-framework",
+  "browser-use",
+  "crawl4ai",
+  "docling",
+  "sglang",
+  "yasb",
+]

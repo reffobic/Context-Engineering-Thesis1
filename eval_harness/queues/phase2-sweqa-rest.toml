@@ -1,0 +1,72 @@
+# Phase 2 SWE-QA rest (12 repos beyond Wave 1): 576 Q × 7 arms, free-form.
+# Generator locked: qwen3.5:9b. Resume-safe; results.jsonl appended continuously.
+# Launch:
+#   PYTHONPATH=eval_harness/src python3 -m harness.queue \
+#     --profile eval_harness/profiles/ubuntu-4080.toml \
+#     --queue eval_harness/queues/phase2-sweqa-rest.toml \
+#     --pipeline-config eval_harness/configs/pipeline_phase2.toml \
+#     --configs eval_harness/configs --cwd .
+
+[queue]
+enabled = true
+frozen_sha = "a2cfcec312626b4b50f743c4af91a6d118c79d0e"
+hard_stop = "2026-11-30T08:00:00"
+hard_stop_tz = "Africa/Cairo"
+safety_factor = 1.25
+allow_dirty = true
+
+[[job]]
+id = "p2-sweqa-ALWAYS_LC-rest"
+model = "qwen3.5:9b"
+arm = "ALWAYS_LC"
+dataset = "swe-qa-rest"
+tasks = 576
+estimated_minutes = 720
+
+[[job]]
+id = "p2-sweqa-ALWAYS_RAG-rest"
+model = "qwen3.5:9b"
+arm = "ALWAYS_RAG"
+dataset = "swe-qa-rest"
+tasks = 576
+estimated_minutes = 800
+
+[[job]]
+id = "p2-sweqa-ALWAYS_GRAPH-rest"
+model = "qwen3.5:9b"
+arm = "ALWAYS_GRAPH"
+dataset = "swe-qa-rest"
+tasks = 576
+estimated_minutes = 880
+
+[[job]]
+id = "p2-sweqa-SELF_ROUTE-rest"
+model = "qwen3.5:9b"
+arm = "SELF_ROUTE"
+dataset = "swe-qa-rest"
+tasks = 576
+estimated_minutes = 960
+
+[[job]]
+id = "p2-sweqa-PREASSESS-rest"
+model = "qwen3.5:9b"
+arm = "PREASSESS"
+dataset = "swe-qa-rest"
+tasks = 576
+estimated_minutes = 960
+
+[[job]]
+id = "p2-sweqa-GASR-rest"
+model = "qwen3.5:9b"
+arm = "GASR"
+dataset = "swe-qa-rest"
+tasks = 576
+estimated_minutes = 1040
+
+[[job]]
+id = "p2-sweqa-GAPA-rest"
+model = "qwen3.5:9b"
+arm = "GAPA"
+dataset = "swe-qa-rest"
+tasks = 576
+estimated_minutes = 1040
