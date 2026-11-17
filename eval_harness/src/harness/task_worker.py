@@ -51,7 +51,8 @@ def main() -> int:
             from harness.arms import run_harness_arm
             result = run_harness_arm(server, spec["arm"], spec["prompt"], spec["hops"], spec["pruning_method"])
         else:
-            result = server.run_pipeline(spec["prompt"], mode=spec["mode"], pruning_method=spec["pruning_method"])
+            result = server.run_pipeline(spec["prompt"], mode=spec["mode"], pruning_method=spec["pruning_method"],
+                                         **({"use_lightweight_tools": False} if spec.get("no_lightweight_tools") else {}))
     except Exception:
         out = {"status": "error", "error": traceback.format_exc()[-3000:]}
     record = ins.end_task(result)

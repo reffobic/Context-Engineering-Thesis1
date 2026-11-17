@@ -130,7 +130,8 @@ class Job:
         self.answer_stop = list(a.answer_stop or fl.get("answer_stop") or [])
         self.answer_suffix = (self.extras.get("text", {}).get("answer_locations_instruction")
                               if (a.answer_locations_instruction or fl.get("answer_locations_instruction")) else None)
-        self.extras_used = bool(self.arm in self.extras.get("arms", {}) or self.answer_stop or self.answer_suffix)
+        self.no_lightweight_tools = bool(a.no_lightweight_tools)
+        self.extras_used = bool(self.arm in self.extras.get("arms", {}) or self.answer_stop or self.answer_suffix or self.no_lightweight_tools)
         if self.arm not in self.arms:
             raise JobAbort(f"unknown arm {self.arm}")
         self.arm_impl = "harness" if self.arms[self.arm] == "HARNESS" else "pipeline"
@@ -228,7 +229,8 @@ class Job:
             "harness_commit": self.ident["harness_commit"], "harness_clean": self.ident["clean"],
             "pipeline_frozen_sha": p["frozen_sha"], "pipeline_base_commit": p["base_commit"],
             "pipeline_seed_alignment_commit": p["seed_alignment_commit"],
-            "ablation": self.ablation, **({"extras": {"answer_stop": self.answer_stop, "answer_suffix": self.answer_suffix}}
+            "ablation": self.ablation, **({"extras": {"answer_stop": self.answer_stop, "answer_suffix": self.answer_suffix,
+                                                    **({"no_lightweight_tools": True} if self.no_lightweight_tools else {})}}
                                          if self.extras_used else {}), "record_results": bool(self.record_auth), "record_authorised_for": self.record_auth,
             "env": env_rec,
             "python_packages": environment_info(), "num_ctx": self.exp["ollama"]["num_ctx"]}
@@ -387,7 +389,8 @@ def run_task(job: Job, task: dict, force_timeout: bool) -> dict:
             "ready": str(scratch / "ready.json"), "out": str(scratch / "out.json"),
             "expect_structure_rerank": job.pcfg["pipeline"]["structure_rerank_expected"],
             **({"answer_suffix": job.answer_suffix} if job.answer_suffix else {}),
-            **({"answer_stop": job.answer_stop} if job.answer_stop else {})}
+            **({"answer_stop": job.answer_stop} if job.answer_stop else {}),
+            **({"no_lightweight_tools": True} if job.no_lightweight_tools else {})}
     (scratch / "spec.json").write_text(json.dumps(spec), encoding="utf-8")
     env = build_env(job.pcfg, a.model, job.exp, extra={
         **job.abl_env, "PYTHONPATH": str(Path(__file__).resolve().parents[1]), "CHROMA_PATH": str(scratch / "chroma"),
@@ -477,6 +480,7 @@ def main() -> int:
     ap.add_argument("--extras-config", type=Path, default=Path(__file__).resolve().parents[2] / "configs" / "extras.toml",
                     help="harness-built arms and opt-in answer flags (all default off)")
     ap.add_argument("--answer-locations-instruction", action="store_true", help="append the LOCATIONS instruction to the task at answer-prompt build only")
+    ap.add_argument("--no-lightweight-tools", action="store_true", help="run_pipeline(use_lightweight_tools=False): issue-text prompts never go to the lookup tools (localization queues)")
     ap.add_argument("--answer-stop", action="append", default=[], help="stop sequence for the answer call only (repeatable)")
     ap.add_argument("--smoke", action="store_true", help="not a result run: allowed while record_results is false")
     ap.add_argument("--allow-dirty", action="store_true", help="development only")

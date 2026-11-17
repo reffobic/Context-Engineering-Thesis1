@@ -138,3 +138,10 @@ def test_ntfy_topic_comes_from_the_named_variable_and_is_never_logged(tmp_path, 
 def test_notifier_without_the_variable_is_silent(tmp_path, monkeypatch):
     monkeypatch.delenv("TEST_NTFY_TOPIC", raising=False)
     assert Q.Notifier("TEST_NTFY_TOPIC").send("t", "m") is False
+
+
+def test_no_lightweight_tools_is_opt_in_per_job(tmp_path):
+    q = make(tmp_path, [("a", 1, 1)], future(60))
+    base = {"id": "a", "dataset": "d", "model": "m", "arm": "GAPA"}
+    assert "--no-lightweight-tools" not in Q.Queue.cmd(q, dict(base))                       # default: backend behaviour unchanged
+    assert "--no-lightweight-tools" in Q.Queue.cmd(q, dict(base, no_lightweight_tools=True))

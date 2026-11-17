@@ -71,3 +71,16 @@ Agreed schedule (user, 2026-11-17). Order = priority, then impact, then longest 
 | 4 (after jobs 1 to 4 exist) | 7c or the user | Final LocAgent comparison against our GAPA and GASR `full` rows on this freeze (Tables VII/VIII). | none | short |
 
 Start slot 2 only after slot 1's server is stopped and the user (or the session holding the user's approval) says go. Job order inside `phase2-ablations.toml`: P0 SWE-Lite full rows (checkpoint), P1 Loc-Bench full rows, P2 gate rows (`gasr_gate_off`, `gate_no_scores`, `gate_no_deps`, `gasr_gate_no_shortcut`), P3 `no_graph_expansion` and `contains_only`, P4 `truncation` and `no_keyword_channel`; Loc-Bench before SWE-Lite inside a tier because it runs about 2.2x longer.
+
+## 8. Lightweight lookup tools (found during the first queue run, 2026-11-17)
+
+`run_pipeline(use_lightweight_tools=True)` is the backend default. `_lightweight_request` matches loose regexes against the prompt and, on a match,
+calls `find_symbol` / `find_references` / `list_files` instead of `retrieve_context`. Full issue texts match by accident (7 tasks of the samples:
+SWE-Lite django-15252, matplotlib-26011, sympy-18532; Loc-Bench langgraph-2571, pandas-21401, streamlit-6617, vllm-10903). Those tasks fail with
+`structure_rerank_not_applied` or a chroma "too many SQL variables" error (`find_symbol` reads the whole collection). It is absent at 2350c0b.
+
+Decision: the backend default is NOT changed (teammates' repo-QA questions can be real lookup requests). Instead the harness has an opt-in per job:
+`no_lightweight_tools = true` in the queue job -> `--no-lightweight-tools` -> `run_pipeline(..., use_lightweight_tools=False)` in the worker.
+Default off, so every existing queue keeps its behaviour. Harness arms (ALWAYS_RAG/LC/GRAPH etc.) call `retrieve_context` directly and are not affected.
+`phase2-ablations.toml` sets it for all jobs. A job may also name `sample_file` (a file under data/samples) to run a subset of tasks.
+Separate backend bug for the next backend freeze: `find_symbol` should not read the whole collection on large indexes.

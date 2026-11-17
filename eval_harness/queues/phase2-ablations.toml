@@ -11,6 +11,7 @@
 #     --queue eval_harness/queues/phase2-ablations.toml \
 #     --pipeline-config eval_harness/configs/pipeline_phase2.toml \
 #     --configs eval_harness/configs --cwd .
+# no_lightweight_tools = true: issue-text prompts never go to the backend lookup tools (see docs/handover/phase2_next_runs.md, section 8).
 # Estimates are minutes for the whole job; a job is started only if estimate x safety_factor fits before the hard stop.
 # Do not run this while a LocAgent or other Ollama job holds the GPU (see docs/handover/phase2_next_runs.md).
 
@@ -29,6 +30,7 @@ dataset = "swe-bench-lite"
 tasks = 27
 estimated_minutes = 10
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-02-qwen3.5-9b-GASR-swe-bench-lite"
@@ -38,6 +40,7 @@ dataset = "swe-bench-lite"
 tasks = 27
 estimated_minutes = 10
 answer_locations_instruction = true
+no_lightweight_tools = true
 hold_after = "checkpoint: SWE-Lite full rows done; review them, then delete data/queue/STOPPED and rerun for the overnight part"
 
 [[job]]
@@ -48,6 +51,7 @@ dataset = "loc-bench"
 tasks = 56
 estimated_minutes = 22
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-04-qwen3.5-9b-GASR-loc-bench"
@@ -57,6 +61,7 @@ dataset = "loc-bench"
 tasks = 56
 estimated_minutes = 22
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-05-qwen3.5-9b-GASR-gasr_gate_off-loc-bench"
@@ -67,6 +72,7 @@ ablation = "gasr_gate_off"
 tasks = 56
 estimated_minutes = 22
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-06-qwen3.5-9b-GAPA-gate_no_scores-loc-bench"
@@ -77,6 +83,7 @@ ablation = "gate_no_scores"
 tasks = 56
 estimated_minutes = 22
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-07-qwen3.5-9b-GAPA-gate_no_deps-loc-bench"
@@ -87,6 +94,7 @@ ablation = "gate_no_deps"
 tasks = 56
 estimated_minutes = 22
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-08-qwen3.5-9b-GASR-gasr_gate_no_shortcut-loc-bench"
@@ -97,6 +105,7 @@ ablation = "gasr_gate_no_shortcut"
 tasks = 56
 estimated_minutes = 22
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-09-qwen3.5-9b-GASR-gasr_gate_off-swe-bench-lite"
@@ -107,6 +116,7 @@ ablation = "gasr_gate_off"
 tasks = 27
 estimated_minutes = 10
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-10-qwen3.5-9b-GAPA-gate_no_scores-swe-bench-lite"
@@ -117,6 +127,7 @@ ablation = "gate_no_scores"
 tasks = 27
 estimated_minutes = 10
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-11-qwen3.5-9b-GAPA-gate_no_deps-swe-bench-lite"
@@ -127,6 +138,7 @@ ablation = "gate_no_deps"
 tasks = 27
 estimated_minutes = 10
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-12-qwen3.5-9b-GASR-gasr_gate_no_shortcut-swe-bench-lite"
@@ -137,6 +149,7 @@ ablation = "gasr_gate_no_shortcut"
 tasks = 27
 estimated_minutes = 10
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-13-qwen3.5-9b-GAPA-no_graph_expansion-loc-bench"
@@ -147,6 +160,7 @@ ablation = "no_graph_expansion"
 tasks = 56
 estimated_minutes = 22
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-14-qwen3.5-9b-GASR-no_graph_expansion-loc-bench"
@@ -157,6 +171,7 @@ ablation = "no_graph_expansion"
 tasks = 56
 estimated_minutes = 22
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-15-qwen3.5-9b-GAPA-no_graph_expansion-swe-bench-lite"
@@ -167,6 +182,7 @@ ablation = "no_graph_expansion"
 tasks = 27
 estimated_minutes = 10
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-16-qwen3.5-9b-GASR-no_graph_expansion-swe-bench-lite"
@@ -177,6 +193,7 @@ ablation = "no_graph_expansion"
 tasks = 27
 estimated_minutes = 10
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-17-qwen3.5-9b-GAPA-contains_only-loc-bench"
@@ -187,6 +204,7 @@ ablation = "contains_only"
 tasks = 56
 estimated_minutes = 22
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-18-qwen3.5-9b-GASR-contains_only-loc-bench"
@@ -197,6 +215,7 @@ ablation = "contains_only"
 tasks = 56
 estimated_minutes = 22
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-19-qwen3.5-9b-GAPA-contains_only-swe-bench-lite"
@@ -207,6 +226,7 @@ ablation = "contains_only"
 tasks = 27
 estimated_minutes = 10
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-20-qwen3.5-9b-GASR-contains_only-swe-bench-lite"
@@ -217,6 +237,7 @@ ablation = "contains_only"
 tasks = 27
 estimated_minutes = 10
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-21-qwen3.5-9b-GAPA-truncation-loc-bench"
@@ -227,6 +248,7 @@ ablation = "truncation"
 tasks = 56
 estimated_minutes = 22
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-22-qwen3.5-9b-GASR-truncation-loc-bench"
@@ -237,6 +259,7 @@ ablation = "truncation"
 tasks = 56
 estimated_minutes = 22
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-23-qwen3.5-9b-GAPA-truncation-swe-bench-lite"
@@ -247,6 +270,7 @@ ablation = "truncation"
 tasks = 27
 estimated_minutes = 10
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-24-qwen3.5-9b-GASR-truncation-swe-bench-lite"
@@ -257,6 +281,7 @@ ablation = "truncation"
 tasks = 27
 estimated_minutes = 10
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-25-qwen3.5-9b-GAPA-no_keyword_channel-loc-bench"
@@ -267,6 +292,7 @@ ablation = "no_keyword_channel"
 tasks = 56
 estimated_minutes = 22
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-26-qwen3.5-9b-GASR-no_keyword_channel-loc-bench"
@@ -277,6 +303,7 @@ ablation = "no_keyword_channel"
 tasks = 56
 estimated_minutes = 22
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-27-qwen3.5-9b-GAPA-no_keyword_channel-swe-bench-lite"
@@ -287,6 +314,7 @@ ablation = "no_keyword_channel"
 tasks = 27
 estimated_minutes = 10
 answer_locations_instruction = true
+no_lightweight_tools = true
 
 [[job]]
 id = "p2-abl-28-qwen3.5-9b-GASR-no_keyword_channel-swe-bench-lite"
@@ -297,3 +325,4 @@ ablation = "no_keyword_channel"
 tasks = 27
 estimated_minutes = 10
 answer_locations_instruction = true
+no_lightweight_tools = true

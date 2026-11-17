@@ -152,13 +152,15 @@ class Queue:
     def cmd(self, job: dict) -> list[str]:
         c = self.a.configs
         cmd = [sys.executable, "-m", "harness.run", "--profile", str(self.a.profile), "--dataset", job["dataset"], "--model", job["model"],
-               "--arm", job["arm"], "--sample", str(self.data / "samples" / f"{job['dataset']}.sample.json"),
+               "--arm", job["arm"], "--sample", str(self.data / "samples" / job.get("sample_file", f"{job['dataset']}.sample.json")),
                "--out", str(self.job_out(job)), "--experiment", str(c / "experiment.toml"), "--pipeline-config", str(self.a.pipeline_config),
                "--index-config", str(c / "index.toml"), "--run-config", str(c / "run.toml"), "--ablations-config", str(c / "ablations.toml")]
         if job.get("ablation"):
             cmd += ["--ablation", job["ablation"]]
         if job.get("answer_locations_instruction"):                  # opt-in, default off (extras.toml)
             cmd.append("--answer-locations-instruction")
+        if job.get("no_lightweight_tools"):                          # opt-in, default off: lookup tools stay as the backend default
+            cmd.append("--no-lightweight-tools")
         if self.q["queue"].get("allow_dirty") or job.get("allow_dirty"):
             cmd.append("--allow-dirty")
         for s in job.get("answer_stop") or []:
