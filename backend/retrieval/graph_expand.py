@@ -19,6 +19,21 @@ except ImportError:
     from graphify_adapter import CodeGraphAdapter, get_adapter  # type: ignore
 
 
+# Neighbour ordering used before the ``max_neighbors`` cap. Mirrors the relative
+# order of ``pruning.file._RELATION_PRIORITY`` (a test keeps them in sync).
+_REL_ORDER: dict[str, float] = {
+    "callee": 1.00,
+    "calls": 1.00,
+    "inherits": 0.95,
+    "inherits_from": 0.95,
+    "caller": 0.85,
+    "import": 0.75,
+    "imports": 0.75,
+    "contains": 0.70,
+    "default": 0.65,
+}
+
+
 def _chroma_collection():
     """Lazy Chroma open — avoid importing retrieval_tool (heavy MiniLM side effects)."""
     if os.environ.get("GASR_OFFLINE", "").strip() in ("1", "true", "yes"):
@@ -186,16 +201,29 @@ def graph_expand(
             "hops": hops,
             "graph_backend": adapter.backend,
             "edge_counts": {"neighbors": 0},
+            "neighbor_relations": {},
         }
 
-    neighbor_ids = adapter.neighbors(
+    triples = adapter.neighbors_with_relations(
         seed_keys,
         hops=hops,
         extracted_only=extracted_only,
         edge_types=("contains",) if os.environ.get("ABL_CONTAINS_ONLY", "0") == "1" else None,
     )
-    if max_neighbors and len(neighbor_ids) > max_neighbors:
-        neighbor_ids = neighbor_ids[:max_neighbors]
+    # Rank neighbours before the cap so the cap drops the least useful ones
+    # (callee > inherits > caller > imports > contains > other; nearer hop first;
+    # BFS order breaks ties) instead of whichever BFS happened to find last.
+    triples = [
+        t
+        for _i, t in sorted(
+            enumerate(triples),
+            key=lambda it: (-_REL_ORDER.get(it[1][1], _REL_ORDER["default"]), it[1][2], it[0]),
+        )
+    ]
+    if max_neighbors and len(triples) > max_neighbors:
+        triples = triples[:max_neighbors]
+    neighbor_ids = [n for n, _r, _d in triples]
+    relation_of = {n: r for n, r, _d in triples}
 
     collection = _chroma_collection()
     new_chunks: list[dict[str, Any]] = []
@@ -208,6 +236,8 @@ def graph_expand(
             if cid in seen_chunk:
                 continue
             seen_chunk.add(cid)
+            # Keep the edge type: the graph-aware pruner scores neighbours on it.
+            chunk["relation_type"] = relation_of.get(nid, "default")
             new_chunks.append(chunk)
 
     return {
@@ -218,6 +248,7 @@ def graph_expand(
         "hops": hops,
         "graph_backend": adapter.backend,
         "edge_counts": {"neighbors": len(neighbor_ids)},
+        "neighbor_relations": relation_of,
     }
 
 

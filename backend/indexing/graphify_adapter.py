@@ -325,15 +325,39 @@ class CodeGraphAdapter:
             return key
         return None
 
-    def neighbors(
+    @staticmethod
+    def normalize_relation(rel: str) -> str:
+        """Map a stored adjacency relation to the label the pruner scores on.
+
+        Forward ``calls`` → ``callee`` (the seed calls it); reverse ``calls`` →
+        ``caller``. Inheritance/import/containment keep their own labels;
+        reverse inherit/import edges fall back to ``default``.
+        """
+        r = (rel or "").strip().lower().replace(" ", "_")
+        rev = r.startswith("rev_")
+        base = r[4:] if rev else r
+        if base in ("calls", "call"):
+            return "caller" if rev else "callee"
+        if base in ("inherits_from", "inherits", "inherit", "implements"):
+            return "default" if rev else "inherits"
+        if base in ("imports", "import"):
+            return "default" if rev else "imports"
+        if base in ("contains", "contain", "contained_in", "defines", "defined_in"):
+            return "contains"
+        return "default"
+
+    def neighbors_with_relations(
         self,
         seed_ids: list[str],
         hops: int = 1,
         edge_types: Optional[Iterable[str]] = None,
         extracted_only: bool = True,
-    ) -> list[str]:
+    ) -> list[tuple[str, str, int]]:
         """
-        BFS up to ``hops`` from seeds. Returns neighbor node keys (excluding seeds).
+        BFS up to ``hops`` from seeds. Returns ``(node_key, relation, distance)``
+        for each neighbour (seeds excluded) in BFS discovery order. ``relation``
+        is the *normalized* label of the edge through which the node was first
+        reached (see ``normalize_relation``); ``distance`` is the hop count (>=1).
         """
         if hops < 1 or not seed_ids:
             return []
@@ -342,7 +366,7 @@ class CodeGraphAdapter:
         start = [s for s in start if s]
         seen = set(start)
         frontier = deque((s, 0) for s in start)
-        found: list[str] = []
+        found: list[tuple[str, str, int]] = []
 
         while frontier:
             node, dist = frontier.popleft()
@@ -359,10 +383,28 @@ class CodeGraphAdapter:
                 if nbr in seen:
                     continue
                 seen.add(nbr)
-                found.append(nbr)
+                found.append((nbr, self.normalize_relation(rel), dist + 1))
                 frontier.append((nbr, dist + 1))
 
         return found
+
+    def neighbors(
+        self,
+        seed_ids: list[str],
+        hops: int = 1,
+        edge_types: Optional[Iterable[str]] = None,
+        extracted_only: bool = True,
+    ) -> list[str]:
+        """
+        BFS up to ``hops`` from seeds. Returns neighbor node keys (excluding seeds).
+        Edge types are dropped; use ``neighbors_with_relations`` to keep them.
+        """
+        return [
+            n
+            for n, _rel, _d in self.neighbors_with_relations(
+                seed_ids, hops=hops, edge_types=edge_types, extracted_only=extracted_only
+            )
+        ]
 
     def node_attrs(self, node_id: str) -> dict[str, Any]:
         key = self._resolve(node_id) or node_id
