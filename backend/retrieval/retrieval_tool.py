@@ -1078,6 +1078,23 @@ def list_files(directory: str = "", extension: str = "") -> list[str]:
     return sorted(paths)
 
 
+_METADATA_PAGE = 2000  # chroma raises "too many SQL variables" when one get() spans a very large collection
+
+
+def _iter_metadatas(page: int = _METADATA_PAGE):
+    """Yield every chunk metadata of the collection in pages (same rows as one unpaged get)."""
+    offset = 0
+    while True:
+        rows = collection.get(include=["metadatas"], limit=page, offset=offset)
+        metas = rows.get("metadatas", []) or []
+        if not metas:
+            return
+        yield from metas
+        if len(metas) < page:
+            return
+        offset += page
+
+
 def find_symbol(symbol: str, limit: int = 20) -> list[dict]:
     """Find exact class/function definitions and return their locations only.
 
@@ -1090,11 +1107,10 @@ def find_symbol(symbol: str, limit: int = 20) -> list[dict]:
         return []
 
     limit = max(1, min(limit, 100))
-    rows = collection.get(include=["metadatas"])
     matches = {}
     definition_types = {"function", "class", "method", "def"}
 
-    for meta in rows.get("metadatas", []) or []:
+    for meta in _iter_metadatas():
         name = str(meta.get("name") or "")
         qualified = str(meta.get("qualified_name") or "")
         # Exact definition identity only — "symbol in symbols" pulls co-located
