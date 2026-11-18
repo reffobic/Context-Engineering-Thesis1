@@ -25,6 +25,11 @@ from typing import Any
 
 import requests
 
+try:
+    from diamond.judge_json import loads_lenient
+except ImportError:  # run as a script from backend/diamond
+    from judge_json import loads_lenient
+
 logger = logging.getLogger(__name__)
 
 # ── tunables ──────────────────────────────────────────────────────────────────
@@ -231,7 +236,7 @@ def _parse_response(raw: str) -> dict[str, Any]:
     if m:
         s = m.group(0)
 
-    data = json.loads(s)
+    data = loads_lenient(s)
 
     sufficient = bool(data.get("sufficient", False))
     confidence = str(data.get("confidence", "low")).lower()
@@ -379,7 +384,7 @@ def _strip_judge_raw(raw: str) -> str:
 
 
 def _parse_structure_response(raw: str) -> dict[str, Any]:
-    data = json.loads(_strip_judge_raw(raw))
+    data = loads_lenient(_strip_judge_raw(raw))
     need = str(data.get("need", "UNCLEAR")).upper()
     if need not in ("STRUCTURE", "CONTEXT", "UNCLEAR"):
         need = "UNCLEAR"
@@ -394,7 +399,7 @@ def _parse_structure_response(raw: str) -> dict[str, Any]:
 
 
 def _parse_rag_gate_response(raw: str) -> dict[str, Any]:
-    data = json.loads(_strip_judge_raw(raw))
+    data = loads_lenient(_strip_judge_raw(raw))
     sufficient = bool(data.get("sufficient", False))
     confidence = str(data.get("confidence", "low")).lower()
     if confidence not in ("high", "medium", "low"):

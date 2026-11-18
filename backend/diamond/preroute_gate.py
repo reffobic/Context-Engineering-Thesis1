@@ -41,6 +41,11 @@ import json
 import logging
 from typing import Any, Callable
 
+try:
+    from diamond.judge_json import loads_lenient
+except ImportError:  # run as a script from backend/diamond
+    from judge_json import loads_lenient
+
 logger = logging.getLogger(__name__)
 
 # ── Stage 1: query-only heuristic ──────────────────────────────────────────
@@ -317,7 +322,7 @@ def _parse_generative_response(raw: str) -> dict[str, Any]:
     match = _re.search(r"\{.*\}", raw, _re.DOTALL)
     if not match:
         raise ValueError(f"no JSON object found in response: {raw[:200]!r}")
-    parsed = json.loads(match.group(0))
+    parsed = loads_lenient(match.group(0))
     sufficient = bool(parsed["sufficient"])
     return {
         "sufficient": sufficient,
