@@ -1,0 +1,55 @@
+{
+ "dataset": "swe-qa-w1",
+ "seed": 42,
+ "method": "2 per (repo, question type) cell; within a cell the lowest sha256(seed:task:instance_id); type = first word of the query",
+ "n_total": 144,
+ "n_sample": 24,
+ "source_tasks_sha256": "3c3cffd1e025e088d4d372de48db73bdcffb66cec1471bd42f4de240132025a2",
+ "created_utc": "2026-11-19T17:52:31.749193+00:00",
+ "per_repo_type": {
+  "pallets/flask": {
+   "how": 2,
+   "what": 2,
+   "where": 2,
+   "why": 2
+  },
+  "psf/requests": {
+   "how": 2,
+   "what": 2,
+   "where": 2,
+   "why": 2
+  },
+  "pytest-dev/pytest": {
+   "how": 2,
+   "what": 2,
+   "where": 2,
+   "why": 2
+  }
+ },
+ "instance_ids": [
+  "flask-004",
+  "flask-007",
+  "flask-013",
+  "flask-014",
+  "flask-024",
+  "flask-025",
+  "flask-040",
+  "flask-045",
+  "pytest-002",
+  "pytest-004",
+  "pytest-016",
+  "pytest-019",
+  "pytest-028",
+  "pytest-035",
+  "pytest-043",
+  "pytest-045",
+  "requests-005",
+  "requests-008",
+  "requests-017",
+  "requests-022",
+  "requests-029",
+  "requests-036",
+  "requests-038",
+  "requests-043"
+ ]
+}

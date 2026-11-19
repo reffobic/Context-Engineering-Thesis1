@@ -477,7 +477,7 @@ the answer likely needs more context than what was retrieved.
 
 Reply ONLY with a JSON object — no markdown, no explanation outside the JSON.
 Schema:
-{"sufficient": true|false, "confidence": "high"|"medium"|"low", "reason": "<one sentence>"}"""
+{"reason": "<one sentence>", "sufficient": true|false, "confidence": "high"|"medium"|"low"}"""
 
 _STRUCTURED_USER_TEMPLATE = """\
 query: "{query}"
@@ -505,25 +505,7 @@ evidence is scattered across files or the chunk has significant external
 dependencies the answer would need to follow.
 
 ## Step 6 — decision
-State your reasoning in one sentence, then output the JSON verdict."""
-
-# --- Reason-first prompt variant (temporary, for the pre-freeze sweep) ---
-# Pre-Route emits its reasoning before the decision. The original schema
-# puts "sufficient" first, so the model commits to a verdict before it writes
-# the reason. These variants move "reason" to the first JSON key.
-# Built with .replace() so Steps 1-5 and all metadata fields stay identical.
-_STRUCTURED_SYSTEM_REASON_FIRST = _STRUCTURED_SYSTEM.replace(
-    '{"sufficient": true|false, "confidence": "high"|"medium"|"low", "reason": "<one sentence>"}',
-    '{"reason": "<one sentence>", "sufficient": true|false, "confidence": "high"|"medium"|"low"}',
-)
-_STRUCTURED_USER_TEMPLATE_REASON_FIRST = _STRUCTURED_USER_TEMPLATE.replace(
-    "State your reasoning in one sentence, then output the JSON verdict.",
-    'Write your one-sentence reasoning in the "reason" field first, then the verdict fields.',
-)
-# Fail at import if either replace() matched nothing, so a silent no-op
-# cannot make the sweep compare two identical prompts.
-assert _STRUCTURED_SYSTEM_REASON_FIRST != _STRUCTURED_SYSTEM
-assert _STRUCTURED_USER_TEMPLATE_REASON_FIRST != _STRUCTURED_USER_TEMPLATE
+Write your one-sentence reasoning in the "reason" field first, then the verdict fields."""
 
 
 def _guess_task_type(query: str) -> str:
@@ -588,14 +570,7 @@ def preroute_structured_gate(
 
     meta = top_chunk.get("metadata") or {}
     dependencies = _parse_dependencies(meta)
-    # Count distinct files among only the top-K chunks, K from GATE_CANDIDATE_TOPK.
-    # The gate receives all retrieved chunks (47 by default), which inflates this
-    # count (median 22 in the Phase 2 logs) regardless of how focused the query is.
-    # "0" keeps the old behavior (count over every retrieved chunk), so nothing
-    # changes unless the switch is set.
-    gate_topk = int(_os.environ.get("GATE_CANDIDATE_TOPK", "0"))
-    scoped_chunks = raw_chunks[:gate_topk] if gate_topk > 0 else raw_chunks
-    candidate_files = len({(c.get("metadata") or {}).get("file", "") for c in scoped_chunks})
+    candidate_files = len({(c.get("metadata") or {}).get("file", "") for c in raw_chunks})
     file_path = meta.get("file", "unknown")
     chunk_type = meta.get("chunk_type", "unknown")
     context_header = meta.get("context_header")
@@ -612,10 +587,7 @@ def preroute_structured_gate(
         sim_lines.append(f"sim_gap: {top_chunk['sim_gap']}")
     similarity_lines = "\n".join(sim_lines)
 
-    # GATE_REASON_FIRST=1 selects the reason-first prompt; default "0" keeps the
-    # original prompt, so behavior is unchanged unless the switch is set.
-    reason_first = _os.environ.get("GATE_REASON_FIRST", "0") == "1"
-    template = _STRUCTURED_USER_TEMPLATE_REASON_FIRST if reason_first else _STRUCTURED_USER_TEMPLATE
+    template = _STRUCTURED_USER_TEMPLATE
     drop_headings = _os.environ.get("ABL_GATE_DROP_HEADINGS", "0") == "1"
     if _os.environ.get("ABL_GATE_NO_SCORES", "0") == "1":
         for line in ("top_score: {top_score}\n", "score_margin: {score_margin}\n",
@@ -642,8 +614,7 @@ def preroute_structured_gate(
     payload = {
         "model": (model or "").strip() or _default_gate_model(),
         "messages": [
-            # System prompt follows the same switch as the user template above.
-            {"role": "system", "content": _STRUCTURED_SYSTEM_REASON_FIRST if reason_first else _STRUCTURED_SYSTEM},
+            {"role": "system", "content": _STRUCTURED_SYSTEM},
             {"role": "user", "content": user_msg},
         ],
         "stream": False,
