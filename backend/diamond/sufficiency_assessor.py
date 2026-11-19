@@ -211,6 +211,26 @@ def _top_score(items: list[dict[str, Any]]) -> float | None:
                 pass
     return None
 
+def _to_bool(value: Any, default: bool = False) -> bool:
+    """Coerce a model-supplied JSON value to bool.
+
+    ``bool("false")`` is True in Python, so a model that returns the string
+    "false" instead of the JSON literal false would be read as sufficient and
+    routed to RAG. Strings are matched explicitly; an unrecognised string or
+    None returns ``default`` (insufficient, the conservative choice).
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        v = value.strip().lower()
+        if v in ("true", "yes", "1"):
+            return True
+        if v in ("false", "no", "0", ""):
+            return False
+        return default
+    if value is None:
+        return default
+    return bool(value)
 
 def _parse_response(raw: str) -> dict[str, Any]:
     """Extract JSON from the model reply, stripping think-tags and fences."""
@@ -233,7 +253,7 @@ def _parse_response(raw: str) -> dict[str, Any]:
 
     data = json.loads(s)
 
-    sufficient = bool(data.get("sufficient", False))
+    sufficient = _to_bool(data.get("sufficient", False))
     confidence = str(data.get("confidence", "low")).lower()
     if confidence not in ("high", "medium", "low"):
         confidence = "low"
@@ -395,7 +415,7 @@ def _parse_structure_response(raw: str) -> dict[str, Any]:
 
 def _parse_rag_gate_response(raw: str) -> dict[str, Any]:
     data = json.loads(_strip_judge_raw(raw))
-    sufficient = bool(data.get("sufficient", False))
+    sufficient = _to_bool(data.get("sufficient", False))
     confidence = str(data.get("confidence", "low")).lower()
     if confidence not in ("high", "medium", "low"):
         confidence = "low"

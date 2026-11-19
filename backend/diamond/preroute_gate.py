@@ -308,6 +308,26 @@ Reasoning steps:
    requires following relationships beyond this one chunk?
 3. If genuinely unsure, prefer sufficient=true (cheaper path)."""
 
+def _to_bool(value: Any, default: bool = False) -> bool:
+    """Coerce a model-supplied JSON value to bool.
+
+    ``bool("false")`` is True in Python, so a model that returns the string
+    "false" instead of the JSON literal false would be read as sufficient and
+    routed to RAG. Strings are matched explicitly; an unrecognised string or
+    None returns ``default`` (insufficient, the conservative choice).
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        v = value.strip().lower()
+        if v in ("true", "yes", "1"):
+            return True
+        if v in ("false", "no", "0", ""):
+            return False
+        return default
+    if value is None:
+        return default
+    return bool(value)
 
 def _parse_generative_response(raw: str) -> dict[str, Any]:
     """Same defensive style as sufficiency_assessor._parse_response —
@@ -318,7 +338,7 @@ def _parse_generative_response(raw: str) -> dict[str, Any]:
     if not match:
         raise ValueError(f"no JSON object found in response: {raw[:200]!r}")
     parsed = json.loads(match.group(0))
-    sufficient = bool(parsed["sufficient"])
+    sufficient = _to_bool(parsed["sufficient"])
     return {
         "sufficient": sufficient,
         "confidence": str(parsed.get("confidence", "low")),
@@ -487,6 +507,24 @@ dependencies the answer would need to follow.
 ## Step 6 — decision
 State your reasoning in one sentence, then output the JSON verdict."""
 
+# --- Reason-first prompt variant (temporary, for the pre-freeze sweep) ---
+# Pre-Route emits its reasoning before the decision. The original schema
+# puts "sufficient" first, so the model commits to a verdict before it writes
+# the reason. These variants move "reason" to the first JSON key.
+# Built with .replace() so Steps 1-5 and all metadata fields stay identical.
+_STRUCTURED_SYSTEM_REASON_FIRST = _STRUCTURED_SYSTEM.replace(
+    '{"sufficient": true|false, "confidence": "high"|"medium"|"low", "reason": "<one sentence>"}',
+    '{"reason": "<one sentence>", "sufficient": true|false, "confidence": "high"|"medium"|"low"}',
+)
+_STRUCTURED_USER_TEMPLATE_REASON_FIRST = _STRUCTURED_USER_TEMPLATE.replace(
+    "State your reasoning in one sentence, then output the JSON verdict.",
+    'Write your one-sentence reasoning in the "reason" field first, then the verdict fields.',
+)
+# Fail at import if either replace() matched nothing, so a silent no-op
+# cannot make the sweep compare two identical prompts.
+assert _STRUCTURED_SYSTEM_REASON_FIRST != _STRUCTURED_SYSTEM
+assert _STRUCTURED_USER_TEMPLATE_REASON_FIRST != _STRUCTURED_USER_TEMPLATE
+
 
 def _guess_task_type(query: str) -> str:
     q = query.lower()
@@ -550,7 +588,14 @@ def preroute_structured_gate(
 
     meta = top_chunk.get("metadata") or {}
     dependencies = _parse_dependencies(meta)
-    candidate_files = len({(c.get("metadata") or {}).get("file", "") for c in raw_chunks})
+    # Count distinct files among only the top-K chunks, K from GATE_CANDIDATE_TOPK.
+    # The gate receives all retrieved chunks (47 by default), which inflates this
+    # count (median 22 in the Phase 2 logs) regardless of how focused the query is.
+    # "0" keeps the old behavior (count over every retrieved chunk), so nothing
+    # changes unless the switch is set.
+    gate_topk = int(_os.environ.get("GATE_CANDIDATE_TOPK", "0"))
+    scoped_chunks = raw_chunks[:gate_topk] if gate_topk > 0 else raw_chunks
+    candidate_files = len({(c.get("metadata") or {}).get("file", "") for c in scoped_chunks})
     file_path = meta.get("file", "unknown")
     chunk_type = meta.get("chunk_type", "unknown")
     context_header = meta.get("context_header")
@@ -567,7 +612,10 @@ def preroute_structured_gate(
         sim_lines.append(f"sim_gap: {top_chunk['sim_gap']}")
     similarity_lines = "\n".join(sim_lines)
 
-    template = _STRUCTURED_USER_TEMPLATE
+    # GATE_REASON_FIRST=1 selects the reason-first prompt; default "0" keeps the
+    # original prompt, so behavior is unchanged unless the switch is set.
+    reason_first = _os.environ.get("GATE_REASON_FIRST", "0") == "1"
+    template = _STRUCTURED_USER_TEMPLATE_REASON_FIRST if reason_first else _STRUCTURED_USER_TEMPLATE
     drop_headings = _os.environ.get("ABL_GATE_DROP_HEADINGS", "0") == "1"
     if _os.environ.get("ABL_GATE_NO_SCORES", "0") == "1":
         for line in ("top_score: {top_score}\n", "score_margin: {score_margin}\n",
@@ -594,7 +642,8 @@ def preroute_structured_gate(
     payload = {
         "model": (model or "").strip() or _default_gate_model(),
         "messages": [
-            {"role": "system", "content": _STRUCTURED_SYSTEM},
+            # System prompt follows the same switch as the user template above.
+            {"role": "system", "content": _STRUCTURED_SYSTEM_REASON_FIRST if reason_first else _STRUCTURED_SYSTEM},
             {"role": "user", "content": user_msg},
         ],
         "stream": False,

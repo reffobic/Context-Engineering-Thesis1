@@ -668,6 +668,9 @@ def run_pipeline(
             assess_after_expand=_assess_graph,
             build_lc=lambda: _build_lc_chunks(context),
             hard_cap=gasr_hard_cap,
+            # Fixed-hop policy (same as ALWAYS_GRAPH): the post-expand judge never
+            # changed the route in the Phase 2 logs and cost about 1.4k tokens per hop.
+            post_expand_judge=False,
         )
         route = ladder.route
         hops_used = ladder.hops_used
@@ -812,6 +815,9 @@ def run_pipeline(
             assess_after_expand=_assess_graph,
             build_lc=lambda: _build_lc_chunks(context),
             hard_cap=gasr_hard_cap,
+            # Fixed-hop policy (same as ALWAYS_GRAPH): the post-expand judge never
+            # changed the route in the Phase 2 logs and cost about 1.4k tokens per hop.
+            post_expand_judge=False,
         )
         route = ladder.route
         hops_used = ladder.hops_used
