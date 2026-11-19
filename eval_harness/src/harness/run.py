@@ -27,6 +27,7 @@ import traceback
 from pathlib import Path
 from typing import Any
 
+from .provider import provider_env
 from .common import OllamaClient, OllamaError, config_hash, gpu_info, load_toml
 from .envinfo import _graphify_version, environment_info
 from .index_cache import index_dir, make_key
@@ -199,20 +200,25 @@ class Job:
         if free_gb < rc["min_free_disk_gb"]:
             raise JobAbort(f"only {free_gb:.0f} GB free for scratch copies")
         self.scratch_root = scratch_root
-        # Ollama, model, GPU
-        try:
+        # Ollama, model, GPU  (paid-API mode: nothing local to check; the provider config is hashed instead)
+        self.api_mode = bool(provider_env())
+        if self.api_mode:
+            version, self.model_digest = "openrouter", None
+            warm, self.gpu = {"seconds": 0, "ollama_ps": None}, None
+        else:
+          try:
             version = self.client.version()
             tags = {m["name"]: m for m in self.client.tags()}
-        except OllamaError as exc:
+          except OllamaError as exc:
             raise JobAbort(f"Ollama not reachable: {exc}")
-        if a.model not in tags:
+          if a.model not in tags:
             raise JobAbort(f"model {a.model} not present in Ollama")
-        self.model_digest = tags[a.model].get("digest")
-        for m in self.client.ps():                                   # one model resident at a time
+          self.model_digest = tags[a.model].get("digest")
+          for m in self.client.ps():                                   # one model resident at a time
             if m.get("name") != a.model:
                 self.client.unload(m["name"])
-        warm = self.warmup()
-        self.gpu = gpu_info()
+          warm = self.warmup()
+          self.gpu = gpu_info()
         env_rec = effective_record(self.pcfg, env_probe)
         cfgs = {n: config_hash(Path(getattr(a, n))) for n in ("experiment", "pipeline_config", "index_config", "run_config",
                                                               "ablations_config")}
@@ -389,7 +395,7 @@ def run_task(job: Job, task: dict, force_timeout: bool) -> dict:
             **({"answer_stop": job.answer_stop} if job.answer_stop else {})}
     (scratch / "spec.json").write_text(json.dumps(spec), encoding="utf-8")
     env = build_env(job.pcfg, a.model, job.exp, extra={
-        **job.abl_env, "PYTHONPATH": str(Path(__file__).resolve().parents[1]), "CHROMA_PATH": str(scratch / "chroma"),
+        **job.abl_env, **provider_env(), "PYTHONPATH": str(Path(__file__).resolve().parents[1]), "CHROMA_PATH": str(scratch / "chroma"),
         "GRAPHIFY_OUT": str(scratch / "graphify-out"), **({"HARNESS_OLLAMA_REDIRECT_PORT": os.environ["HARNESS_OLLAMA_REDIRECT_PORT"]}
                                                            if os.environ.get("HARNESS_OLLAMA_REDIRECT_PORT") else {})})
     timeout = 1.0 if force_timeout else rc["task_timeout_s"]
@@ -449,6 +455,9 @@ def run_task(job: Job, task: dict, force_timeout: bool) -> dict:
                          "counted_as_failed": True})
     else:
         line["counted_as_failed"] = True
+    if job.api_mode:
+        line["ollama_ps"] = None
+        return line
     try:
         ps = [m for m in job.client.ps() if m.get("name") == a.model]
         line["ollama_ps"] = {"size": ps[0].get("size"), "size_vram": ps[0].get("size_vram")} if ps else None
@@ -547,7 +556,7 @@ def main() -> int:
                 print(f"[ABORT] {line['failure']['detail'][:300]}")
                 return 3
             consecutive = consecutive + 1 if line["status"] in ("timeout", "oom", "error", "preflight_failed") else 0
-            if line["status"] in ("timeout", "oom"):                       # a stuck/overloaded runner: reset and re-warm
+            if line["status"] in ("timeout", "oom") and not job.api_mode:  # a stuck/overloaded runner: reset and re-warm
                 try:
                     job.client.unload(a.model)
                     time.sleep(3)

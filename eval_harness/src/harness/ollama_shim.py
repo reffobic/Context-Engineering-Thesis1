@@ -53,7 +53,11 @@ class Recorder:
 
 class OllamaShim:
     def __init__(self, cfg: dict, recorder: Recorder, redirect: dict[str, str] | None = None,
-                 ollama_ports: tuple[int, ...] = (11434,), answer_stop: list[str] | None = None) -> None:
+                 ollama_ports: tuple[int, ...] = (11434,), answer_stop: list[str] | None = None,
+                 provider: Any = None) -> None:
+        # paid-API mode: when HARNESS_PROVIDER_CONFIG is set, Ollama-shaped calls go to the provider instead
+        from .provider import provider_from_env
+        self.provider = provider if provider is not None else provider_from_env()
         self.cfg, self.rec, self.redirect = cfg, recorder, redirect or {}
         self.answer_stop = list(answer_stop or [])                # opt-in (extras.toml / --answer-stop); empty = requests unchanged
         self.ports = ollama_ports
@@ -120,6 +124,8 @@ class OllamaShim:
             "num_ctx": num_ctx,
             "truncation_suspected": bool(pe is not None and pe >= num_ctx - int(o["truncation_margin_tokens"])),
             "error": error, "http_status": http_status, "error_text": error_text,
+            "provider_usage": (resp or {}).get("provider_usage"),       # reasoning tokens, cost (paid-API mode)
+            "provider_retries": getattr(self, "_last_retries", None) if self.provider else None,
             # first words of judge/gate replies (not of answers) to diagnose unparseable verdicts
             # exact request and full reply of the gate calls (small), for diagnosing routing decisions
             "request": ({"messages": msgs, "options": sent["options"], "think": sent.get("think"),
@@ -143,7 +149,13 @@ class OllamaShim:
             sent, changed = shim.prepare(json)
             t = time.perf_counter()
             try:
-                r = shim._orig_post(shim._rewrite(url), json=sent, **kw)
+                if shim.provider:                                  # paid API: same recording, different transport
+                    import requests as _rq
+                    st, raw, shim._last_retries = shim.provider.call(urlparse(url).path, sent, ROLE.get())
+                    r = _rq.Response()
+                    r.status_code, r._content, r.url = st, raw, url
+                else:
+                    r = shim._orig_post(shim._rewrite(url), json=sent, **kw)
                 try:
                     body = r.json()
                 except ValueError:
@@ -167,8 +179,13 @@ class OllamaShim:
                                          method=req.get_method(), headers=dict(req.header_items()))
             t = time.perf_counter()
             try:
-                resp = shim._orig_urlopen(new, *a, **kw)
-                raw = resp.read()
+                if shim.provider:
+                    st, raw, shim._last_retries = shim.provider.call(urlparse(url).path, sent, ROLE.get())
+                    if st >= 400:
+                        raise urllib.error.HTTPError(url, st, "provider error", {}, io.BytesIO(raw))
+                else:
+                    resp = shim._orig_urlopen(new, *a, **kw)
+                    raw = resp.read()
                 shim._record(url, orig, sent, changed, _json.loads(raw.decode("utf-8")),
                              (time.perf_counter() - t) * 1000, None)
                 return _Replay(raw)
