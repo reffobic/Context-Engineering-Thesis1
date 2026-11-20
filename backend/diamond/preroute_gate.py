@@ -313,6 +313,26 @@ Reasoning steps:
    requires following relationships beyond this one chunk?
 3. If genuinely unsure, prefer sufficient=true (cheaper path)."""
 
+def _to_bool(value: Any, default: bool = False) -> bool:
+    """Coerce a model-supplied JSON value to bool.
+
+    ``bool("false")`` is True in Python, so a model that returns the string
+    "false" instead of the JSON literal false would be read as sufficient and
+    routed to RAG. Strings are matched explicitly; an unrecognised string or
+    None returns ``default`` (insufficient, the conservative choice).
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        v = value.strip().lower()
+        if v in ("true", "yes", "1"):
+            return True
+        if v in ("false", "no", "0", ""):
+            return False
+        return default
+    if value is None:
+        return default
+    return bool(value)
 
 def _parse_generative_response(raw: str) -> dict[str, Any]:
     """Same defensive style as sufficiency_assessor._parse_response —
@@ -323,7 +343,7 @@ def _parse_generative_response(raw: str) -> dict[str, Any]:
     if not match:
         raise ValueError(f"no JSON object found in response: {raw[:200]!r}")
     parsed = loads_lenient(match.group(0))
-    sufficient = bool(parsed["sufficient"])
+    sufficient = _to_bool(parsed["sufficient"])
     return {
         "sufficient": sufficient,
         "confidence": str(parsed.get("confidence", "low")),
@@ -462,7 +482,7 @@ the answer likely needs more context than what was retrieved.
 
 Reply ONLY with a JSON object — no markdown, no explanation outside the JSON.
 Schema:
-{"sufficient": true|false, "confidence": "high"|"medium"|"low", "reason": "<one sentence>"}"""
+{"reason": "<one sentence>", "sufficient": true|false, "confidence": "high"|"medium"|"low"}"""
 
 _STRUCTURED_USER_TEMPLATE = """\
 query: "{query}"
@@ -490,7 +510,7 @@ evidence is scattered across files or the chunk has significant external
 dependencies the answer would need to follow.
 
 ## Step 6 — decision
-State your reasoning in one sentence, then output the JSON verdict."""
+Write your one-sentence reasoning in the "reason" field first, then the verdict fields."""
 
 
 def _guess_task_type(query: str) -> str:

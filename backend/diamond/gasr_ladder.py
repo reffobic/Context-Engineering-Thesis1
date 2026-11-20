@@ -94,12 +94,19 @@ def run_gasr_ladder(
     assess_rag_gate: Optional[AssessFn] = None,
     assess_rag: Optional[AssessFn] = None,
     assess_structure: Optional[AssessFn] = None,
+    post_expand_judge: bool = True,
 ) -> GasrLadderResult:
     """
     Execute the GASR controller.
 
     Prefer ``assess_rag_gate`` (single merged judge). Legacy ``assess_rag`` +
     ``assess_structure`` are composed once for older tests.
+    ``post_expand_judge``: when True (library default, so existing tests are
+    unchanged), an LLM judge runs after each hop and can stop early. When
+    False, hops run to ``hard_cap`` (or until an expand adds no new chunks),
+    the same fixed-hop policy ALWAYS_GRAPH uses. The server passes False. In
+    the Phase 2 logs the judge never changed the route, and on tasks where it
+    stopped after 1 hop, ALWAYS_GRAPH (2 hops) scored the same.
     """
     if assess_rag_gate is not None:
         gate_fn = assess_rag_gate
@@ -197,16 +204,20 @@ def run_gasr_ladder(
         neighbor_pool.extend(new_chunks)
         current_pruned = re_prune(seed_pool, neighbor_pool)
 
-        decision2 = assess_after_expand()
-        assess_trace.append({"phase": "graph", "hops": hops_used, **decision2})
-        if decision2.get("sufficient"):
-            return _finish(
-                route="GRAPH",
-                hops_used=hops_used,
-                context=current_pruned,
-                assess_trace=assess_trace,
-                expand_trace=expand_trace,
-            )
+        # Optional early stop: ask the judge whether the re-pruned context is
+        # already sufficient. Skipped when post_expand_judge is False, so the
+        # loop falls through to the hop-cap check below.
+        if post_expand_judge:
+            decision2 = assess_after_expand()
+            assess_trace.append({"phase": "graph", "hops": hops_used, **decision2})
+            if decision2.get("sufficient"):
+                return _finish(
+                    route="GRAPH",
+                    hops_used=hops_used,
+                    context=current_pruned,
+                    assess_trace=assess_trace,
+                    expand_trace=expand_trace,
+                )
 
         if hops_used >= hard_cap:
             return _finish(

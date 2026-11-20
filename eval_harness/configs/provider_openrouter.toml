@@ -1,0 +1,12 @@
+# Paid-API run: used only when HARNESS_PROVIDER_CONFIG points to this file. The key itself is never stored here.
+[provider]
+base_url = "https://openrouter.ai/api/v1"
+api_key_env = "OPENROUTER_API_KEY"   # name of the environment variable that holds the key
+reasoning_effort = "none"            # verify with the pilot: some models reject "none"; then use "minimal" or "low"
+send_temperature = true
+send_seed = true
+timeout_s = 300
+max_retries = 3
+
+[provider.models]                    # role name -> model id; roles not listed use "default"
+default = "openai/gpt-5.1"           # gates (gapa_gate_call1/2, gasr_gate) and the answer call

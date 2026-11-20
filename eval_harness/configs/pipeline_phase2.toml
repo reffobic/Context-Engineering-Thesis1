@@ -27,7 +27,7 @@ require_call_graph_json = true       # every index must ship call_graph.json; th
 
 # Harness commits whose bundles/builds must not be used for runs (predate the frozen merge).
 # Pipeline commits runs must not use.
-revoked_pipeline_shas = ["cd84fad1c13d8e7783bff39389cfb195e0cbac5b", "3bbc52f220addbc648d4802dab6b1c658d427612"]
+revoked_pipeline_shas = ["cd84fad1c13d8e7783bff39389cfb195e0cbac5b", "3bbc52f220addbc648d4802dab6b1c658d427612", "a2cfcec312626b4b50f743c4af91a6d118c79d0e"]
 revoked_harness_commits = [
   "2c22f5ddf2acf31675a112d96c3f73d548014901",
   "cd84fad1c13d8e7783bff39389cfb195e0cbac5b",   # configured frozen_sha cd84fad
