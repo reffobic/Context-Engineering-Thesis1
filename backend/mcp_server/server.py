@@ -245,9 +245,20 @@ def _retrieval_summary(items: list[dict]) -> dict:
     }
 
 
+_LOOKUP_MAX_CHARS = 200
+_NOT_A_SYMBOL = frozenset({"a", "an", "the", "this", "that", "it", "is", "of", "to", "in", "and", "or"})
+
+
 def _lightweight_request(user_prompt: str) -> Optional[tuple[str, dict[str, Any]]]:
-    """Return a lightweight tool call only for explicit lookup requests."""
+    """Return a lightweight tool call only for explicit lookup requests.
+
+    A lookup request is a short, single-line question ("where is Foo defined?"). Long or multi-line text is a bug
+    report or an essay question that merely contains a phrase like "calls to ..."; it must go through normal
+    retrieval. (Phase 2: 7 of 83 localization issues were hijacked by the unanchored patterns below.)
+    """
     prompt = user_prompt.strip()
+    if len(prompt) > _LOOKUP_MAX_CHARS or "\n" in prompt or "```" in prompt:
+        return None
     symbol_patterns = (
         r"\bwhere\s+(?:is|are)\s+(?:class\s+|function\s+)?`?([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)?)`?\s+defined\b",
         r"\bdefinition\s+of\s+`?([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)?)`?",
@@ -255,7 +266,7 @@ def _lightweight_request(user_prompt: str) -> Optional[tuple[str, dict[str, Any]
     )
     for pattern in symbol_patterns:
         match = re.search(pattern, prompt, re.IGNORECASE)
-        if match:
+        if match and match.group(1).lower() not in _NOT_A_SYMBOL:
             return "find_symbol", {"symbol": match.group(1)}
 
     reference_patterns = (
@@ -266,7 +277,7 @@ def _lightweight_request(user_prompt: str) -> Optional[tuple[str, dict[str, Any]
     )
     for pattern in reference_patterns:
         match = re.search(pattern, prompt, re.IGNORECASE)
-        if match:
+        if match and match.group(1).lower() not in _NOT_A_SYMBOL:
             return "find_references", {"symbol": match.group(1)}
 
     if re.search(r"\b(?:list|show|find|what|which)\b.{0,35}\bfiles?\b", prompt, re.IGNORECASE):

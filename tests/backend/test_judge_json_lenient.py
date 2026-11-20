@@ -38,3 +38,10 @@ def test_nothing_recognisable_still_fails_so_the_fallback_applies():
         sa._parse_response("I think the context is probably fine.")
     with pytest.raises(json.JSONDecodeError):
         loads_lenient('{"foo": "bar", oops')
+
+
+def test_reason_first_reply_keeps_reason_clean_and_decision():
+    from diamond.judge_json import loads_lenient
+    d = loads_lenient('{"reason": "calls "foo" twice", "sufficient": false, "confidence": "high", "need": "STRUCTURE"}')
+    assert d["sufficient"] is False and d["need"] == "STRUCTURE" and d["confidence"] == "high"
+    assert d["reason"] == 'calls "foo" twice'

@@ -172,8 +172,11 @@ def test_find_best_window_empty():
 
 
 def test_heuristic_weights_default():
+    # The defaults are the Pareto-tuned weights (frozen Oct 21); they are relative
+    # weights for ranking and are deliberately not normalised to 1.0.
     w = HeuristicWeights()
-    assert abs(sum(w.as_tuple()) - 1.0) < 0.01
+    assert all(x > 0 for x in w.as_tuple())
+    assert len(w.as_tuple()) == 4
 
 
 def test_heuristic_weights_custom():
@@ -188,13 +191,17 @@ def test_score_candidate_with_custom_weights():
         "final_score": 0.8,
         "metadata": {"function": "hello", "file": "greet.py"},
     }
-    default_score = score_candidate("hello function", item)
-    # High retrieval weight should increase score when retrieval score is high
+    # Weights are used as given: a retrieval-heavy setting scores a high-retrieval item
+    # above a setting that puts the weight on the other signals.
     high_ret = score_candidate(
         "hello function", item,
         weights=HeuristicWeights(retrieval=0.9, query_match=0.05, function=0.03, structure=0.02),
     )
-    assert high_ret > default_score
+    low_ret = score_candidate(
+        "hello function", item,
+        weights=HeuristicWeights(retrieval=0.02, query_match=0.05, function=0.03, structure=0.9),
+    )
+    assert high_ret > low_ret
 
 
 # ── score_candidate ───────────────────────────────────────────
@@ -208,7 +215,7 @@ def test_score_candidate_returns_float():
     }
     s = score_candidate("hello function", item)
     assert isinstance(s, float)
-    assert 0.0 <= s <= 1.0
+    assert s >= 0.0   # the tuned weights sum above 1, so the score is not capped at 1.0
 
 
 def test_score_candidate_higher_for_relevant():
