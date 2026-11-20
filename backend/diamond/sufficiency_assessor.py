@@ -237,6 +237,22 @@ def _to_bool(value: Any, default: bool = False) -> bool:
         return default
     return bool(value)
 
+def _first_json_object(s: str) -> str:
+    """Return the first complete JSON object in s, or s unchanged if there is none.
+
+    A non-greedy regex stopped at the first closing brace, which can be inside a quoted string
+    (for example a reason text that quotes `{user:first_name}`) and left broken JSON.
+    """
+    i = s.find("{")
+    if i == -1:
+        return s
+    try:
+        _, end = json.JSONDecoder().raw_decode(s[i:])
+    except ValueError:
+        return s
+    return s[i:i + end]
+
+
 def _parse_response(raw: str) -> dict[str, Any]:
     """Extract JSON from the model reply, stripping think-tags and fences."""
     s = raw.strip()
@@ -251,10 +267,8 @@ def _parse_response(raw: str) -> dict[str, Any]:
         lines = s.splitlines()
         s = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:]).strip()
 
-    # find first {...}
-    m = re.search(r"\{[\s\S]*?\}", s)
-    if m:
-        s = m.group(0)
+    # find first complete {...} object (braces inside quoted strings are handled)
+    s = _first_json_object(s)
 
     data = loads_lenient(s)
 
@@ -397,10 +411,7 @@ def _strip_judge_raw(raw: str) -> str:
     if s.startswith("```"):
         lines = s.splitlines()
         s = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:]).strip()
-    m = re.search(r"\{[\s\S]*?\}", s)
-    if m:
-        s = m.group(0)
-    return s
+    return _first_json_object(s)
 
 
 def _parse_structure_response(raw: str) -> dict[str, Any]:

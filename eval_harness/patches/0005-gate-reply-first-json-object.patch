@@ -1,0 +1,90 @@
+diff --git a/backend/diamond/sufficiency_assessor.py b/backend/diamond/sufficiency_assessor.py
+index 25ca0ba..18633ca 100644
+--- a/backend/diamond/sufficiency_assessor.py
++++ b/backend/diamond/sufficiency_assessor.py
+@@ -237,6 +237,22 @@ def _to_bool(value: Any, default: bool = False) -> bool:
+         return default
+     return bool(value)
+ 
++def _first_json_object(s: str) -> str:
++    """Return the first complete JSON object in s, or s unchanged if there is none.
++
++    A non-greedy regex stopped at the first closing brace, which can be inside a quoted string
++    (for example a reason text that quotes `{user:first_name}`) and left broken JSON.
++    """
++    i = s.find("{")
++    if i == -1:
++        return s
++    try:
++        _, end = json.JSONDecoder().raw_decode(s[i:])
++    except ValueError:
++        return s
++    return s[i:i + end]
++
++
+ def _parse_response(raw: str) -> dict[str, Any]:
+     """Extract JSON from the model reply, stripping think-tags and fences."""
+     s = raw.strip()
+@@ -251,10 +267,8 @@ def _parse_response(raw: str) -> dict[str, Any]:
+         lines = s.splitlines()
+         s = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:]).strip()
+ 
+-    # find first {...}
+-    m = re.search(r"\{[\s\S]*?\}", s)
+-    if m:
+-        s = m.group(0)
++    # find first complete {...} object (braces inside quoted strings are handled)
++    s = _first_json_object(s)
+ 
+     data = loads_lenient(s)
+ 
+@@ -397,10 +411,7 @@ def _strip_judge_raw(raw: str) -> str:
+     if s.startswith("```"):
+         lines = s.splitlines()
+         s = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:]).strip()
+-    m = re.search(r"\{[\s\S]*?\}", s)
+-    if m:
+-        s = m.group(0)
+-    return s
++    return _first_json_object(s)
+ 
+ 
+ def _parse_structure_response(raw: str) -> dict[str, Any]:
+diff --git a/tests/backend/test_gate_reply_braces.py b/tests/backend/test_gate_reply_braces.py
+new file mode 100644
+index 0000000..12fe48f
+--- /dev/null
++++ b/tests/backend/test_gate_reply_braces.py
+@@ -0,0 +1,32 @@
++"""Gate replies that quote braces inside the reason text must still parse (reason last and reason first)."""
++import sys
++from pathlib import Path
++
++sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "backend"))
++from diamond import sufficiency_assessor as sa  # noqa: E402
++
++LAST = '{"need": "CONTEXT", "confidence": "high", "reason": "How `inject` resolves `{user:first_name}` in the string."}'
++FIRST = '{"reason": "see {a} and {b}", "need": "STRUCTURE", "confidence": "low"}'
++GATE_FIRST = '{"reason": "see {a} and {b}", "sufficient": false, "need": "STRUCTURE", "confidence": "low"}'
++
++
++def test_structure_reason_last():
++    r = sa._parse_structure_response(LAST)
++    assert r["need"] == "CONTEXT" and r["reason"].endswith("in the string.")
++
++
++def test_structure_reason_first():
++    r = sa._parse_structure_response(FIRST)
++    assert r["need"] == "STRUCTURE" and r["confidence"] == "low"
++
++
++def test_rag_gate_reason_first():
++    r = sa._parse_rag_gate_response(GATE_FIRST)
++    assert r["need"] == "STRUCTURE" and r["sufficient"] is False
++
++
++def test_fenced_and_trailing_text_still_parse():
++    r = sa._parse_structure_response("```json\n" + LAST + "\n```")
++    assert r["confidence"] == "high"
++    r = sa._parse_structure_response("Sure. " + FIRST + " Hope this helps {done}")
++    assert r["need"] == "STRUCTURE"
