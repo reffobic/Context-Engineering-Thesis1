@@ -72,6 +72,7 @@ ABL_GATE_NO_DEPS = "0"
 ABL_GATE_DROP_HEADINGS = "0"
 ABL_GASR_GATE_OFF = "0"
 ABL_GASR_GATE_NO_SHORTCUT = "0"
+JUDGE_JSON_FORMAT = "1"
 
 [assert_unset]
 # These change the pipeline when set. The launcher refuses to start if any is present in the environment.
@@ -88,6 +89,7 @@ ABL_GATE_NO_DEPS = "0"
 ABL_GATE_DROP_HEADINGS = "0"
 ABL_GASR_GATE_OFF = "0"
 ABL_GASR_GATE_NO_SHORTCUT = "0"
+JUDGE_JSON_FORMAT = "1"
 GRAPHIFY_PATH_PREFIX = "superset/"
 # Every environment variable the pipeline reads at the frozen SHA, with its code default
 # ("" = read without default). Each log line records the effective value of all of them.
