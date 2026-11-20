@@ -7,9 +7,9 @@
 # Second Phase 2 freeze (branch phase2-next): a2cfcec + backend fixes B/C/D (patch 0003: nearest-chunk per-file cap, rank-order LC
 # packing, graph-expand edge types and oversized-neighbour truncation) + GASR gate ablation switches (patch 0004).
 # File order in the prompt is rank order by decision (the earlier alphabetical order was an accident, no switch is kept).
-frozen_sha = "cacecedb1862539822e2009e0b17cb5406fee8b4"
-previous_frozen_sha = "a2cfcec312626b4b50f743c4af91a6d118c79d0e"   # first Phase 2 freeze (Wave 1 and SWE-QA rest runs)
-earlier_frozen_shas = ["2350c0b2e064e4fd808e941731366e6cc71a9551", "3bbc52f220addbc648d4802dab6b1c658d427612", "cd84fad1c13d8e7783bff39389cfb195e0cbac5b"]   # 2350c0b = Phase 1 Nov 3 freeze
+frozen_sha = "0c618fda4d449e31a897d6b0312c9b05e0bafcae"
+previous_frozen_sha = "cacecedb1862539822e2009e0b17cb5406fee8b4"   # Phase 2 Wave 1 freeze (local qwen runs)
+earlier_frozen_shas = ["2350c0b2e064e4fd808e941731366e6cc71a9551", "3bbc52f220addbc648d4802dab6b1c658d427612", "cd84fad1c13d8e7783bff39389cfb195e0cbac5b", "a2cfcec312626b4b50f743c4af91a6d118c79d0e"]   # 2350c0b = Phase 1 Nov 3 freeze
 chroma_path_patch = "patches/0001-retrieval-tool-chroma-path-env.patch"
 ablation_patch = "patches/0002-graphify-prefix-env-and-ablation-switches.patch"
 lc_rank_patch = "patches/0003-lc-rank-order-chunk-cap-graph-edge-types.patch"
@@ -20,14 +20,14 @@ seed_alignment_commit = "50cf149efd6180b41098210b234efef81685ceaf"  # GAPA expan
 # <data_dir>/queue/record_authorisation.json (written by the launcher at the user's confirmation). Both are
 # part of the job identity and of every log line. Without a matching authorisation only --smoke runs are allowed.
 record_results = true
-record_results_pipeline_sha = "cacecedb1862539822e2009e0b17cb5406fee8b4"
+record_results_pipeline_sha = "0c618fda4d449e31a897d6b0312c9b05e0bafcae"
 mode_names = ["SELF_ROUTE", "GASR", "GAPA", "RAG", "LC"]
 structure_rerank_expected = true     # retrieval_tool._STRUCTURE_RERANK (module flag, not an env var)
 require_call_graph_json = true       # every index must ship call_graph.json; the job fails otherwise
 
 # Harness commits whose bundles/builds must not be used for runs (predate the frozen merge).
 # Pipeline commits runs must not use.
-revoked_pipeline_shas = ["cd84fad1c13d8e7783bff39389cfb195e0cbac5b", "3bbc52f220addbc648d4802dab6b1c658d427612", "a2cfcec312626b4b50f743c4af91a6d118c79d0e"]
+revoked_pipeline_shas = ["cd84fad1c13d8e7783bff39389cfb195e0cbac5b", "3bbc52f220addbc648d4802dab6b1c658d427612", "a2cfcec312626b4b50f743c4af91a6d118c79d0e", "cacecedb1862539822e2009e0b17cb5406fee8b4"]
 revoked_harness_commits = [
   "2c22f5ddf2acf31675a112d96c3f73d548014901",
   "cd84fad1c13d8e7783bff39389cfb195e0cbac5b",   # configured frozen_sha cd84fad
