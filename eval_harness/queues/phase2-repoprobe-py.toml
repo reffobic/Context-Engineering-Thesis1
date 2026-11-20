@@ -4,7 +4,7 @@
 
 [queue]
 enabled = true
-frozen_sha = "cacecedb1862539822e2009e0b17cb5406fee8b4"
+frozen_sha = "da8a64d68ae329694cdf249ec25ea856866f46bb"
 hard_stop = "2026-12-01T08:00:00"
 hard_stop_tz = "Africa/Cairo"
 safety_factor = 1.25
