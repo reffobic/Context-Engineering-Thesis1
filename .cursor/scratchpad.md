@@ -207,9 +207,11 @@ Do **not** change Always-LC mid-suite. Revisit only after full-720 table exists 
 
 - [x] **Task 1 — Wire budgeted ranked LC** (code)
 - [x] **Task 2 — Smoke flask-000 ALWAYS_LC** — awaiting human verify
-- [x] **Task 3 — Freeze bump** `619a4ea` + FREEZE/queues/rekey/auth — awaiting human verify
-- [ ] Task 4–5 — Local retest (n=120) Always-LC + LC-escalation arms + judge
-- [ ] Task 6 — Planner/human cross-check after retest
+- [x] Task 3 — Freeze bump budgeted LC `619a4ea`
+- [x] **Fix 4** — symbol-centred neighbour truncate + fraction **0.55** + GAPA/SSE fraction wiring; freeze **`3ac1066`** / harness **`392f02b`**
+- [x] Fix 4 smoke (GRAPH/GASR/LC flask-000) ok
+- [ ] Task 4–5 — Local n=120 retest **IN PROGRESS** → `/home/g7/haya/fix4_runs` (scoring queued → `fix4_scores`)
+- [ ] Task 6 — Planner/human cross-check after scores
 
 ## Current Status / Progress Tracking
 
