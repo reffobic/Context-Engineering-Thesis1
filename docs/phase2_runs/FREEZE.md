@@ -1,9 +1,10 @@
-# Phase 2 freeze — Wave 1
+# Phase 2 freeze — Wave 1 / budgeted LC
 
-**Stamp (UTC):** 2026-11-14T20:55:00Z  
-**Branch:** `phase2-eval`  
-**Harness / pipeline HEAD at freeze:** `a2cfcec312626b4b50f743c4af91a6d118c79d0e`  
-**Phase 2 pipeline config:** `eval_harness/configs/pipeline_phase2.toml` (frozen_sha = this HEAD; graph-retrieval port included)
+**Stamp (UTC):** 2026-11-22T18:40:00Z (budgeted-LC bump)  
+**Branch:** `phase2-eval-haya`  
+**Pipeline frozen_sha:** `619a4eaa5c969b21accd7b24ff871bbf407a40d7` (budgeted LC; previous `0c618fda…`)  
+**Phase 2 pipeline config:** `eval_harness/configs/pipeline_phase2.toml`  
+**Always-LC:** ranked parent-file packing under **`LC_TOKEN_BUDGET=8000`** (inject safety `MAX_CONTEXT_TOKENS=24000`). Prior full-dump LC runs remain ablation / archive only.
 
 ## Models
 
@@ -14,7 +15,7 @@
 | **SWE-QA judge** | `qwen-7B:latest` via Ollama | **≠ generator.** OpenAI-compatible `http://127.0.0.1:11434/v1`. Port: [`scripts/phase2_sweqa_ollama_judge.py`](../../scripts/phase2_sweqa_ollama_judge.py). Tables: **`local-judge` · `single-judge`**. (Prior partial run with `qwen3.8:27b` archived under `phase2_sweqa_scores_qwen38_27b/`.) |
 | **RepoProbe scorer** | `qwen-7B:latest` via Ollama | `SCORING_MODEL=qwen-7B:latest` + `OPENAI_SCORING_BASE_URL=http://127.0.0.1:11434/v1` (see `judge_ollama.env`) |
 
-**Runtime knobs:** `OLLAMA_THINK=0`, `OLLAMA_NUM_PREDICT=8192` (default), `token_budget=1300`, `OLLAMA_NUM_CTX=32768`.
+**Runtime knobs:** `OLLAMA_THINK=0`, `OLLAMA_NUM_PREDICT=8192` (default), `token_budget=1300`, `OLLAMA_NUM_CTX=32768`, **`LC_TOKEN_BUDGET=8000`**, `MAX_CONTEXT_TOKENS=24000`.
 
 **Judge env file:** [`docs/phase2_runs/judge_ollama.env`](judge_ollama.env) — `set -a && source docs/phase2_runs/judge_ollama.env && set +a` before CP5/CP9.
 

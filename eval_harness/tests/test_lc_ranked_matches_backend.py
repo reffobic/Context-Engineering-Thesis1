@@ -12,7 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
 
-from harness.arms import _select_lc_chunks_by_rank  # noqa: E402
+from harness.lc_budget import select_lc_chunks_by_rank as _select_lc_chunks_by_rank  # noqa: E402
 from injection.prompt_builder import CONTEXT_TRUNCATED_TAG, PromptBuilder  # noqa: E402
 
 

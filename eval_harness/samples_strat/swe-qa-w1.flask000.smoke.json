@@ -1,0 +1,12 @@
+{
+  "dataset": "swe-qa-w1",
+  "seed": 0,
+  "method": "smoke: flask-000 only for budgeted LC",
+  "n_total": 144,
+  "n_sample": 1,
+  "source_tasks_sha256": "3c3cffd1e025e088d4d372de48db73bdcffb66cec1471bd42f4de240132025a2",
+  "created_utc": "2026-11-22T16:30:27.618796+00:00",
+  "instance_ids": [
+    "flask-000"
+  ]
+}
