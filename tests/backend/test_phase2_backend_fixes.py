@@ -292,13 +292,25 @@ def test_truncate_chunk_single_giant_line():
     assert pruning.estimate_tokens(out["text"]) <= 40
 
 
+def test_truncate_prefers_anchor_window_over_file_head():
+    # Noise at the top; symbol body later — truncate must keep the symbol lines.
+    lines = [f"noise {i}" for i in range(80)] + ["def gold_fn():", "    return 1", "    # end"]
+    chunk = {"text": "\n".join(lines), "path": "p.py"}
+    out = pruning._truncate_chunk_to_tokens(chunk, 40, anchor="gold_fn")
+    assert "gold_fn" in out["text"]
+    assert "noise 0" not in out["text"]
+    assert pruning.estimate_tokens(out["text"]) <= 40
+
+
 def test_oversized_neighbor_kept_truncated_in_reserve():
     big = _neighbor("big_gold", 600)  # far larger than the reserve
     budget = 1300
-    reserve = int(budget * 0.30)
+    frac = 0.55
+    reserve = int(budget * frac)
     assert pruning.estimate_tokens(big["code"]) > reserve
     kept, _stats = pruning.prune_context_graph_aware(
-        "where is big_gold defined", seeds=[], neighbors=[big], token_budget=budget
+        "where is big_gold defined", seeds=[], neighbors=[big],
+        token_budget=budget, neighbor_budget_fraction=frac,
     )
     assert kept, "oversized neighbour must not be dropped"
     texts = "\n".join(c["text"] for c in kept)
@@ -309,18 +321,22 @@ def test_oversized_neighbor_kept_truncated_in_reserve():
 def test_neighbor_reserve_never_exceeded_with_mixed_sizes():
     neighbors = [_neighbor(f"n{i}", 10 + 40 * i) for i in range(8)]
     budget = 1300
+    frac = 0.55
     kept, _ = pruning.prune_context_graph_aware(
-        "q", seeds=[], neighbors=neighbors, token_budget=budget
+        "q", seeds=[], neighbors=neighbors,
+        token_budget=budget, neighbor_budget_fraction=frac,
     )
-    assert sum(pruning.estimate_tokens(c["text"]) for c in kept) <= int(budget * 0.30)
+    assert sum(pruning.estimate_tokens(c["text"]) for c in kept) <= int(budget * frac)
 
 
 def test_tiny_remaining_room_does_not_produce_stub():
     first = _neighbor("fits", 5)
     first_tokens = pruning.estimate_tokens(first["code"])
-    budget = int((first_tokens + pruning.NEIGHBOR_MIN_TRUNC_TOKENS - 10) / 0.30)
+    frac = 0.55
+    budget = int((first_tokens + pruning.NEIGHBOR_MIN_TRUNC_TOKENS - 10) / frac)
     kept, _ = pruning.prune_context_graph_aware(
-        "q", seeds=[], neighbors=[first, _neighbor("huge", 500, "default")], token_budget=budget
+        "q", seeds=[], neighbors=[first, _neighbor("huge", 500, "default")],
+        token_budget=budget, neighbor_budget_fraction=frac,
     )
     assert all("truncated ..." not in c["text"] for c in kept)
 

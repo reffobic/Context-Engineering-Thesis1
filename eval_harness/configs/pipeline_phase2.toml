@@ -4,11 +4,11 @@
 [pipeline]
 # Frozen SHA for all arms: 3bbc52f (cd84fad merge + CHROMA_PATH env override) + patches/0002
 # (GRAPHIFY_PATH_PREFIX env override and the Table VIII ablation switches, all default off).
-# Budgeted-LC freeze (phase2-eval-haya): 0c618fd + LC_TOKEN_BUDGET ranked parent-file packing for
-# Always-LC escalations (SELF/GASR/GAPA/forced LC). File order remains rank order; inject ceiling stays 24k.
-frozen_sha = "619a4eaa5c969b21accd7b24ff871bbf407a40d7"
-previous_frozen_sha = "0c618fda4d449e31a897d6b0312c9b05e0bafcae"   # parser-fix freeze (pre budgeted LC)
-earlier_frozen_shas = ["2350c0b2e064e4fd808e941731366e6cc71a9551", "3bbc52f220addbc648d4802dab6b1c658d427612", "cd84fad1c13d8e7783bff39389cfb195e0cbac5b", "a2cfcec312626b4b50f743c4af91a6d118c79d0e", "cacecedb1862539822e2009e0b17cb5406fee8b4"]   # 2350c0b = Phase 1 Nov 3 freeze
+# Fix-4 freeze (phase2-eval-haya): budgeted LC + graph neighbour packing (symbol truncate, fraction 0.55).
+# Always-LC escalations use LC_TOKEN_BUDGET; GRAPH/GASR/GAPA use GASR_NEIGHBOR_BUDGET_FRACTION=0.55.
+frozen_sha = "3ac10665c16f07ae58ee3fbb9ce3e67874f07c19"
+previous_frozen_sha = "619a4eaa5c969b21accd7b24ff871bbf407a40d7"   # budgeted LC freeze (pre Fix 4 neighbour packing)
+earlier_frozen_shas = ["2350c0b2e064e4fd808e941731366e6cc71a9551", "3bbc52f220addbc648d4802dab6b1c658d427612", "cd84fad1c13d8e7783bff39389cfb195e0cbac5b", "a2cfcec312626b4b50f743c4af91a6d118c79d0e", "cacecedb1862539822e2009e0b17cb5406fee8b4", "0c618fda4d449e31a897d6b0312c9b05e0bafcae"]   # 2350c0b = Phase 1 Nov 3 freeze
 chroma_path_patch = "patches/0001-retrieval-tool-chroma-path-env.patch"
 ablation_patch = "patches/0002-graphify-prefix-env-and-ablation-switches.patch"
 lc_rank_patch = "patches/0003-lc-rank-order-chunk-cap-graph-edge-types.patch"
@@ -19,15 +19,17 @@ seed_alignment_commit = "50cf149efd6180b41098210b234efef81685ceaf"  # GAPA expan
 # <data_dir>/queue/record_authorisation.json (written by the launcher at the user's confirmation). Both are
 # part of the job identity and of every log line. Without a matching authorisation only --smoke runs are allowed.
 record_results = true
-record_results_pipeline_sha = "619a4eaa5c969b21accd7b24ff871bbf407a40d7"
+record_results_pipeline_sha = "3ac10665c16f07ae58ee3fbb9ce3e67874f07c19"
 mode_names = ["SELF_ROUTE", "GASR", "GAPA", "RAG", "LC"]
 structure_rerank_expected = true     # retrieval_tool._STRUCTURE_RERANK (module flag, not an env var)
 require_call_graph_json = true       # every index must ship call_graph.json; the job fails otherwise
 
 # Harness commits whose bundles/builds must not be used for runs (predate the frozen merge).
 # Pipeline commits runs must not use.
-revoked_pipeline_shas = ["cd84fad1c13d8e7783bff39389cfb195e0cbac5b", "3bbc52f220addbc648d4802dab6b1c658d427612", "a2cfcec312626b4b50f743c4af91a6d118c79d0e", "cacecedb1862539822e2009e0b17cb5406fee8b4", "0c618fda4d449e31a897d6b0312c9b05e0bafcae"]
+revoked_pipeline_shas = ["cd84fad1c13d8e7783bff39389cfb195e0cbac5b", "3bbc52f220addbc648d4802dab6b1c658d427612", "a2cfcec312626b4b50f743c4af91a6d118c79d0e", "cacecedb1862539822e2009e0b17cb5406fee8b4", "0c618fda4d449e31a897d6b0312c9b05e0bafcae", "619a4eaa5c969b21accd7b24ff871bbf407a40d7"]
 revoked_harness_commits = [
+  "59f9b33c09cd1e81e97048fb35580e584bb9efcc",   # configured frozen_sha 619a4ea (pre Fix 4)
+  "f2b3f0bcf35e0cba07100c01d2011c032374884f",   # freeze bump commit for 619a4ea
   "b5e15fc01be18e359752687c6a3020769a2ecd05",   # configured frozen_sha 0c618fd (pre budgeted LC)
   "2c22f5ddf2acf31675a112d96c3f73d548014901",
   "cd84fad1c13d8e7783bff39389cfb195e0cbac5b",   # configured frozen_sha cd84fad
@@ -60,7 +62,7 @@ HF_HUB_OFFLINE = "1"                 # models are cached; no network access at l
 TRANSFORMERS_OFFLINE = "1"
 GASR_HARD_CAP = "2"
 GASR_MAX_NEIGHBORS = "8"
-GASR_NEIGHBOR_BUDGET_FRACTION = "0.42"   # was 0.30 (about 390 tokens at the 1300 budget). 0.42 gives about 546, the absolute reserve Nov 3 measured (540). Env only: revert here, no SHA change.
+GASR_NEIGHBOR_BUDGET_FRACTION = "0.55"   # ~715 tokens at 1300; near ≤720 reserve that admitted most gold-neighbour chunks (edge_budget_report). Was 0.42 / 0.30.
 OLLAMA_THINK = "0"
 GRAPHIFY_PATH_PREFIX = ""            # indexes use repo-relative paths; the pipeline default "superset/" is for the Superset repo
 # Table VIII ablation switches: all off here; a job turns on the ones of its setting (configs/ablations.toml).
@@ -112,7 +114,7 @@ FINAL_W_PROXIMITY = "0"
 FINAL_W_SYMBOL = "0"
 GASR_HARD_CAP = "2"
 GASR_MAX_NEIGHBORS = "8"
-GASR_NEIGHBOR_BUDGET_FRACTION = "0.30"
+GASR_NEIGHBOR_BUDGET_FRACTION = "0.55"
 GASR_OFFLINE = ""
 GRAPHIFY_OUT = ""
 INDEX_CACHE_SAVE_INTERVAL = "50"

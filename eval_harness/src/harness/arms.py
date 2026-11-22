@@ -32,7 +32,7 @@ def run_always_graph(server, prompt: str, hops: int, pruning_method: str) -> dic
 
     token_budget = 1300                                    # same constant as run_pipeline
     max_neighbors = int(os.environ.get("GASR_MAX_NEIGHBORS", "8"))
-    fraction = float(os.environ.get("GASR_NEIGHBOR_BUDGET_FRACTION", "0.30"))
+    fraction = float(os.environ.get("GASR_NEIGHBOR_BUDGET_FRACTION", "0.55"))
     context = server.call_tool("retrieve_context", prompt)
     pruned, _stats = server.prune_context_with_stats(prompt, context, token_budget=token_budget, method=pruning_method)
     seeds = _shaped(build_gasr_seed_pool(pruned, context), "gasr_seed")
