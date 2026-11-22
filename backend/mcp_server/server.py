@@ -522,23 +522,34 @@ def run_pipeline(
     )
 
     
-    def _build_lc_chunks(raw_retrieved: list[dict]) -> list[dict]:
+    def _build_lc_chunks(raw_retrieved: list[dict], *, deduplicate: bool = True) -> list[dict]:
         """Convert retrieved chunks to ContextChunk format using parent_context."""
         if any("parent_context" not in i for i in raw_retrieved):
             raw_retrieved = reconstruct_file_context(raw_retrieved)
         lc_chunks = []
+        seen_files: set[str] = set()
         for item in raw_retrieved:
             pc = item.get("parent_context") or item.get("code") or ""
             if not pc.strip():
                 continue
             meta = item.get("metadata") or {}
+            path = meta.get("file") or ""
+            if deduplicate and path:
+                if path in seen_files:
+                    continue
+                seen_files.add(path)
             lc_chunks.append({
                 "text":     pc,
-                "path":     meta.get("file") or "",
+                "path":     path,
                 "symbol":   meta.get("function") or "",
                 "language": meta.get("language") or "",
             })
         return lc_chunks
+
+    def _budgeted_lc_chunks(raw_retrieved: list[dict]) -> list[dict]:
+        """Parent-file LC under ``LC_TOKEN_BUDGET`` (ranked); inject still uses MAX_CONTEXT_TOKENS."""
+        from injection.lc_budget import select_lc_chunks_by_rank
+        return select_lc_chunks_by_rank(_build_lc_chunks(raw_retrieved, deduplicate=True))
 
     def _injection_token_est(chunks: list[dict]) -> int:
         total = 0
@@ -594,8 +605,8 @@ def run_pipeline(
             "Route decision: %s (confidence=%s)", decision["route"], decision["confidence"]
         )
         if decision["route"] == "LC":
-            logging.info("Escalating to LC — using parent_context")
-            context_for_injection = _build_lc_chunks(context)
+            logging.info("Escalating to LC — using parent_context (LC_TOKEN_BUDGET)")
+            context_for_injection = _budgeted_lc_chunks(context)
             route = "LC"
         else:
             logging.info("Staying on RAG path — using pruned_context")
@@ -677,7 +688,7 @@ def run_pipeline(
             expand_hop=_expand,
             re_prune=_re_prune,
             assess_after_expand=_assess_graph,
-            build_lc=lambda: _build_lc_chunks(context),
+            build_lc=lambda: _budgeted_lc_chunks(context),
             hard_cap=gasr_hard_cap,
             # Fixed-hop policy (same as ALWAYS_GRAPH): the post-expand judge never
             # changed the route in the Phase 2 logs and cost about 1.4k tokens per hop.
@@ -824,7 +835,7 @@ def run_pipeline(
             expand_hop=_expand,
             re_prune=_re_prune,
             assess_after_expand=_assess_graph,
-            build_lc=lambda: _build_lc_chunks(context),
+            build_lc=lambda: _budgeted_lc_chunks(context),
             hard_cap=gasr_hard_cap,
             # Fixed-hop policy (same as ALWAYS_GRAPH): the post-expand judge never
             # changed the route in the Phase 2 logs and cost about 1.4k tokens per hop.
@@ -888,7 +899,7 @@ def run_pipeline(
                 "reason":     "LC mode forced — assessment skipped.",
             },
         )
-        context_for_injection = _build_lc_chunks(context)
+        context_for_injection = _budgeted_lc_chunks(context)
         route = "LC"
 
     else:  # RAG
@@ -1118,21 +1129,6 @@ def _run_pipeline_streaming(
             return
 
         # ── Stage 3: Assess (SELF_ROUTE / GASR) ───────────────────────────
-        def _build_lc_chunks_sse(raw_retrieved: list) -> list:
-            if any("parent_context" not in i for i in raw_retrieved):
-                raw_retrieved = reconstruct_file_context(raw_retrieved)
-            lc_chunks = []
-            for item in raw_retrieved:
-                pc = item.get("parent_context") or item.get("code") or ""
-                if not pc.strip():
-                    continue
-                meta = item.get("metadata") or {}
-                lc_chunks.append({
-                    "text": pc, "path": meta.get("file") or "",
-                    "symbol": meta.get("function") or "", "language": meta.get("language") or "",
-                })
-            return lc_chunks
-
         yield _sse({"event": "stage_start", "stage": "assess", "label": "Sufficiency assessment"})
         try:
             if mode == "SELF_ROUTE":
@@ -1144,7 +1140,7 @@ def _run_pipeline_streaming(
                     "confidence": decision["confidence"], "reason": decision["reason"]
                 }
                 context_for_injection = (
-                    _build_lc_chunks_sse(context) if decision["route"] == "LC" else pruned_context
+                    _budgeted_lc_chunks(context) if decision["route"] == "LC" else pruned_context
                 )
             elif mode == "GASR":
                 from diamond.gasr_ladder import run_gasr_ladder
@@ -1191,7 +1187,7 @@ def _run_pipeline_streaming(
                     expand_hop=_gasr_expand,
                     re_prune=_gasr_re_prune,
                     assess_after_expand=_gasr_assess_after,
-                    build_lc=lambda: _build_lc_chunks_sse(context),
+                    build_lc=lambda: _budgeted_lc_chunks(context),
                     hard_cap=3,
                 )
                 total_assess_ms = sum(t.get("duration_ms", 0) for t in ladder.assess_trace)
@@ -1223,7 +1219,7 @@ def _run_pipeline_streaming(
                             "reason": "LC mode forced — assessment skipped."}
                 duration_ms = 0
                 assess_summary = decision
-                context_for_injection = _build_lc_chunks_sse(context)
+                context_for_injection = _budgeted_lc_chunks(context)
             else:  # RAG
                 decision = {"route": "RAG", "sufficient": True, "confidence": "high",
                             "reason": "RAG mode forced — assessment skipped."}
