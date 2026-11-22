@@ -641,10 +641,11 @@ def prune_context(
 #             via the standard heuristic scorer.
 
 # Fraction of the total token budget reserved for graph neighbours.
-# Lower default (0.30) limits off-gold neighbor mass in GRAPH inject (P@k).
+# 0.55 ≈ 715 tokens at the Phase-2 1300 budget — near the ≤720 reserve that
+# admitted most measurable gold-neighbour chunks in edge_budget_report.md.
 # Override with env GASR_NEIGHBOR_BUDGET_FRACTION.
 NEIGHBOR_BUDGET_FRACTION: float = float(
-    os.environ.get("GASR_NEIGHBOR_BUDGET_FRACTION", "0.30")
+    os.environ.get("GASR_NEIGHBOR_BUDGET_FRACTION", "0.55")
 )
 
 # Priority weights by graph edge / relation type.
@@ -670,22 +671,45 @@ NEIGHBOR_MIN_TRUNC_TOKENS: int = 64   # constant (not env) so the frozen env lis
 _TRUNC_MARKER = "# [... truncated ...]"
 
 
-def _truncate_chunk_to_tokens(chunk: ContextChunk, max_tokens: int) -> ContextChunk:
-    """Return a copy of ``chunk`` whose text fits ``max_tokens`` (whole leading lines).
+def _truncate_chunk_to_tokens(
+    chunk: ContextChunk,
+    max_tokens: int,
+    *,
+    anchor: str = "",
+) -> ContextChunk:
+    """Return a copy of ``chunk`` whose text fits ``max_tokens``.
 
-    The marker line is counted in the budget. If not even the first line plus the
-    marker fit, the first line is hard-cut by characters.
+    Prefer a window starting at the first line that contains ``anchor`` (usually
+    the neighbour's function/symbol name) so truncation keeps the definition
+    body rather than only file-leading noise. Falls back to leading lines when
+    no anchor hits. The marker line is counted in the budget.
     """
     text = chunk.get("text") or ""
     if estimate_tokens(text) <= max_tokens:
         return chunk
     lines = text.split("\n")
-    kept: list[str] = []
-    for line in lines:
-        candidate = "\n".join(kept + [line, _TRUNC_MARKER])
-        if estimate_tokens(candidate) > max_tokens:
-            break
-        kept.append(line)
+    if not lines:
+        return chunk
+
+    def _pack_from(start: int) -> list[str]:
+        kept: list[str] = []
+        for line in lines[start:]:
+            candidate = "\n".join(kept + [line, _TRUNC_MARKER])
+            if estimate_tokens(candidate) > max_tokens:
+                break
+            kept.append(line)
+        return kept
+
+    start = 0
+    if anchor:
+        for i, line in enumerate(lines):
+            if anchor in line:
+                start = i
+                break
+    kept = _pack_from(start)
+    # If the anchor window could not keep anything useful, fall back to head.
+    if not kept and start != 0:
+        kept = _pack_from(0)
     if kept:
         new_text = "\n".join(kept + [_TRUNC_MARKER])
     else:
@@ -854,12 +878,14 @@ def prune_context_graph_aware(
         if neighbor_tokens + t > neighbor_budget:
             # Do not silently drop a neighbour that is bigger than what is left
             # of the reserve (gold-loss mode seen on Nov 8 data: the best
-            # neighbour was larger than the whole reserve). Keep its leading
-            # lines instead, provided a meaningful amount of room remains.
+            # neighbour was larger than the whole reserve). Keep a symbol-centred
+            # window instead, provided a meaningful amount of room remains.
             room = neighbor_budget - neighbor_tokens
             if room < NEIGHBOR_MIN_TRUNC_TOKENS:
                 continue
-            chunk = _truncate_chunk_to_tokens(chunk, room)
+            meta = item.get("metadata") or {}
+            anchor = str(meta.get("function") or meta.get("name") or "")
+            chunk = _truncate_chunk_to_tokens(chunk, room, anchor=anchor)
             t = estimate_tokens(chunk["text"])
             if t > room:
                 continue

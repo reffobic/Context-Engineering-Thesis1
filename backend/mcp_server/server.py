@@ -629,7 +629,7 @@ def run_pipeline(
         )
         max_neighbors = int(os.environ.get("GASR_MAX_NEIGHBORS", "8"))
         neighbor_budget_fraction = float(
-            os.environ.get("GASR_NEIGHBOR_BUDGET_FRACTION", "0.30")
+            os.environ.get("GASR_NEIGHBOR_BUDGET_FRACTION", "0.55")
         )
         hops_box = {"n": 0}
 
@@ -802,7 +802,12 @@ def run_pipeline(
         def _re_prune(seeds, neighbors):
             (pruned, stats), p_ms = _time_stage(
                 lambda: prune_context_graph_aware(
-                    user_prompt, seeds, neighbors, token_budget=token_budget, method=pruning_method
+                    user_prompt, seeds, neighbors,
+                    token_budget=token_budget,
+                    neighbor_budget_fraction=float(
+                        os.environ.get("GASR_NEIGHBOR_BUDGET_FRACTION", "0.55")
+                    ),
+                    method=pruning_method,
                 )
             )
             state["pruned"] = pruned
@@ -1167,6 +1172,9 @@ def _run_pipeline_streaming(
                         lambda: prune_context_graph_aware(
                             user_prompt, seeds, neighbors,
                             token_budget=token_budget,
+                            neighbor_budget_fraction=float(
+                                os.environ.get("GASR_NEIGHBOR_BUDGET_FRACTION", "0.55")
+                            ),
                             method=req.pruning_method,
                         )
                     )
