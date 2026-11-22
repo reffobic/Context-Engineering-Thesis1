@@ -203,18 +203,27 @@ Do **not** change Always-LC mid-suite. Revisit only after full-720 table exists 
 - [ ] A4 — Optional qwen-7B cross-check on agent answers
 - [ ] A5 — Optional `requests`
 
-### B — Budgeted Always-LC (PARKED — blocked during C so W1∪Rest stay consistent)
+### B — Budgeted Always-LC (ACTIVE on phase2-eval-haya)
 
-- [ ] Tasks 1–6 as previously listed
+- [x] **Task 1 — Wire budgeted ranked LC** (code)
+- [x] **Task 2 — Smoke flask-000 ALWAYS_LC** — awaiting human verify
+- [x] **Task 3 — Freeze bump** `619a4ea` + FREEZE/queues/rekey/auth — awaiting human verify
+- [ ] Task 4–5 — Local retest (n=120) Always-LC + LC-escalation arms + judge
+- [ ] Task 6 — Planner/human cross-check after retest
 
 ## Current Status / Progress Tracking
 
-- **Mode:** Executor. Human C0 confirmed 2026-11-15: **all 7 arms**, **full-dump LC**, disk OK, **run all steps**, continuous save, no permission stops.
-- **§C COMPLETE** (human confirmed 2026-11-16). Full Table B: [`docs/phase2_runs/TABLE_B_SWEQA_FULL.md`](docs/phase2_runs/TABLE_B_SWEQA_FULL.md).
+- **Mode:** Executor (2026-11-22). Human asked to implement LC budgeting on **haya `phase2-eval-haya`**.
+- **Task 1+2:** budgeted LC wired; smoke `flask-000` ALWAYS_LC **ok**.
+- Smoke artifact: `/home/g7/haya/smoke_budgeted_lc/ALWAYS_LC_flask000/` (`--smoke --allow-dirty`).
+- Harness helper is `eval_harness/src/harness/lc_budget.py` (frozen backend snapshot lacks new `injection.lc_budget` until freeze bump). Backend copy still present for GASR/SELF after freeze.
+- **Still required before recorded jobs:** pipeline **freeze bump** + `record_authorisation` refresh.
 
 ## Executor's Feedback or Assistance Requests
 
-- §C closed by Planner after human confirm. Optional next (human pick): budgeted Always-LC (parked B), CP10–12 polish, or paper Sonnet re-judge.
+- **Freeze bump done** — please verify. Next: local n=120 retest (say when).
+- Pipeline `619a4eaa…` · harness `f2b3f0b…` (+ queue pin commit if any) · auth written · 23 indexes rekeyed · snapshot extracted.
+- Lesson: harness must not import new backend modules until they are in the frozen snapshot; rekey needs a venv with numpy (`-I` isolates user site).
 
 ## Lessons
 
