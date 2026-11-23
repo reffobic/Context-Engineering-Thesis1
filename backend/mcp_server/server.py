@@ -387,8 +387,11 @@ def _retrieve_for_prompt(
         lightweight = _lightweight_request(user_prompt)
         if lightweight is not None:
             tool_name, arguments = lightweight
-            result = call_tool(tool_name, **arguments)
-            return _lightweight_context(tool_name, result), tool_name
+            try:
+                result = call_tool(tool_name, **arguments)
+                return _lightweight_context(tool_name, result), tool_name
+            except Exception as exc:  # a failed shortcut must not fail the request: fall back to normal retrieval
+                logging.warning("lightweight tool %s failed (%s); falling back to retrieve_context", tool_name, exc)
     mode = _normalize_retrieval_mode(retrieval_mode)
     return call_tool(
         "retrieve_context",

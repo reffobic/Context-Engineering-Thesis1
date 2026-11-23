@@ -11,6 +11,7 @@ and the callers' existing fail-safe fallback applies.
 from __future__ import annotations
 
 import json
+import os
 import re
 
 _BOOL = re.compile(r'"sufficient"\s*:\s*(true|false)', re.I)
@@ -43,3 +44,9 @@ def loads_lenient(text: str) -> dict:
             rest = rest[:e.start()]
         out["reason"] = re.sub(r'["}\s]+$', "", rest).strip()
     return out
+
+
+def judge_format_field() -> dict:
+    """Ollama ``format`` field for judge calls: grammar-constrained JSON, so quotes in "reason" are escaped by the
+    decoder and the reply always parses. ``JUDGE_JSON_FORMAT=0`` turns it off (default on)."""
+    return {} if os.environ.get("JUDGE_JSON_FORMAT", "1").strip() in ("0", "false", "off") else {"format": "json"}

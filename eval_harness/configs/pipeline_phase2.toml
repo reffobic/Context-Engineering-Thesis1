@@ -6,9 +6,10 @@
 # (GRAPHIFY_PATH_PREFIX env override and the Table VIII ablation switches, all default off).
 # Fix-4 freeze (phase2-eval-haya): budgeted LC + graph neighbour packing (symbol truncate, fraction 0.55).
 # Always-LC escalations use LC_TOKEN_BUDGET; GRAPH/GASR/GAPA use GASR_NEIGHBOR_BUDGET_FRACTION=0.55.
+# Merged teammate da8a64d (JUDGE_JSON_FORMAT, lookup fail-soft) into history; active freeze remains Fix-4.
 frozen_sha = "3ac10665c16f07ae58ee3fbb9ce3e67874f07c19"
 previous_frozen_sha = "619a4eaa5c969b21accd7b24ff871bbf407a40d7"   # budgeted LC freeze (pre Fix 4 neighbour packing)
-earlier_frozen_shas = ["2350c0b2e064e4fd808e941731366e6cc71a9551", "3bbc52f220addbc648d4802dab6b1c658d427612", "cd84fad1c13d8e7783bff39389cfb195e0cbac5b", "a2cfcec312626b4b50f743c4af91a6d118c79d0e", "cacecedb1862539822e2009e0b17cb5406fee8b4", "0c618fda4d449e31a897d6b0312c9b05e0bafcae"]   # 2350c0b = Phase 1 Nov 3 freeze
+earlier_frozen_shas = ["2350c0b2e064e4fd808e941731366e6cc71a9551", "3bbc52f220addbc648d4802dab6b1c658d427612", "cd84fad1c13d8e7783bff39389cfb195e0cbac5b", "a2cfcec312626b4b50f743c4af91a6d118c79d0e", "cacecedb1862539822e2009e0b17cb5406fee8b4", "0c618fda4d449e31a897d6b0312c9b05e0bafcae", "da8a64d68ae329694cdf249ec25ea856866f46bb"]   # da8a64d = teammate third freeze (kept in history)
 chroma_path_patch = "patches/0001-retrieval-tool-chroma-path-env.patch"
 ablation_patch = "patches/0002-graphify-prefix-env-and-ablation-switches.patch"
 lc_rank_patch = "patches/0003-lc-rank-order-chunk-cap-graph-edge-types.patch"
@@ -75,6 +76,7 @@ ABL_GATE_NO_DEPS = "0"
 ABL_GATE_DROP_HEADINGS = "0"
 ABL_GASR_GATE_OFF = "0"
 ABL_GASR_GATE_NO_SHORTCUT = "0"
+JUDGE_JSON_FORMAT = "1"
 
 [assert_unset]
 # These change the pipeline when set. The launcher refuses to start if any is present in the environment.
@@ -91,6 +93,7 @@ ABL_GATE_NO_DEPS = "0"
 ABL_GATE_DROP_HEADINGS = "0"
 ABL_GASR_GATE_OFF = "0"
 ABL_GASR_GATE_NO_SHORTCUT = "0"
+JUDGE_JSON_FORMAT = "1"
 GRAPHIFY_PATH_PREFIX = "superset/"
 # Every environment variable the pipeline reads at the frozen SHA, with its code default
 # ("" = read without default). Each log line records the effective value of all of them.

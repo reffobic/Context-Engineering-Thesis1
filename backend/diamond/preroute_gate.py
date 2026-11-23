@@ -42,9 +42,9 @@ import logging
 from typing import Any, Callable
 
 try:
-    from diamond.judge_json import loads_lenient
+    from diamond.judge_json import loads_lenient, judge_format_field
 except ImportError:  # run as a script from backend/diamond
-    from judge_json import loads_lenient
+    from judge_json import loads_lenient, judge_format_field
 
 logger = logging.getLogger(__name__)
 
@@ -395,6 +395,7 @@ def _stage2_generative(
         "keep_alive": "10m",  # hold the model resident — avoids reload cost between benchmark calls
         "options": {"temperature": 0.0, "num_ctx": 2048},  # smaller ctx — no chunk text
     }
+    payload.update(judge_format_field())
 
     try:
         resp = _requests.post(
@@ -626,6 +627,7 @@ def preroute_structured_gate(
         "keep_alive": "10m",  # hold the model resident — avoids reload cost between benchmark calls
         "options": {"temperature": 0.0, "num_ctx": 2048},
     }
+    payload.update(judge_format_field())
 
     try:
         resp = _requests.post(

@@ -26,9 +26,9 @@ from typing import Any
 import requests
 
 try:
-    from diamond.judge_json import loads_lenient
+    from diamond.judge_json import loads_lenient, judge_format_field
 except ImportError:  # run as a script from backend/diamond
-    from judge_json import loads_lenient
+    from judge_json import loads_lenient, judge_format_field
 
 logger = logging.getLogger(__name__)
 
@@ -354,6 +354,7 @@ def assess_sufficiency(
     "keep_alive": "10m",
     "options": {"temperature": 0.0, "num_ctx": 4096},
     }
+    payload.update(judge_format_field())
 
     try:
         resp = requests.post(
@@ -529,6 +530,7 @@ def assess_rag_gate(
         "stream": False,
         "options": {"temperature": 0.0, "num_ctx": 4096},
     }
+    payload.update(judge_format_field())
 
     try:
         resp = requests.post(
@@ -613,6 +615,7 @@ def assess_structure_vs_context(
         "keep_alive": "10m",
         "options": {"temperature": 0.0, "num_ctx": 4096},
     }
+    payload.update(judge_format_field())
 
     try:
         resp = requests.post(
