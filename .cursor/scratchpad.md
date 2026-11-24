@@ -215,17 +215,22 @@ Do **not** change Always-LC mid-suite. Revisit only after full-720 table exists 
 
 ## Current Status / Progress Tracking
 
-- **Mode:** Executor (2026-11-22). Human asked to implement LC budgeting on **haya `phase2-eval-haya`**.
-- **Task 1+2:** budgeted LC wired; smoke `flask-000` ALWAYS_LC **ok**.
-- Smoke artifact: `/home/g7/haya/smoke_budgeted_lc/ALWAYS_LC_flask000/` (`--smoke --allow-dirty`).
-- Harness helper is `eval_harness/src/harness/lc_budget.py` (frozen backend snapshot lacks new `injection.lc_budget` until freeze bump). Backend copy still present for GASR/SELF after freeze.
-- **Still required before recorded jobs:** pipeline **freeze bump** + `record_authorisation` refresh.
+- **Mode:** Executor (2026-11-23) — **paid API gen** (GPT-5.1 via OpenRouter).
+- Local Fix4 n=120 done earlier (`fix4_runs` / `fix4_scores`).
+- Freeze `3ac1066` pushed; merge with teammate `da8a64d` resolved; auth refreshed to harness `a8824d7`.
+- Scripts: `scripts/run_api_smoke.sh`, `scripts/run_api_w1_rp.sh` (W1 144 + RP 108 × 7; `--allow-dirty` added to full script).
+- **`~/haya/api_gen.env` fixed** (stripped nested quotes + newline on key). Direct OpenRouter chat OK; smoke ALWAYS_RAG flask-000 **ok** (`provider_usage.cost≈0.006`).
+- **Full gen RUNNING** → `/home/g7/haya/api_runs` (started swe-qa-w1/GAPA). Log: `api_runs/run.log`.
+- First preflight-only attempt failed (dirty tree); no results written; restarted after `--allow-dirty`.
 
 ## Executor's Feedback or Assistance Requests
 
-- **Freeze bump done** — please verify. Next: local n=120 retest (say when).
-- Pipeline `619a4eaa…` · harness `f2b3f0b…` (+ queue pin commit if any) · auth written · 23 indexes rekeyed · snapshot extracted.
-- Lesson: harness must not import new backend modules until they are in the frozen snapshot; rekey needs a venv with numpy (`-I` isolates user site).
+- Gen still running; **streaming judge** active (`run_api_judge_stream.sh`, pidfile `api_runs/judge_stream.pid`).
+- Old full waiter **cancelled**; full `run_api_judge.sh` now skips marker-done arms (no double-spend).
+- Cancel stream: `touch ~/haya/api_runs/CANCEL_JUDGE` or `kill $(cat ~/haya/api_runs/judge_stream.pid)`.
+- Strict readiness: ≥144/108 lines + no `inflight.json` + mtime≥15s before Sonnet spend.
+- Judge fixes applied: RP cache sanitizes `/` in model ids; `EVAL_MAX_WORKERS=1`; OpenAI `max_retries=0` for SWE+RP scoring clients. Stream restarted (gen untouched).
+- **Paid run COMPLETE** (2026-11-24): gen $31.40 / user total ~$58; report `docs/phase2_runs/TABLE_B_API_GPT51_SONNET_W1_RP.md`. Self-Route/LC top absolute; RAG best qpt; GRAPH worst.
 
 ## Lessons
 
@@ -248,3 +253,5 @@ Do **not** change Always-LC mid-suite. Revisit only after full-720 table exists 
 - Modern Cursor CLI binary is `agent`, not `cursor-agent`; set `CURSOR_AGENT_PATH` and label version vs paper `2025.09.04`.
 - System Ollama models are under `/usr/share/ollama/.ollama/models` (incl. `qwen-7B:latest`); `~/.ollama/models/blobs` can be empty and still have a working judge if `OLLAMA_MODELS` points at the system store.
 - RepoProbe scorer-on-pipeline entry: `scripts/phase2_repoprobe_score_pipeline.py` (not Docker evaluator).
+- OpenRouter `api_gen.env`: nested quotes (`'"sk-…"'`) or trailing `\n` → InvalidHeader / Missing Authentication; strip to bare `sk-or-…` inside single quotes; verify with a tiny chat call before smoke.
+- Paid full gen needs `--allow-dirty` when tracked scratchpad/gitignore are dirty (smoke already had it; `run_api_w1_rp.sh` must match).

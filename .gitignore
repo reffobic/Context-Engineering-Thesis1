@@ -38,3 +38,11 @@ docs/_tmp_*.py
 eval_harness/data/
 eval_harness/**/*.log
 eval_harness/**/__pycache__/
+
+# local paid API secrets
+api_gen.env
+**/api_gen.env
+../api_gen.env
+
+api_judge.env
+**/api_judge.env

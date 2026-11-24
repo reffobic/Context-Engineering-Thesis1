@@ -27,11 +27,13 @@ import json
 import os
 import re
 import sys
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Optional
 
-from openai import OpenAI
+from openai import OpenAI, RateLimitError
 
 JUDGE_PROMPT = """You are a STRICT and RIGOROUS evaluator. You must rate the candidate answer STRICTLY against the reference answer. Be CONSERVATIVE with high scores - only award high scores (16-20) when the candidate answer is truly excellent and closely matches the reference answer in quality and content.
 
@@ -114,10 +116,13 @@ REQUIRED = ("correctness", "completeness", "clarity", "relevance", "reasoning")
 
 
 def get_client() -> OpenAI:
+    # max_retries=0: avoid burning paid Sonnet tokens on automatic 429 retries;
+    # the stream wrapper re-queues the arm instead.
     return OpenAI(
         base_url=os.environ.get("EVAL_LLM_BASE_URL", "http://127.0.0.1:11434/v1"),
         api_key=os.environ.get("EVAL_LLM_API_KEY", "ollama"),
         timeout=float(os.environ.get("EVAL_LLM_TIMEOUT", "600")),
+        max_retries=int(os.environ.get("EVAL_LLM_MAX_RETRIES", "0")),
     )
 
 
@@ -140,8 +145,27 @@ def _parse_scores(raw: str) -> Optional[dict[str, int]]:
     return {k: int(scores[k]) for k in REQUIRED}
 
 
+_rate_lock = threading.Lock()
+_last_call_monotonic = 0.0
+
+
+def _throttle() -> None:
+    """Stay under OpenRouter new-account RPM (default ≥3.1s between calls)."""
+    global _last_call_monotonic
+    gap = float(os.environ.get("EVAL_LLM_MIN_INTERVAL_S", "0") or "0")
+    if gap <= 0:
+        return
+    with _rate_lock:
+        now = time.monotonic()
+        wait = gap - (now - _last_call_monotonic)
+        if wait > 0:
+            time.sleep(wait)
+        _last_call_monotonic = time.monotonic()
+
+
 def score_answer(question: str, reference: str, candidate: str, client: OpenAI, model: str) -> Optional[dict[str, int]]:
     prompt = JUDGE_PROMPT.format(question=question, reference=reference, candidate=candidate)
+    _throttle()
     # Ollama: disable thinking when supported via options / extra body is model-specific — keep plain chat.
     resp = client.chat.completions.create(
         model=model,
@@ -167,13 +191,28 @@ def reference_map(rows: list[dict[str, Any]]) -> dict[str, str]:
     return {r["question"]: r["answer"] for r in rows if r.get("question") and r.get("answer")}
 
 
+def _append_score(out_path: Path, row: dict) -> None:
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with out_path.open("a", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+
 def score_file(cand_path: Path, ref_map: dict[str, str], out_path: Path, client: OpenAI, model: str, workers: int) -> dict:
     cands = load_jsonl(cand_path)
-    results: list[dict] = []
+    # Resume: keep prior scores so 429/retry does not re-bill completed questions.
+    prior: list[dict] = load_jsonl(out_path) if out_path.is_file() else []
+    done_q = {r["question"] for r in prior if r.get("question")}
+    done_tid = {r["task_id"] for r in prior if r.get("task_id")}
+    results: list[dict] = list(prior)
     failed = 0
+    if prior:
+        print(f"[resume] keeping {len(prior)} existing scores in {out_path.name}", flush=True)
 
     def one(rec: dict) -> Optional[dict]:
         q, a = rec.get("question", ""), rec.get("answer", "")
+        tid = rec.get("task_id") or rec.get("instance_id")
+        if q in done_q or (tid and tid in done_tid):
+            return {"_skipped_resume": True}
         ref = ref_map.get(q, "")
         if not ref or not a or a.strip() == "No answer found":
             return None
@@ -181,19 +220,50 @@ def score_file(cand_path: Path, ref_map: dict[str, str], out_path: Path, client:
         if not scores:
             return None
         return {"question": q, "score": scores, "overall": sum(scores.values()),
-                "task_id": rec.get("task_id") or rec.get("instance_id"),
-                "arm": rec.get("arm"), "repo": rec.get("repo")}
+                "task_id": tid, "arm": rec.get("arm"), "repo": rec.get("repo")}
 
-    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
-        futs = [pool.submit(one, r) for r in cands]
-        for fut in as_completed(futs):
-            r = fut.result()
-            if r is None:
-                failed += 1
-            else:
-                results.append(r)
-                print(f"  scored overall={r['overall']} q={r['question'][:60]!r}", flush=True)
+    pending = []
+    for r in cands:
+        q = r.get("question")
+        tid = r.get("task_id") or r.get("instance_id")
+        if q in done_q or (tid and tid in done_tid):
+            continue
+        pending.append(r)
+    # Prefer serial path under RPM caps (workers=1).
+    try:
+        if max(1, workers) <= 1:
+            for rec in pending:
+                r = one(rec)
+                if r is None:
+                    failed += 1
+                elif r.get("_skipped_resume"):
+                    continue
+                else:
+                    results.append(r)
+                    _append_score(out_path, r)
+                    print(f"  scored overall={r['overall']} q={r['question'][:60]!r}", flush=True)
+        else:
+            with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+                futs = [pool.submit(one, r) for r in pending]
+                for fut in as_completed(futs):
+                    r = fut.result()
+                    if r is None:
+                        failed += 1
+                    elif r.get("_skipped_resume"):
+                        continue
+                    else:
+                        results.append(r)
+                        _append_score(out_path, r)
+                        print(f"  scored overall={r['overall']} q={r['question'][:60]!r}", flush=True)
+    except RateLimitError as exc:
+        print(f"[WARN] rate limited after {len(results)} scores; partial file kept for resume: {exc}", flush=True)
 
+    # Rewrite compact file from results (dedupe by question)
+    by_q: dict[str, dict] = {}
+    for r in results:
+        if r.get("question"):
+            by_q[r["question"]] = r
+    results = list(by_q.values())
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with out_path.open("w", encoding="utf-8", newline="\n") as f:
         for r in results:
