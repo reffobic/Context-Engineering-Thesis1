@@ -12,5 +12,6 @@ Copied from `~/haya/api_runs`, `~/haya/api_scores`, `~/haya/api_scores_strat_res
 **Secrets:** any accidental `sk-or-v1-…` / Bearer fragments were redacted to `[REDACTED]` before commit. Live keys remain only in `~/haya/api_gen.env` / `api_judge.env` (gitignored).
 
 **Tables:**
+- [`../TABLE_B_API_GPT51_SONNET_SUMMARY.md`](../TABLE_B_API_GPT51_SONNET_SUMMARY.md) — **comprehensive** (W1 + RP + rest + strat120, with qpt)
 - [`../TABLE_B_API_GPT51_SONNET_W1_RP.md`](../TABLE_B_API_GPT51_SONNET_W1_RP.md) — full W1 (144) + RP (108)
 - [`../TABLE_B_API_GPT51_SONNET_STRAT120.md`](../TABLE_B_API_GPT51_SONNET_STRAT120.md) — strat2 120 (W1×24 filtered + rest×96 new)

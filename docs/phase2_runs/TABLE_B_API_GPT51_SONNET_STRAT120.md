@@ -75,17 +75,33 @@ Harness auth for this rest run: `harness_commit=db16582` · pipeline freeze `3ac
 
 | Arm | Overall | tokens mean | qpt×1000 | %RAG | %GRAPH | %LC | gen $ (24+96) |
 |-----|--------:|------------:|---------:|-----:|-------:|----:|--------------:|
-| **SELF_ROUTE** | **60.66** | 10305 | 5.89 | — | — | — | 2.60 |
-| **ALWAYS_LC** | **60.12** | 11595 | 5.18 | — | — | — | 2.45 |
-| GASR | 57.64 | 5158 | 11.18 | — | — | — | 2.00 |
-| GAPA | 56.99 | 5623 | 10.13 | — | — | — | 2.15 |
-| ALWAYS_RAG | 56.89 | 1873 | **30.37** | — | — | — | 1.32 |
-| PREASSESS | 56.03 | 9622 | 5.82 | — | — | — | 2.36 |
-| ALWAYS_GRAPH | 52.20 | 1700 | **30.71** | — | — | — | 1.19 |
+| **SELF_ROUTE** | **60.66** | 10305 | 5.89 | 17.5 | 0.0 | 82.5 | 2.60 |
+| **ALWAYS_LC** | **60.12** | 11595 | 5.18 | 0.0 | 0.0 | 100.0 | 2.45 |
+| GASR | 57.64 | 5158 | 11.18 | 16.7 | 50.0 | 33.4 | 2.00 |
+| GAPA | 56.99 | 5623 | 10.13 | 25.0 | 32.5 | 42.5 | 2.15 |
+| ALWAYS_RAG | 56.89 | 1873 | **30.37** | 100.0 | 0.0 | 0.0 | 1.32 |
+| PREASSESS | 56.03 | 9622 | 5.82 | 20.8 | 0.0 | 79.2 | 2.36 |
+| ALWAYS_GRAPH | 52.20 | 1700 | **30.71** | 0.0 | 100.0 | 0.0 | 1.19 |
+
+Tokens = `inject.est_tokens_div4` mean. **qpt×1000** = Overall / tokens × 1000.
 
 **Strat120 gen $ total (all arms):** **~$14.07** (of which ~$11.48 is new rest; W1×24 slice of prior W1 bill).
 
+### Strat120 dimensions (1–20)
+
+| Arm | Correctness | Completeness | Relevance | Clarity | Reasoning |
+|-----|------------:|-------------:|----------:|--------:|----------:|
+| SELF_ROUTE | 10.2 | 9.7 | 12.9 | 15.6 | 12.3 |
+| ALWAYS_LC | 10.0 | 9.3 | 12.9 | 15.6 | 12.4 |
+| GASR | 9.0 | 8.5 | 12.4 | 15.7 | 12.0 |
+| ALWAYS_RAG | 9.1 | 8.5 | 12.3 | 15.2 | 11.9 |
+| GAPA | 8.9 | 8.5 | 12.3 | 15.5 | 11.8 |
+| PREASSESS | 9.0 | 8.3 | 12.0 | 15.2 | 11.5 |
+| ALWAYS_GRAPH | 7.8 | 7.1 | 11.2 | 15.1 | 10.9 |
+
 W1-strat24 alone is optimistic vs rest (same pattern as local full-720): e.g. SELF_ROUTE W1-strat **64.71** vs rest **59.65**.
+
+See also the full cross-suite summary: [`TABLE_B_API_GPT51_SONNET_SUMMARY.md`](TABLE_B_API_GPT51_SONNET_SUMMARY.md).
 
 ---
 
