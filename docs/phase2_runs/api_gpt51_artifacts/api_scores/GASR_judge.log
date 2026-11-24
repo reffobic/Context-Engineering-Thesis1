@@ -1,0 +1,196 @@
+  scored overall=46 q='What is the purpose of the registration tracking flag in the'
+  scored overall=92 q='What is the relationship between the ASCII-only encoding con'
+  scored overall=34 q='What is the modular component registration architecture that'
+  scored overall=37 q='What architectural decisions are reflected by the dual inher'
+  scored overall=33 q='What is the dependency chain in the test function that verif'
+  scored overall=60 q='What mechanisms ensure that template processing functions re'
+  scored overall=37 q='What does the method that enables the test helper class repr'
+  scored overall=37 q='What is the interaction between the parametrization of impor'
+  scored overall=50 q='What is the dependency chain between the application loading'
+  scored overall=22 q='What is the dependency chain from recursive type tagging met'
+  scored overall=37 q='What is the architectural pattern of the test class that iso'
+  scored overall=55 q="What hidden coupling exists between the decorator's state ma"
+  scored overall=80 q='How does the wrapper function that defers hash algorithm acc'
+  scored overall=28 q='How does the decorator that copies request contexts handle i'
+  scored overall=37 q='How does the certificate parameter conversion method for the'
+  scored overall=90 q='How does the deferred registration mechanism ensure that cus'
+Traceback (most recent call last):
+  File "/home/g7/haya/Context-Engineering-Thesis1/scripts/phase2_sweqa_ollama_judge.py", line 262, in <module>
+    raise SystemExit(main())
+  File "/home/g7/haya/Context-Engineering-Thesis1/scripts/phase2_sweqa_ollama_judge.py", line 249, in main
+    score_file(Path(cand_path), ref_map, out, client, model, workers)
+  File "/home/g7/haya/Context-Engineering-Thesis1/scripts/phase2_sweqa_ollama_judge.py", line 190, in score_file
+    r = fut.result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 451, in result
+    return self.__get_result()
+  File "/usr/lib/python3.10/concurrent/futures/_base.py", line 403, in __get_result
+    raise self._exception
+  File "/usr/lib/python3.10/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "/home/g7/haya/Context-Engineering-Thesis1/scripts/phase2_sweqa_ollama_judge.py", line 180, in one
+    scores = score_answer(q, ref, a, client, model)
+  File "/home/g7/haya/Context-Engineering-Thesis1/scripts/phase2_sweqa_ollama_judge.py", line 146, in score_answer
+    resp = client.chat.completions.create(
+  File "/home/g7/.local/lib/python3.10/site-packages/openai/_utils/_utils.py", line 287, in wrapper
+    return func(*args, **kwargs)
+  File "/home/g7/.local/lib/python3.10/site-packages/openai/resources/chat/completions/completions.py", line 1211, in create
+    return self._post(
+  File "/home/g7/.local/lib/python3.10/site-packages/openai/_base_client.py", line 1314, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+  File "/home/g7/.local/lib/python3.10/site-packages/openai/_base_client.py", line 1087, in request
+    raise self._make_status_error_from_response(err.response) from None
+openai.RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit exceeded: new-account-rpm/anthropic/claude-4.5-sonnet-20250929. Rate limit reached: new accounts are limited to 20 requests per minute for this model. Please retry shortly.', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0', 'X-RateLimit-Reset': '1795464420000'}, 'limit_source': 'openrouter_new_account', 'remedy_hint': 'New accounts are temporarily limited for this model. Please retry shortly.', 'provider_name': None}}, 'user_id': 'user_3MHCPYwMAhGfqzQNnOE0pW8DZc8'}
+  scored overall=92 q='What is the relationship between the ASCII-only encoding con'
+  scored overall=46 q='What is the purpose of the registration tracking flag in the'
+  scored overall=34 q='What is the modular component registration architecture that'
+  scored overall=37 q='What architectural decisions are reflected by the dual inher'
+  scored overall=33 q='What is the dependency chain in the test function that verif'
+  scored overall=60 q='What mechanisms ensure that template processing functions re'
+  scored overall=37 q='What does the method that enables the test helper class repr'
+  scored overall=37 q='What is the interaction between the parametrization of impor'
+  scored overall=50 q='What is the dependency chain between the application loading'
+  scored overall=22 q='What is the dependency chain from recursive type tagging met'
+  scored overall=37 q='What is the architectural pattern of the test class that iso'
+  scored overall=55 q="What hidden coupling exists between the decorator's state ma"
+  scored overall=80 q='How does the wrapper function that defers hash algorithm acc'
+  scored overall=28 q='How does the decorator that copies request contexts handle i'
+  scored overall=37 q='How does the certificate parameter conversion method for the'
+  scored overall=90 q='How does the deferred registration mechanism ensure that cus'
+  scored overall=78 q='How does the tagged JSON serializer class that handles bytes'
+  scored overall=33 q='How does the method that processes unhandled exceptions dete'
+  scored overall=37 q='How does the method that registers URL rules on blueprint ob'
+  scored overall=48 q='How does the callback-based modification tracking in the ses'
+  scored overall=31 q='How does the namespace object that stores application-level '
+  scored overall=90 q='How does the error handling strategy in the application cont'
+  scored overall=33 q='How does the type-safe dictionary structure used as a view f'
+  scored overall=92 q='How does the subclass initialization hook in the HTTP method'
+  scored overall=23 q='Why does the class that handles UUID serialization in the ta'
+  scored overall=37 q='Why does the asynchronous HTTP method view class inherit fro'
+  scored overall=75 q='Why does the CLI helper class that manages Flask application'
+  scored overall=25 q='Why does the method that opens application package resources'
+  scored overall=32 q='Why does the CLI helper class that manages Flask application'
+  scored overall=87 q='Why does unconditionally setting the session access tracking'
+  scored overall=71 q='Why would performance degradation occur if the custom templa'
+  scored overall=83 q='Why does the test that validates blueprint names cannot cont'
+  scored overall=85 q='Why does repeated invocation of the method that instantiates'
+  scored overall=87 q="Why does the pass-through dictionary tag class's JSON conver"
+  scored overall=96 q='Why does the test that checks handler behavior when a stream'
+  scored overall=50 q='Where does the application root path get transformed during '
+  scored overall=81 q="Where does the control flow in the CLI group class's command"
+  scored overall=58 q='Where in the serialization pipeline for the JSON tag class t'
+  scored overall=91 q="Where does the list serialization tag's item conversion meth"
+  scored overall=76 q='Where is the control flow determining whether a routing rule'
+  scored overall=37 q='Where in the error handler resolution method does the lookup'
+  scored overall=36 q='Where is the test class that validates URL generation with a'
+  scored overall=32 q='Where does the encoding parameter flow from the test functio'
+  scored overall=22 q='Where does the base64-decoding method for byte sequence tags'
+  scored overall=37 q='Where does the inheritance chain between parent and child co'
+  scored overall=38 q='Where in the request processing flow does the orchestration '
+  scored overall=34 q='Where does the route handler function that returns a list of'
+  scored overall=72 q='Why does the linear traversal of the exception class hierarc'
+  scored overall=81 q='What is the semantic significance of the `no_proxy` keyword '
+  scored overall=33 q='What assumptions about encoding representation does the test'
+  scored overall=90 q="What is the semantic distinction between InvalidSchema's dua"
+  scored overall=37 q='What is the dependency chain between the TestRequests class '
+  scored overall=95 q='What is the architectural distinction in the TestGuessJSONUT'
+  scored overall=42 q='What are the critical environmental prerequisites for the Te'
+  scored overall=42 q='What is the architectural responsibility of the request prep'
+  scored overall=60 q="What is the dependency chain between HTTPError's inheritance"
+  scored overall=76 q='What is the semantic distinction between UnrewindableBodyErr'
+  scored overall=90 q='What is the architectural design in RequestException that le'
+  scored overall=78 q='What is the impact of removing the `merge_cookies` function '
+  scored overall=86 q='What is the data integrity mechanism in the PreparedRequest '
+  scored overall=90 q='How should the exception hierarchy in the requests library i'
+  scored overall=94 q="How does the links method handle the case where the 'link' h"
+  scored overall=90 q="How does the should_strip_auth method's special case for htt"
+  scored overall=68 q='How does the parametrize decorator coordinate with the test '
+  scored overall=37 q='How does the SessionRedirectMixin handle the interplay betwe'
+  scored overall=91 q='How does the resolve_redirects method balance the requiremen'
+  scored overall=91 q='How does the SessionRedirectMixin coordinate the interaction'
+  scored overall=90 q='How does the Response class manage the dual-state content co'
+  scored overall=90 q='How does the Response class separate concerns between lazy c'
+  scored overall=92 q="How does the register_hook method's dual handling of Callabl"
+  scored overall=90 q='How does the Response class coordinate the lifecycle managem'
+  scored overall=94 q='How should the TLSServer class refactor its SSL context init'
+  scored overall=87 q='Why does the `prepare()` method enforce a strict ordering wh'
+  scored overall=82 q='Why does the repeated invocation of key.lower() across __set'
+  scored overall=90 q='What is the design rationale for storing `_body_position` as'
+  scored overall=90 q='Why does the `prepare_body()` method raise `NotImplementedEr'
+  scored overall=55 q="Why does the guess_filename function's validation logic prev"
+  scored overall=94 q='Why does the morsel_to_cookie function determine whether to '
+  scored overall=92 q="Why would the repeated urlparse calls in MockRequest's __ini"
+  scored overall=90 q="Why does BaseAdapter's __init__ method invoke super().__init"
+  scored overall=90 q='Why would the `host` method in `MockRequest` delegating to `'
+  scored overall=70 q='Why does the ConnectionError exception class serve as a spec'
+  scored overall=86 q="Where does the apparent_encoding method's control flow handl"
+  scored overall=86 q='Why does the test_transfer_enc_removal_on_redirect method sp'
+  scored overall=42 q='Where does the ProxyError exception propagate through the ex'
+  scored overall=36 q='Where does the control flow in TestIsValidCIDR.test_invalid '
+  scored overall=91 q='Why does the repeated key-lookup pattern in CaseInsensitiveD'
+  scored overall=91 q='Where is the Server class implementation located that TestTe'
+  scored overall=71 q='Where in the morsel_to_cookie function implementation are th'
+  scored overall=85 q='Where is the to_native_string function implementation locate'
+  scored overall=37 q='Where in the requests library codebase are the lower-level v'
+  scored overall=86 q='Where is the delegation chain through which MockResponse.get'
+  scored overall=33 q='Where does the URL parsing and credential extraction dataflo'
+  scored overall=56 q='Where in the codebase is the TooManyRedirects exception rais'
+  scored overall=75 q='Where does the CaseInsensitiveDict class implement the __ite'
+  scored overall=73 q='Where does the parametrize decorator chain interact with the'
+  scored overall=38 q='What is the execution semantics encoded by the return value '
+  scored overall=90 q='What is the validation logic in the FixtureFunctionMarker.__'
+  scored overall=36 q='What is the architectural separation in the pytest fixture r'
+  scored overall=95 q='How does the `from_item_and_call` classmethod implement cond'
+  scored overall=87 q='What is the dependency chain between the TestRequestScopeAcc'
+  scored overall=90 q='What is the defensive layering pattern established by the ex'
+  scored overall=90 q="What is the impact of the tmpdir fixture's conversion from P"
+  scored overall=84 q='What is the architectural pattern in the TestArgComplete cla'
+  scored overall=31 q='What external dependencies and context must be available for'
+  scored overall=37 q='What is the sentinel value abstraction pattern that NotSetTy'
+  scored overall=95 q='What is the conditional logic in write_captured_output that '
+  scored overall=37 q='What is the dependency relationship between evaluate_skip_ma'
+  scored overall=38 q="What is the failure mechanism when the parametrize method's "
+  scored overall=48 q="How does the Skip class integrate with pytest's mark evaluat"
+  scored overall=90 q='How does the FastFilesCompleter.__call__ method reconcile th'
+  scored overall=69 q='How would you refactor a minimal test function like test_1 t'
+  scored overall=90 q='How does the TestReadme class separate the concerns of cache'
+  scored overall=71 q='How does the pytest_internalerror method iterate through spl'
+  scored overall=95 q='How does the import_path API framework resolve module identi'
+  scored overall=35 q='How does the pytest capture framework ensure that stdout and'
+  scored overall=37 q="How does pytest's indirect parametrization mechanism resolve"
+  scored overall=89 q='How does the RunAndParse class decouple the concerns of test'
+  scored overall=40 q='How should the plugin manager architecture be redesigned to '
+  scored overall=68 q='Why does the test design rely on injecting the TerminalRepor'
+  scored overall=90 q='Why does the TestImportHookInstallation class employ subproc'
+  scored overall=90 q='How should the `isnosetest` method be refactored to separate'
+  scored overall=87 q='Why does the TestShowFixtures class employ separate test met'
+  scored overall=72 q='Why does test_rewrite_ast employ pytest.register_assert_rewr'
+  scored overall=62 q='Why would caching the Source object initialization in setup_'
+  scored overall=87 q='Why does the repeated instantiation of FNMatcher objects in '
+  scored overall=62 q='Why does the repeated fixture instantiation and teardown cyc'
+  scored overall=59 q="Why does the _bestrelpath_cache class leverage Python's dict"
+  scored overall=80 q='Why would repeated invocations of pytester.getitem() followe'
+  scored overall=82 q='Why does the test_parse_from_file method verify that the par'
+  scored overall=95 q="Why does the ensure_deletable function's resilience mechanis"
+  scored overall=72 q='Why does the SysCapture class maintain consistency between i'
+  scored overall=36 q='Where is the precise file location and line range where the '
+  scored overall=31 q='Where does the data flow of marker information propagate fro'
+  scored overall=95 q='Where does the `_marked_for_rewrite_cache` dictionary contro'
+  scored overall=90 q='Where does the data flow from `_early_rewrite_bailout` throu'
+  scored overall=37 q='Where does the data flow from pytester.inline_run() through '
+  scored overall=74 q='Where in the LocalPath class can I locate the code logic res'
+  scored overall=91 q='Where is the line-wrapping logic that determines when functi'
+  scored overall=44 q='Where are the functions or methods in the assertion module t'
+  scored overall=73 q='Where in the test_attr_hasmarkup function is the hasmarkup a'
+  scored overall=84 q="Where does the MockTiming.patch method's delegation to monke"
+  scored overall=38 q='Where is the subprocess execution mechanism that `pytester.r'
+  scored overall=92 q='Where is the LocalPath class definition located that impleme'
+{
+ "candidate": "/home/g7/haya/api_scores/GASR_answers.jsonl",
+ "output": "/home/g7/haya/api_scores/GASR_answers_score.jsonl",
+ "n_candidates": 144,
+ "n_scored": 144,
+ "n_failed_or_skipped": 0,
+ "mean_overall": 65.97,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}

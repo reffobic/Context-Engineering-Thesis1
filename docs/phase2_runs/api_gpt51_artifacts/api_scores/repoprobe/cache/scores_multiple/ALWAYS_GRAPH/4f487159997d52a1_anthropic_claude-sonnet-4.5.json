@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_GRAPH",
+    "score": 2.0,
+    "max_score": 10.0,
+    "reason": "Let me evaluate this answer against the scoring criteria:\n\n**MCP Server Integration (4 points possible):**\nThe model's answer discusses MCP integration extensively but misses the key point that direct MCP server calling is ALREADY supported via HostedMcpServerTool. Instead, the answer:\n- Suggests creating a wrapper client to handle MCP (incorrect approach)\n- Mentions MCPStreamableHTTPTool from Python example but doesn't identify the C# equivalent (HostedMcpServerTool)\n- Suggests adding MCP configuration into request payloads manually (unnecessary)\n- States 'The specifics of extension points for the C# client are not shown in the code context' - but the question asks about EXISTING functionality\n\nThe model provides general advice about MCP as a tool but fails to identify that the functionality Bruno is looking for is already built-in. This deserves 2 points for mentioning MCP tool support exists but lacking specific correct details.\n\n**Customizing Request Options via RawRepresentationFactory (5 points possible):**\nThe model completely fails to mention RawRepresentationFactory, which is the actual solution for customizing OpenAI prompt templates. Instead, it:\n- Suggests creating wrapper clients with ApplyPromptTemplate methods\n- Proposes composition and inheritance patterns\n- Recommends implementing IChatClient from scratch or wrapping it\n\nNone of these approaches address the actual question about using OpenAI's prompt templates. The correct answer is to use RawRepresentationFactory to set ResponseCreationOptions. Score: 0 points.\n\n**Clear and Concise Output (1 point possible):**\nThe answer is well-structured with numbered sections, clear code examples, and logical flow. However, it contains significant factual errors by not identifying the existing solutions (HostedMcpServerTool and RawRepresentationFactory). The response is verbose and suggests unnecessary workarounds instead of pointing to the built-in features. Due to these factual errors about what's available in the framework, this deserves 0 points.\n\n**Hallucination Check:**\nThe model doesn't fabricate non-existent files or paths. The code examples are illustrative patterns, not claims about existing repository files. No hallucination penalty applies.\n\n**Total Calculation:**\nKnowledge: 2/9 (2 for MCP + 0 for RawRepresentationFactory)\nClarity: 0/1 (factual errors about available functionality)\nTotal: 2/10",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 2.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 0.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

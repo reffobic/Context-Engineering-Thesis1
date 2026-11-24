@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "SELF_ROUTE",
+    "score": 0.0,
+    "max_score": 10.0,
+    "reason": "The model's answer is COMPLETELY UNRELATED to the actual question and correct solution. The question asks 'how to pass raw html to LLMExtractionStrategy?' and the correct answer is about using the `raw:` prefix with the crawler (e.g., `raw_html = f\"raw:{html}\"` and `await crawler.arun(url=raw_html, config=config)`). However, the model's answer discusses the internal implementation details of `LLMExtractionStrategy`, including methods like `run()`, `arun()`, `extract()`, `sanitize_input_encode()`, `sanitize_html()`, and `escape_json_string()`. While these implementation details might be technically accurate regarding the internal workings of the extraction strategy, they DO NOT answer the user's question about HOW TO PASS raw HTML to the strategy. The model completely misses the point about the `raw:` prefix input mechanism, which is the actual solution. The model discusses crawler configuration and internal sanitization processes, but never mentions the three supported input types (web URLs, file://, raw:) or the specific `raw:` prefix usage that directly answers the question. Since the answer is fundamentally off-topic and does not provide the information needed to solve the user's problem, it deserves minimal scores across all criteria. For knowledge score: 0 points for Raw HTML Prefix Usage (doesn't mention raw: prefix at all), 0 points for Input Type Prefixes (doesn't identify the three input types), 0 points for Output Consistency (discusses internal methods instead of unified arun() usage). For clarity: While the answer is well-structured and clear in its own right, it answers the WRONG question, so it gets 0 points for not being relevant to what was asked.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 0.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

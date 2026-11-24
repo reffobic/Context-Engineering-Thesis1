@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "GAPA",
+    "score": 1.0,
+    "max_score": 10.0,
+    "reason": "The model's answer is completely unrelated to the actual question. The question asks about how to pass raw HTML to LLMExtractionStrategy, and the correct answer involves using the `raw:` prefix with the crawler (e.g., `raw:<html>...</html>` passed to `arun()` method). However, the model's response discusses internal implementation details about HTML sanitization within the `LLMExtractionStrategy` class, focusing on how the strategy sanitizes HTML internally rather than how to pass raw HTML as input to the crawler. The model appears to be analyzing code that was not provided in the context and discusses `sanitize_html()`, `escape_json_string()`, `sanitize_input_encode()` functions that are implementation details rather than the user-facing API. The model completely misses the key point about the `raw:` prefix usage, the three input types (http://, https://, file://, raw:), and the unified `arun()` method usage. Since the answer does not address the actual question being asked and provides information about internal implementation rather than the user-facing API for passing raw HTML, it deserves minimal to no points across all criteria.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 1.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

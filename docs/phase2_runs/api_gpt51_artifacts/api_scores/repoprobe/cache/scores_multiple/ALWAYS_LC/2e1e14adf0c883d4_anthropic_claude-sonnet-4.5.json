@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_LC",
+    "score": 2.0,
+    "max_score": 10.0,
+    "reason": "Let me evaluate this answer carefully:\n\n**Hallucination Check**: The model references specific files and paths: `docker/README.md` (lines 49-57) and `fs42/fs42_server/static/ppv/README.md`. However, the provided repository information shows an EMPTY directory structure (no files listed). The model is citing non-existent files with specific line numbers and quote blocks. This constitutes hallucination.\n\n**Symbolic Links Feasibility (4 points)**: The model does confirm symbolic links work (1st sentence: 'Yes, using shortcuts/symlinks into the catalog will work'), but the entire answer is focused on PPV and Docker setup with fabricated documentation references. The question asks about the general catalog structure for already-sorted files, but the model pivots to PPV-specific advice without clearly addressing the core catalog use case. The confirmation is present but buried in incorrect context. Score: 2 points (mentions symbolic links are possible but lacks proper clarity due to wrong focus and fabricated sources).\n\n**Directory Structure Limitations (3 points)**: The model COMPLETELY FAILS to mention the critical limitation stated in the reference answer: the catalog only looks in channel_content folder and ONE FOLDER DEEP. Instead, it talks about Docker mounts and PPV directories. This is a fundamental miss of important technical constraints. Score: 0 points.\n\n**Practical Use Cases (2 points)**: The model provides a generic workflow pattern (3 steps) but does NOT provide the concrete examples from the reference answer (commercials pools, syndication across multiple channels). The workflow is abstract rather than practical use cases. Score: 0 points.\n\n**Clear and Concise Output (1 point)**: While the answer is well-structured with numbered steps and clear formatting, it contains significant factual errors through hallucinations (fabricated file references with fake quotes and line numbers). The content is also misaligned with the actual question context (focuses on PPV/Docker when user asks about general catalog organization). Due to hallucinations and misdirection, score: 0 points.\n\nTotal: 2 + 0 + 0 + 0 = 2/10",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 2.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 0.0,
+    "clarity_max": 1.0,
+    "hallucination": true
+  }
+]

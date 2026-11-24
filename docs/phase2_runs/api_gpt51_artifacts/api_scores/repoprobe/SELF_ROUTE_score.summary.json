@@ -1,0 +1,11 @@
+{
+  "arm": "SELF_ROUTE",
+  "n": 108,
+  "n_scored": 108,
+  "score_mean": 3.6018518518518516,
+  "overall_pct_mean": 36.01851851851852,
+  "knowledge_score_mean": 3.064814814814815,
+  "clarity_score_mean": 0.5370370370370371,
+  "perfect_solve_pct": 11.11111111111111,
+  "wall_s_mean": 14.998887770705753
+}

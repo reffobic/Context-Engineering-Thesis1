@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "GASR",
+    "score": 10.0,
+    "max_score": 10.0,
+    "reason": "Let me evaluate this answer against the scoring criteria:\n\n**Core Solution Identification (4 points):**\nThe model correctly identifies that `gpu_index` parameter needs to be added to specify different GPUs. The answer explicitly states 'you just need a second GPU widget instance with a different `gpu_index`' and shows how it's used in the code logic. This fully meets the 4-point criteria.\n\n**Configuration Location and Usage (5 points):**\nThe model correctly explains that `gpu_index` should be added under the widget's `options` section. It provides a comprehensive configuration example showing two separate GPU widgets (gpu0 and gpu1) with `gpu_index: 0` and `gpu_index: 1` respectively. The example is complete, correct, and demonstrates exactly how to use different index values to select different GPUs. This fully meets the 5-point criteria.\n\n**Clear and Concise Output (1 point):**\nThe response has excellent structure:\n- Clear introduction explaining the solution\n- Code snippet showing internal logic\n- Detailed YAML configuration examples for both GPUs\n- Additional explanation about how the labels work\n\nThe language is clear and professional. The hierarchy is well-organized with proper indentation in the YAML examples. There are no hallucinations - the code references and configuration structure appear to be appropriate for the yasb.gpu.GpuWidget context.\n\n**Hallucination Check:**\nNo fabricated files or paths are present. The model references code logic and configuration that appears consistent with the question context. The Python code snippet showing `gpu_data = next((g for g in gpu_data_list if g.index == inst.config.gpu_index), None)` is presented as an explanation of how the system works internally, which is helpful context rather than hallucination.\n\n**Overall Assessment:**\nThe answer exceeds the reference answer in completeness by providing both the solution and context about how it works internally. It gives a full working example with both GPU widgets configured, making it very practical for the user to implement.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 9.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 1.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

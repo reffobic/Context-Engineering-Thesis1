@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_GRAPH",
+    "score": 0.0,
+    "max_score": 10.0,
+    "reason": "The model's answer is related to the repository (mentions Bar class, AutoHideZone, window flags from the codebase) so it's not completely irrelevant. However, the answer is fundamentally incorrect and misses the actual solution entirely.\n\n**Configuration Option (0/5 points):** The model completely fails to identify `always_on_top: true` as the configuration option that solves this issue. Instead, it goes into extensive technical discussion about Win32 APIs, WindowStaysOnTopHint, Show Desktop behavior, and claims there is 'no way to prevent Win+D / Show Desktop from hiding the bar' with the current code. This is factually wrong - the solution is simply a configuration setting.\n\n**Implementation Details (0/4 points):** The model does not mention setting `always_on_top: true` in the configuration file at all. It suggests that OS-level tricks like 'registering as shell appbar' or 'Win32 styles' would be needed, which is incorrect and overcomplicated.\n\n**Clear and Concise Output (0/1 point):** While the response is well-structured and uses clear language, it contains significant factual errors. The model incorrectly concludes that the feature is impossible with the current codebase when in fact it's a simple configuration change. This represents a fundamental misunderstanding of the problem and solution. The answer is overly technical and verbose for what should be a simple configuration answer. The claim that 'there is no way' is a factual error that makes the answer misleading and unhelpful.\n\n**Hallucination Check:** The model references actual files from the codebase (src/core/bar.py, src/core/bar_helper.py, src/core/utils/win32/utilities.py) with line numbers that appear to be from code context provided. While we cannot verify the exact line numbers without the full repository, these are presented as references to provided code snippets rather than fabricated paths, so this doesn't constitute hallucination of non-existent files.\n\nTotal: 0/9 for knowledge (missed the simple solution entirely and provided incorrect technical analysis), 0/1 for clarity (factual errors make it unclear/misleading).",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 0.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

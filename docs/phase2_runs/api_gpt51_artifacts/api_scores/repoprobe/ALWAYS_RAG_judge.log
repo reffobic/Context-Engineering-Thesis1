@@ -1,0 +1,134 @@
+=== RepoProbe pipeline score start model=anthropic/claude-sonnet-4.5 arms=['ALWAYS_RAG'] filter='' iterations=1 ===
+--- ALWAYS_RAG ---
+  scored ALWAYS_RAG FieldStation42__FieldStation42-0 total=0.0/10 K=0.0 C=0.0 wall_s=15.1
+  scored ALWAYS_RAG FieldStation42__FieldStation42-1 total=0.0/10 K=0.0 C=0.0 wall_s=14.8
+  scored ALWAYS_RAG FieldStation42__FieldStation42-2 total=1.0/10 K=0.0 C=1.0 wall_s=15.7
+  scored ALWAYS_RAG FieldStation42__FieldStation42-3 total=1.0/10 K=0.0 C=1.0 wall_s=15.2
+  scored ALWAYS_RAG FieldStation42__FieldStation42-4 total=3.0/10 K=2.0 C=1.0 wall_s=17.5
+  scored ALWAYS_RAG FieldStation42__FieldStation42-5 total=2.0/10 K=2.0 C=0.0 wall_s=17.7
+  scored ALWAYS_RAG FieldStation42__FieldStation42-6 total=2.0/10 K=1.0 C=1.0 wall_s=20.8
+  scored ALWAYS_RAG FieldStation42__FieldStation42-7 total=3.0/10 K=3.0 C=0.0 wall_s=13.4
+  scored ALWAYS_RAG FieldStation42__FieldStation42-8 total=0.0/10 K=0.0 C=0.0 wall_s=15.6
+  scored ALWAYS_RAG FieldStation42__FieldStation42-9 total=3.0/10 K=2.0 C=1.0 wall_s=15.1
+  scored ALWAYS_RAG FieldStation42__FieldStation42-10 total=0.0/10 K=0.0 C=0.0 wall_s=18.3
+  scored ALWAYS_RAG FieldStation42__FieldStation42-11 total=2.0/10 K=2.0 C=0.0 wall_s=16.4
+  scored ALWAYS_RAG FieldStation42__FieldStation42-12 total=0.0/10 K=0.0 C=0.0 wall_s=17.5
+  scored ALWAYS_RAG FieldStation42__FieldStation42-13 total=1.0/10 K=1.0 C=0.0 wall_s=17.0
+  scored ALWAYS_RAG adk-python__adk-python-0 total=9.0/10 K=8.0 C=1.0 wall_s=17.8
+  scored ALWAYS_RAG adk-python__adk-python-1 total=1.0/10 K=1.0 C=0.0 wall_s=22.0
+  scored ALWAYS_RAG adk-python__adk-python-2 total=0.0/10 K=0.0 C=0.0 wall_s=17.0
+  scored ALWAYS_RAG adk-python__adk-python-3 total=10.0/10 K=9.0 C=1.0 wall_s=16.9
+  scored ALWAYS_RAG adk-python__adk-python-4 total=4.0/10 K=3.0 C=1.0 wall_s=15.9
+  scored ALWAYS_RAG adk-python__adk-python-5 total=0.0/10 K=0.0 C=0.0 wall_s=14.9
+  scored ALWAYS_RAG adk-python__adk-python-6 total=0.0/10 K=0.0 C=0.0 wall_s=17.7
+  scored ALWAYS_RAG adk-python__adk-python-7 total=3.0/10 K=3.0 C=0.0 wall_s=15.6
+  scored ALWAYS_RAG adk-python__adk-python-8 total=1.0/10 K=1.0 C=0.0 wall_s=19.6
+  scored ALWAYS_RAG adk-python__adk-python-9 total=8.0/10 K=7.0 C=1.0 wall_s=13.1
+  scored ALWAYS_RAG adk-python__adk-python-10 total=1.0/10 K=0.0 C=1.0 wall_s=13.2
+  scored ALWAYS_RAG adk-python__adk-python-11 total=1.0/10 K=1.0 C=0.0 wall_s=22.5
+  scored ALWAYS_RAG adk-python__adk-python-12 total=0.0/10 K=0.0 C=0.0 wall_s=20.8
+  scored ALWAYS_RAG adk-python__adk-python-13 total=8.0/10 K=7.0 C=1.0 wall_s=21.1
+  scored ALWAYS_RAG adk-python__adk-python-14 total=1.0/10 K=0.0 C=1.0 wall_s=19.9
+  scored ALWAYS_RAG adk-python__adk-python-15 total=0.0/10 K=0.0 C=0.0 wall_s=15.7
+  scored ALWAYS_RAG adk-python__adk-python-16 total=5.0/10 K=4.0 C=1.0 wall_s=17.7
+  scored ALWAYS_RAG adk-python__adk-python-17 total=0.0/10 K=0.0 C=0.0 wall_s=14.4
+  scored ALWAYS_RAG adk-python__adk-python-18 total=1.0/10 K=0.0 C=1.0 wall_s=13.5
+  scored ALWAYS_RAG adk-python__adk-python-19 total=6.0/10 K=5.0 C=1.0 wall_s=17.3
+  scored ALWAYS_RAG adk-python__adk-python-20 total=10.0/10 K=9.0 C=1.0 wall_s=15.0
+  scored ALWAYS_RAG adk-python__adk-python-21 total=0.0/10 K=0.0 C=0.0 wall_s=16.2
+  scored ALWAYS_RAG adk-python__adk-python-22 total=0.0/10 K=0.0 C=0.0 wall_s=17.6
+  scored ALWAYS_RAG adk-python__adk-python-23 total=1.0/10 K=0.0 C=1.0 wall_s=16.0
+  scored ALWAYS_RAG adk-python__adk-python-24 total=8.0/10 K=7.0 C=1.0 wall_s=16.0
+  scored ALWAYS_RAG adk-python__adk-python-25 total=10.0/10 K=9.0 C=1.0 wall_s=12.2
+  scored ALWAYS_RAG adk-python__adk-python-26 total=10.0/10 K=9.0 C=1.0 wall_s=19.6
+  scored ALWAYS_RAG adk-python__adk-python-27 total=10.0/10 K=9.0 C=1.0 wall_s=18.2
+  scored ALWAYS_RAG adk-python__adk-python-28 total=9.0/10 K=8.0 C=1.0 wall_s=14.4
+  scored ALWAYS_RAG adk-python__adk-python-29 total=6.0/10 K=5.0 C=1.0 wall_s=12.4
+  scored ALWAYS_RAG agent-framework__agent-framework-0 total=2.0/10 K=2.0 C=0.0 wall_s=16.8
+  scored ALWAYS_RAG agent-framework__agent-framework-1 total=0.0/10 K=0.0 C=0.0 wall_s=12.9
+  scored ALWAYS_RAG agent-framework__agent-framework-2 total=5.0/10 K=4.0 C=1.0 wall_s=13.5
+  scored ALWAYS_RAG agent-framework__agent-framework-3 total=1.0/10 K=0.0 C=1.0 wall_s=17.0
+  scored ALWAYS_RAG agent-framework__agent-framework-4 total=10.0/10 K=9.0 C=1.0 wall_s=12.6
+  scored ALWAYS_RAG agent-framework__agent-framework-5 total=0.0/10 K=0.0 C=0.0 wall_s=16.4
+  scored ALWAYS_RAG agent-framework__agent-framework-6 total=3.0/10 K=2.0 C=1.0 wall_s=14.9
+  scored ALWAYS_RAG agent-framework__agent-framework-7 total=0.0/10 K=0.0 C=0.0 wall_s=8.3
+  scored ALWAYS_RAG agent-framework__agent-framework-8 total=0.0/10 K=0.0 C=0.0 wall_s=16.6
+  scored ALWAYS_RAG browser-use__browser-use-0 total=5.0/10 K=4.0 C=1.0 wall_s=14.2
+  scored ALWAYS_RAG browser-use__browser-use-1 total=1.0/10 K=0.0 C=1.0 wall_s=13.3
+  scored ALWAYS_RAG browser-use__browser-use-2 total=5.0/10 K=5.0 C=0.0 wall_s=17.8
+  scored ALWAYS_RAG browser-use__browser-use-3 total=3.0/10 K=2.0 C=1.0 wall_s=13.9
+  scored ALWAYS_RAG browser-use__browser-use-4 total=0.0/10 K=0.0 C=0.0 wall_s=15.6
+  scored ALWAYS_RAG crawl4ai__crawl4ai-0 total=1.0/10 K=0.0 C=1.0 wall_s=16.1
+  scored ALWAYS_RAG crawl4ai__crawl4ai-1 total=3.0/10 K=3.0 C=0.0 wall_s=15.9
+  scored ALWAYS_RAG crawl4ai__crawl4ai-2 total=1.0/10 K=0.0 C=1.0 wall_s=13.0
+  scored ALWAYS_RAG crawl4ai__crawl4ai-3 total=1.0/10 K=0.0 C=1.0 wall_s=14.7
+  scored ALWAYS_RAG crawl4ai__crawl4ai-4 total=8.0/10 K=7.0 C=1.0 wall_s=13.1
+  scored ALWAYS_RAG crawl4ai__crawl4ai-5 total=0.0/10 K=0.0 C=0.0 wall_s=12.3
+  scored ALWAYS_RAG crawl4ai__crawl4ai-6 total=0.0/10 K=0.0 C=0.0 wall_s=13.4
+  scored ALWAYS_RAG crawl4ai__crawl4ai-7 total=2.0/10 K=2.0 C=0.0 wall_s=18.6
+  scored ALWAYS_RAG crawl4ai__crawl4ai-8 total=0.0/10 K=0.0 C=0.0 wall_s=14.7
+  scored ALWAYS_RAG crawl4ai__crawl4ai-9 total=6.0/10 K=5.0 C=1.0 wall_s=16.5
+  scored ALWAYS_RAG crawl4ai__crawl4ai-10 total=4.0/10 K=3.0 C=1.0 wall_s=14.2
+  scored ALWAYS_RAG crawl4ai__crawl4ai-11 total=1.0/10 K=0.0 C=1.0 wall_s=10.8
+  scored ALWAYS_RAG crawl4ai__crawl4ai-12 total=0.0/10 K=0.0 C=0.0 wall_s=14.5
+  scored ALWAYS_RAG crawl4ai__crawl4ai-13 total=6.0/10 K=5.0 C=1.0 wall_s=17.7
+  scored ALWAYS_RAG crawl4ai__crawl4ai-14 total=3.0/10 K=2.0 C=1.0 wall_s=16.9
+  scored ALWAYS_RAG crawl4ai__crawl4ai-15 total=1.0/10 K=0.0 C=1.0 wall_s=11.4
+  scored ALWAYS_RAG crawl4ai__crawl4ai-16 total=2.0/10 K=2.0 C=0.0 wall_s=13.6
+  scored ALWAYS_RAG crawl4ai__crawl4ai-17 total=0.0/10 K=0.0 C=0.0 wall_s=13.5
+  scored ALWAYS_RAG docling__docling-0 total=9.0/10 K=8.0 C=1.0 wall_s=17.5
+  scored ALWAYS_RAG docling__docling-1 total=1.0/10 K=0.0 C=1.0 wall_s=19.1
+  scored ALWAYS_RAG docling__docling-2 total=0.0/10 K=0.0 C=0.0 wall_s=12.7
+  scored ALWAYS_RAG docling__docling-3 total=2.0/10 K=1.0 C=1.0 wall_s=14.2
+  scored ALWAYS_RAG docling__docling-4 total=6.0/10 K=5.0 C=1.0 wall_s=12.8
+  scored ALWAYS_RAG docling__docling-5 total=1.0/10 K=0.0 C=1.0 wall_s=15.0
+  scored ALWAYS_RAG docling__docling-6 total=8.0/10 K=7.0 C=1.0 wall_s=16.2
+  scored ALWAYS_RAG docling__docling-7 total=1.0/10 K=1.0 C=0.0 wall_s=12.9
+  scored ALWAYS_RAG docling__docling-8 total=0.0/10 K=0.0 C=0.0 wall_s=10.5
+  scored ALWAYS_RAG docling__docling-9 total=0.0/10 K=0.0 C=0.0 wall_s=19.3
+  scored ALWAYS_RAG sglang__sglang-0 total=6.0/10 K=5.0 C=1.0 wall_s=17.4
+  scored ALWAYS_RAG sglang__sglang-1 total=1.0/10 K=0.0 C=1.0 wall_s=14.6
+  scored ALWAYS_RAG sglang__sglang-2 total=0.0/10 K=0.0 C=0.0 wall_s=14.7
+  scored ALWAYS_RAG sglang__sglang-3 total=5.0/10 K=5.0 C=0.0 wall_s=12.2
+  scored ALWAYS_RAG sglang__sglang-4 total=5.0/10 K=5.0 C=0.0 wall_s=15.9
+  scored ALWAYS_RAG sglang__sglang-5 total=8.0/10 K=7.0 C=1.0 wall_s=13.6
+  scored ALWAYS_RAG sglang__sglang-6 total=1.0/10 K=0.0 C=1.0 wall_s=12.9
+  scored ALWAYS_RAG sglang__sglang-7 total=8.0/10 K=7.0 C=1.0 wall_s=14.2
+  scored ALWAYS_RAG sglang__sglang-8 total=0.0/10 K=0.0 C=0.0 wall_s=16.1
+  scored ALWAYS_RAG sglang__sglang-9 total=1.0/10 K=0.0 C=1.0 wall_s=12.5
+  scored ALWAYS_RAG sglang__sglang-10 total=4.0/10 K=4.0 C=0.0 wall_s=14.9
+  scored ALWAYS_RAG yasb__yasb-0 total=10.0/10 K=9.0 C=1.0 wall_s=15.7
+  scored ALWAYS_RAG yasb__yasb-1 total=10.0/10 K=9.0 C=1.0 wall_s=18.0
+  scored ALWAYS_RAG yasb__yasb-2 total=1.0/10 K=1.0 C=0.0 wall_s=15.0
+  scored ALWAYS_RAG yasb__yasb-3 total=0.0/10 K=0.0 C=0.0 wall_s=13.9
+  scored ALWAYS_RAG yasb__yasb-4 total=0.0/10 K=0.0 C=0.0 wall_s=10.0
+  scored ALWAYS_RAG yasb__yasb-5 total=0.0/10 K=0.0 C=0.0 wall_s=16.3
+  scored ALWAYS_RAG yasb__yasb-6 total=3.0/10 K=2.0 C=1.0 wall_s=12.1
+  scored ALWAYS_RAG yasb__yasb-7 total=0.0/10 K=0.0 C=0.0 wall_s=14.1
+  scored ALWAYS_RAG yasb__yasb-8 total=5.0/10 K=5.0 C=0.0 wall_s=17.3
+  scored ALWAYS_RAG yasb__yasb-9 total=9.0/10 K=9.0 C=0.0 wall_s=15.3
+  scored ALWAYS_RAG yasb__yasb-10 total=1.0/10 K=0.0 C=1.0 wall_s=11.1
+[PASS] ALWAYS_RAG wrote /home/g7/haya/api_scores/repoprobe/ALWAYS_RAG_score.jsonl n_scored=108
+{
+  "scoring_model": "anthropic/claude-sonnet-4.5",
+  "repo_filter": "",
+  "num_iterations": 1,
+  "arms": [
+    {
+      "arm": "ALWAYS_RAG",
+      "n": 108,
+      "n_scored": 108,
+      "score_mean": 2.9722222222222223,
+      "overall_pct_mean": 29.72222222222222,
+      "knowledge_score_mean": 2.4537037037037037,
+      "clarity_score_mean": 0.5185185185185185,
+      "perfect_solve_pct": 7.407407407407407,
+      "wall_s_mean": 15.428565508789486
+    }
+  ],
+  "n_total": 108,
+  "n_scored": 108,
+  "wall_s_total": 1666.3702147006989,
+  "label": "local-judge \u00b7 single-judge \u00b7 scorer-on-pipeline"
+}
+=== done in 1666.4s ===

@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_LC",
+    "score": 0.0,
+    "max_score": 10.0,
+    "reason": "The model's answer is completely unrelated to the repository information and question context. The question is about C#/.NET Microsoft.Extensions.AI library and specifically asks about AITool, AIFunctionFactory.CreateDeclaration, and client-side tool declarations in a .NET context. However, the model's answer discusses Python code with ChatAgent, ChatClientProtocol, ChatOptions, ChatMessage, and proposes Python-based solutions involving async/await patterns, which are entirely from a different technology stack. The answer shows no understanding of the C# context, does not mention AIFunctionFactory.CreateDeclaration, does not discuss the Microsoft.Extensions.AI namespace or package, and fails to address the core requirement of creating non-executable function declarations for client-side tools in .NET. While the answer is well-structured and comprehensive for a hypothetical Python agent system, it completely misses the actual question about C#/.NET APIs. According to the scoring requirements, when a model's answer is completely unrelated to the repository information, a score of 0 should be given directly. Additionally, the answer contains extensive discussion of code patterns and line number references that do not exist in the provided empty directory structure, though these appear to be from the model's internal context rather than pure hallucination. The fundamental issue is a complete technology stack mismatch - answering a C# question with Python code.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 0.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

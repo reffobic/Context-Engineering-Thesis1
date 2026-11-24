@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "GASR",
+    "score": 1.0,
+    "max_score": 10.0,
+    "reason": "The model's answer is completely unrelated to the repository and question context. The question asks about equivalents to Semantic Kernel's Kernel.Data in MAF (Microsoft AI Framework), specifically for .NET/C# code. However, the model provides an extensive answer about Python implementations with Semantic Kernel, discussing Python classes, decorators like @kernel_function, and Python-specific patterns. The answer references Python files like '02_responses_agent_with_tool.py', '03_openai_assistant_function_tool.py', and '03_chat_completion_thread_and_stream.py', which are completely unrelated to the .NET MAF framework being asked about. The reference answer clearly describes three .NET-specific approaches: IServiceProvider access, FunctionInvokingChatClient.CurrentContext with ChatOptions.AdditionalProperties, and AIFunction wrapping with AIFunctionArguments. None of these concepts are mentioned in the model's answer. The model appears to have confused the question context entirely, treating it as a Python Semantic Kernel question rather than a .NET MAF question. Since the answer is completely unrelated to the actual repository and question being asked, it deserves 0 points across all knowledge dimensions. The answer itself is well-structured and clear in explaining Python concepts, so it gets 1 point for clarity, but this cannot compensate for being entirely off-topic.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 1.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

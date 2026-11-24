@@ -1,0 +1,11 @@
+{
+  "arm": "ALWAYS_RAG",
+  "n": 108,
+  "n_scored": 108,
+  "score_mean": 2.9722222222222223,
+  "overall_pct_mean": 29.72222222222222,
+  "knowledge_score_mean": 2.4537037037037037,
+  "clarity_score_mean": 0.5185185185185185,
+  "perfect_solve_pct": 7.407407407407407,
+  "wall_s_mean": 15.428565508789486
+}

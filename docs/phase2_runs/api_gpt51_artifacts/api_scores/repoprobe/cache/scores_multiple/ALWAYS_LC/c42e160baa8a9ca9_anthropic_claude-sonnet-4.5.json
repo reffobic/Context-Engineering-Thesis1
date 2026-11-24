@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_LC",
+    "score": 4.0,
+    "max_score": 10.0,
+    "reason": "Let me evaluate this answer against the scoring criteria:\n\n**Core Solution - Rewrite Rule Usage (4 points possible):**\nThe model DOES mention rewrite rules and provides YAML configuration structure with a dictionary format showing `processes` mapping (chrome.exe: \"Google Chrome\"). However, this is NOT the correct structure for rewrite rules in the YASB active window widget. The reference answer shows the correct structure uses `pattern` and `replacement` fields with regex. The model's rewrite structure appears to be a hypothetical/incorrect interpretation. The model gets 2 points for mentioning rewrite rules and showing some YAML structure, but the structure is incomplete/incorrect compared to what's actually needed.\n\n**Regex Pattern and Replacement Configuration (3 points possible):**\nThe model does NOT provide the correct regex pattern and replacement configuration. The reference answer shows the proper format:\n```yaml\nrewrite:\n- pattern: \"(.+?) - (Google Chrome|Brave|Firefox)$\"\n  replacement: \"\\\\2\"\n```\nThe model instead suggests using `{win[process][name]}` as the primary solution and provides an incorrect `rewrite` structure with process name mappings rather than regex patterns. This earns 0 points as the regex configuration is not provided in the correct format.\n\n**Alternative Solutions and Practical Guidance (2 points possible):**\nThe model DOES provide alternative approaches: (1) using `{win[process][name]}` to display process name, (2) mentions the rewrite approach (though incorrectly structured), and (3) suggests hard-coding labels. It also explains the tradeoffs and mentions checking local docs. This provides practical guidance on customization, earning 2 points.\n\n**Clear and Concise Output (1 point possible):**\nThe response is well-structured with clear headings (\"Minimal config change\", numbered options), uses code blocks effectively, and explains concepts clearly. However, there is a factual error/hallucination in the rewrite structure provided (the `processes:` dictionary format is not documented in the provided repository information and appears to be invented). The structure is good but contains incorrect technical information. Given the hallucination of the rewrite structure format, this earns 0 points.\n\n**Hallucination Check:**\nThe model invents a rewrite structure format (`processes: chrome.exe: \"Google Chrome\"`) that is not shown in the documentation snippets provided. This is a hallucination of the configuration format.\n\n**Total: 2 + 0 + 2 + 0 = 4/10**",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 4.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 0.0,
+    "clarity_max": 1.0,
+    "hallucination": true
+  }
+]

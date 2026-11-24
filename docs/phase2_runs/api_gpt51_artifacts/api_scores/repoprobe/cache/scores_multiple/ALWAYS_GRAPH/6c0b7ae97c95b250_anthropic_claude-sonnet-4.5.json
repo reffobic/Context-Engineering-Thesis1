@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_GRAPH",
+    "score": 1.0,
+    "max_score": 10.0,
+    "reason": "Let me evaluate this answer against the scoring criteria:\n\n**Problem Explanation (2 points possible):** The model correctly identifies that React sites require browser-based crawling with JavaScript execution, not just raw HTTP fetches. It explains that without proper browser configuration, you only get the initial shell HTML with the root div. However, it doesn't explicitly explain that SPAs populate data via API calls to backend services as the reference answer does. The explanation is technical and accurate but misses the fundamental SPA architecture point. Score: 1 point.\n\n**Basic Waiting Solution (3 points possible):** The model does NOT provide the basic waiting solution using `delay_before_return_html` and `page_timeout` parameters as shown in the reference answer. Instead, it focuses entirely on browser configuration (`browser_type`, `headless`, `viewport`, etc.) which are setup parameters, not waiting mechanisms. The model shows how to create a `CrawlerRunConfig` but without any timing/waiting parameters. Score: 0 points.\n\n**Advanced Waiting Solution (4 points possible):** The model does not provide any advanced waiting solution using `wait_for` parameter with JavaScript conditions or CSS selector-based waiting. It doesn't mention this capability at all. Score: 0 points.\n\n**Clear and Concise Output (1 point possible):** The answer is well-structured with clear code examples and explanations. It uses code snippets from the repository (lines 588-607, 421-423, 437) which are properly referenced. The language is clear and professional. However, the answer completely misses the actual solution to the problem - it focuses on browser setup rather than waiting strategies. While the information provided is accurate regarding browser configuration, it doesn't address the core issue of why React sites return empty HTML (waiting for content to load). The response is clear but factually incomplete for solving the stated problem. Score: 0 points (due to missing the core solution despite being well-written).\n\n**Hallucination Check:** The line number references appear to be from the codebase analysis. No fabricated files or paths are detected. Hallucination: false.\n\nTotal: The model provides technically accurate information about browser configuration but completely misses the actual solution (waiting mechanisms) needed to crawl React sites successfully.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 1.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 0.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

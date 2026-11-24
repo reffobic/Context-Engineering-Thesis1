@@ -1,0 +1,11 @@
+{
+  "arm": "PREASSESS",
+  "n": 108,
+  "n_scored": 108,
+  "score_mean": 3.462962962962963,
+  "overall_pct_mean": 34.629629629629626,
+  "knowledge_score_mean": 2.8981481481481484,
+  "clarity_score_mean": 0.5648148148148148,
+  "perfect_solve_pct": 14.814814814814815,
+  "wall_s_mean": 15.219427356013545
+}

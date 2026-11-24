@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_GRAPH",
+    "score": 1.0,
+    "max_score": 10.0,
+    "reason": "The model's answer is completely unrelated to the actual question and repository information. The question asks specifically about how to pass raw HTML to LLMExtractionStrategy in Crawl4AI v0.7.x, which uses a prefix-based input handling system with the `raw:` prefix. The correct answer involves using `raw_html = f\"raw:{html}\"` and passing it to `crawler.arun(url=raw_html, config=config)`. However, the model's response discusses the `input_format` parameter of `LLMExtractionStrategy` class, which is about controlling the format of content (markdown vs HTML) that gets sent to the LLM after crawling, not about how to pass raw HTML strings to the crawler itself. The model focuses on `ExtractionStrategy` class initialization parameters and the `extract()` method, which is a different topic entirely. The model discusses conversion between HTML and markdown formats and mentions configuring the crawler to return raw vs cleaned HTML, but completely misses the core mechanism of using the `raw:` prefix for direct HTML input. Since the answer addresses a different aspect of the library and does not explain the prefix-based input handling system at all, it fails all scoring criteria: (1) Does not mention the `raw:` prefix usage (0/4 points), (2) Does not identify the three input type prefixes (0/3 points), (3) Does not explain the unified `arun()` method usage for different input types (0/2 points). While the answer is well-structured and clear in its own context, it answers a completely different question, so it receives 1 point for clarity. No hallucinations are detected as the model doesn't fabricate file paths.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 1.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

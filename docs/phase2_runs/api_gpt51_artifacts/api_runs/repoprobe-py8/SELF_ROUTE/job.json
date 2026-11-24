@@ -1,0 +1,370 @@
+{
+ "job_id": "SELF_ROUTE__qwen3.5-9b__repoprobe-py8__3ac1066__20261123T195437",
+ "identity": {
+  "arm": "SELF_ROUTE",
+  "model": "qwen3.5:9b",
+  "dataset": "repoprobe-py8",
+  "ablation": "full",
+  "config_hash": "82f62ce95e4a1422",
+  "pipeline_frozen_sha": "3ac10665c16f07ae58ee3fbb9ce3e67874f07c19",
+  "harness_commit": "a8824d73bc30bb1b3e2fdfda45c0d98dae05dc39",
+  "sample_sha256": "a63f350b242fba28dd6d8613eb7b34996600af073054b884abf06fd486e79a34"
+ },
+ "info": {
+  "arm": "SELF_ROUTE",
+  "arm_impl": "pipeline",
+  "dataset": "repoprobe-py8",
+  "model": "qwen3.5:9b",
+  "n_tasks": 108,
+  "warmup": {
+   "seconds": 0,
+   "ollama_ps": null
+  },
+  "preflight_s": 0.66,
+  "sample": "/home/g7/haya/Context-Engineering-Thesis1/eval_harness/data/samples/repoprobe-py8.sample.json",
+  "sample_sha256": "a63f350b242fba28dd6d8613eb7b34996600af073054b884abf06fd486e79a34"
+ },
+ "header": {
+  "schema": 1,
+  "smoke": false,
+  "machine_id": "ubuntu-4080",
+  "gpu_name": null,
+  "gpu_driver": null,
+  "ollama_version": "openrouter",
+  "model": "qwen3.5:9b",
+  "model_digest": null,
+  "config_hashes": {
+   "experiment": "5f9aad96023b1bfb",
+   "pipeline_config": "cf8ea0cdf723e8d4",
+   "index_config": "ca64eb2049611bb8",
+   "run_config": "1acb24354734fd02",
+   "ablations_config": "93a12af1c4fcbe69"
+  },
+  "config_hash": "82f62ce95e4a1422",
+  "harness_commit": "a8824d73bc30bb1b3e2fdfda45c0d98dae05dc39",
+  "harness_clean": false,
+  "pipeline_frozen_sha": "3ac10665c16f07ae58ee3fbb9ce3e67874f07c19",
+  "pipeline_base_commit": "166dbd01e126cdfe91524534a172498746a49cc2",
+  "pipeline_seed_alignment_commit": "50cf149efd6180b41098210b234efef81685ceaf",
+  "ablation": {
+   "key": "full",
+   "label": "full GAPA",
+   "env": {
+    "ABL_NO_GRAPH_EXPAND": "0",
+    "ABL_CONTAINS_ONLY": "0",
+    "ABL_TRUNCATE_PRUNING": "0",
+    "ABL_DENSE_ONLY": "0",
+    "ABL_GATE_NO_SCORES": "0",
+    "ABL_GATE_NO_DEPS": "0",
+    "ABL_GATE_DROP_HEADINGS": "0",
+    "ABL_GASR_GATE_OFF": "0",
+    "ABL_GASR_GATE_NO_SHORTCUT": "0"
+   }
+  },
+  "record_results": true,
+  "record_authorised_for": {
+   "pipeline_sha": "3ac10665c16f07ae58ee3fbb9ce3e67874f07c19",
+   "harness_commit": "a8824d73bc30bb1b3e2fdfda45c0d98dae05dc39",
+   "authorised_utc": "2026-11-23T12:11:33.286096+00:00",
+   "note": "API gen W1+RP; Fix4 freeze 3ac1066; harness after merge a8824d7"
+  },
+  "env": {
+   "ABL_NO_GRAPH_EXPAND": {
+    "value": "0",
+    "source": "pinned"
+   },
+   "ABL_CONTAINS_ONLY": {
+    "value": "0",
+    "source": "pinned"
+   },
+   "ABL_TRUNCATE_PRUNING": {
+    "value": "0",
+    "source": "pinned"
+   },
+   "ABL_DENSE_ONLY": {
+    "value": "0",
+    "source": "pinned"
+   },
+   "ABL_GATE_NO_SCORES": {
+    "value": "0",
+    "source": "pinned"
+   },
+   "ABL_GATE_NO_DEPS": {
+    "value": "0",
+    "source": "pinned"
+   },
+   "ABL_GATE_DROP_HEADINGS": {
+    "value": "0",
+    "source": "pinned"
+   },
+   "ABL_GASR_GATE_OFF": {
+    "value": "0",
+    "source": "pinned"
+   },
+   "ABL_GASR_GATE_NO_SHORTCUT": {
+    "value": "0",
+    "source": "pinned"
+   },
+   "JUDGE_JSON_FORMAT": {
+    "value": "1",
+    "source": "pinned"
+   },
+   "GRAPHIFY_PATH_PREFIX": {
+    "value": "",
+    "source": "pinned"
+   },
+   "ASSESSOR_MODEL": {
+    "value": "qwen3.5:9b",
+    "source": "pinned"
+   },
+   "BM25_TOP_N": {
+    "value": "120",
+    "source": "code_default"
+   },
+   "BM25_WEIGHT": {
+    "value": "0.30304975850615135",
+    "source": "code_default"
+   },
+   "CHROMA_COLLECTION": {
+    "value": "code_embeddings",
+    "source": "code_default"
+   },
+   "CHROMA_META_COLLECTION": {
+    "value": "code_meta_embeddings",
+    "source": "code_default"
+   },
+   "CHROMA_PATH": {
+    "value": null,
+    "source": "code_default"
+   },
+   "CLASS_DEF_WEIGHT": {
+    "value": "0.14213806413377017",
+    "source": "code_default"
+   },
+   "DENSE_ALPHA": {
+    "value": "0.40",
+    "source": "code_default"
+   },
+   "DENSE_WEIGHT": {
+    "value": "0.36116489734850177",
+    "source": "code_default"
+   },
+   "EMBEDDING_DEVICE": {
+    "value": "cpu",
+    "source": "pinned"
+   },
+   "EVAL_JUDGE_MODEL": {
+    "value": "qwen3.5:9b",
+    "source": "pinned"
+   },
+   "EVAL_OLLAMA_NUM_CTX": {
+    "value": null,
+    "source": "code_default"
+   },
+   "EXACT_TOP_N": {
+    "value": "400",
+    "source": "code_default"
+   },
+   "EXACT_WEIGHT": {
+    "value": "0.12353950364432467",
+    "source": "code_default"
+   },
+   "FINAL_W_FUNCTION": {
+    "value": "0",
+    "source": "code_default"
+   },
+   "FINAL_W_HYBRID": {
+    "value": "1",
+    "source": "code_default"
+   },
+   "FINAL_W_PROXIMITY": {
+    "value": "0",
+    "source": "code_default"
+   },
+   "FINAL_W_SYMBOL": {
+    "value": "0",
+    "source": "code_default"
+   },
+   "GASR_HARD_CAP": {
+    "value": "2",
+    "source": "pinned"
+   },
+   "GASR_MAX_NEIGHBORS": {
+    "value": "8",
+    "source": "pinned"
+   },
+   "GASR_NEIGHBOR_BUDGET_FRACTION": {
+    "value": "0.55",
+    "source": "pinned"
+   },
+   "GASR_OFFLINE": {
+    "value": null,
+    "source": "code_default"
+   },
+   "GRAPHIFY_OUT": {
+    "value": null,
+    "source": "code_default"
+   },
+   "INDEX_CACHE_SAVE_INTERVAL": {
+    "value": "50",
+    "source": "code_default"
+   },
+   "INDEX_CONTEXT_MODEL": {
+    "value": null,
+    "source": "code_default"
+   },
+   "INDEX_CONTEXT_OLLAMA": {
+    "value": "0",
+    "source": "code_default"
+   },
+   "INDEX_CONTEXT_TIMEOUT": {
+    "value": "20",
+    "source": "code_default"
+   },
+   "INDEX_CPU_THREADS": {
+    "value": "2",
+    "source": "code_default"
+   },
+   "INDEX_EMBED_BATCH_SIZE": {
+    "value": "16",
+    "source": "code_default"
+   },
+   "INDEX_MAX_FILES": {
+    "value": "600",
+    "source": "code_default"
+   },
+   "INDEX_SITUATING_MAX_CHARS": {
+    "value": "700",
+    "source": "code_default"
+   },
+   "KEYWORD_WEIGHT": {
+    "value": "0.09538879448754434",
+    "source": "code_default"
+   },
+   "MAX_CONTEXT_TOKENS": {
+    "value": "24000",
+    "source": "pinned"
+   },
+   "LC_TOKEN_BUDGET": {
+    "value": "8000",
+    "source": "pinned"
+   },
+   "OLLAMA_ASSESSOR_MODEL": {
+    "value": null,
+    "source": "code_default"
+   },
+   "OLLAMA_BASE_URL": {
+    "value": "http://localhost:11434",
+    "source": "code_default"
+   },
+   "OLLAMA_HOST": {
+    "value": "http://127.0.0.1:11434",
+    "source": "code_default"
+   },
+   "OLLAMA_MODEL": {
+    "value": "qwen3.5:9b",
+    "source": "pinned"
+   },
+   "OLLAMA_NUM_CTX": {
+    "value": "32768",
+    "source": "pinned"
+   },
+   "OLLAMA_NUM_GPU": {
+    "value": "99",
+    "source": "code_default"
+   },
+   "OLLAMA_NUM_PREDICT": {
+    "value": "8192",
+    "source": "code_default"
+   },
+   "OLLAMA_SKIP": {
+    "value": null,
+    "source": "code_default"
+   },
+   "OLLAMA_THINK": {
+    "value": "0",
+    "source": "pinned"
+   },
+   "PATH_MATCH_WEIGHT": {
+    "value": "0.20500050082771293",
+    "source": "code_default"
+   },
+   "PREROUTE_DEBUG": {
+    "value": null,
+    "source": "code_default"
+   },
+   "PRUNE_W_FUNCTION": {
+    "value": "0.824755791189501",
+    "source": "code_default"
+   },
+   "PRUNE_W_QUERY_MATCH": {
+    "value": "0.2887302647124196",
+    "source": "code_default"
+   },
+   "PRUNE_W_RETRIEVAL": {
+    "value": "0.7741918328343507",
+    "source": "code_default"
+   },
+   "PRUNE_W_STRUCTURE": {
+    "value": "0.42360256074513347",
+    "source": "code_default"
+   },
+   "RERANKER_ENABLED": {
+    "value": "0",
+    "source": "code_default"
+   },
+   "RERANKER_MODEL": {
+    "value": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+    "source": "code_default"
+   },
+   "RERANK_TOP_N": {
+    "value": "80",
+    "source": "code_default"
+   },
+   "SOURCE_WEIGHT": {
+    "value": "0.10461575657334723",
+    "source": "code_default"
+   },
+   "USE_HYBRID_EMBEDDINGS": {
+    "value": "1",
+    "source": "code_default"
+   },
+   "PYTHONHASHSEED": {
+    "value": "0",
+    "source": "pinned"
+   },
+   "ANONYMIZED_TELEMETRY": {
+    "value": "False",
+    "source": "pinned"
+   },
+   "HF_HUB_OFFLINE": {
+    "value": "1",
+    "source": "pinned"
+   },
+   "TRANSFORMERS_OFFLINE": {
+    "value": "1",
+    "source": "pinned"
+   }
+  },
+  "python_packages": {
+   "python": "3.10.12",
+   "platform": "Linux-6.8.0-149-generic-x86_64-with-glibc2.35",
+   "packages": {
+    "chromadb": "1.5.8",
+    "sentence-transformers": "5.4.1",
+    "torch": "2.11.0",
+    "transformers": "5.7.0",
+    "numpy": "2.2.6",
+    "rank-bm25": "0.2.2",
+    "requests": "2.33.1",
+    "fastapi": "0.136.1",
+    "pydantic": "2.13.3",
+    "tokenizers": "0.22.2",
+    "huggingface-hub": "1.13.0"
+   },
+   "graphify": "graphify 0.9.65",
+   "lock_sha256": "2609f238dfd3b38a15eba7b053d237991c59149fd5f25f099ba817b71eab8534"
+  },
+  "num_ctx": 32768
+ }
+}

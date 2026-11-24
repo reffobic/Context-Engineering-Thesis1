@@ -1,0 +1,43 @@
+[16:46:26] START swe-qa-w1/GAPA
+[FAIL] preflight: tracked files have uncommitted changes; commit before running
+[16:46:26] END   swe-qa-w1/GAPA
+[16:46:26] START repoprobe-py8/GAPA
+[FAIL] preflight: tracked files have uncommitted changes; commit before running
+[16:46:26] END   repoprobe-py8/GAPA
+[16:46:26] START swe-qa-w1/GASR
+[FAIL] preflight: tracked files have uncommitted changes; commit before running
+[16:46:26] END   swe-qa-w1/GASR
+[16:46:26] START repoprobe-py8/GASR
+[FAIL] preflight: tracked files have uncommitted changes; commit before running
+[16:46:26] END   repoprobe-py8/GASR
+[16:46:26] START swe-qa-w1/SELF_ROUTE
+[FAIL] preflight: tracked files have uncommitted changes; commit before running
+[16:46:26] END   swe-qa-w1/SELF_ROUTE
+[16:46:26] START repoprobe-py8/SELF_ROUTE
+[FAIL] preflight: tracked files have uncommitted changes; commit before running
+[16:46:26] END   repoprobe-py8/SELF_ROUTE
+[16:46:26] START swe-qa-w1/ALWAYS_RAG
+[FAIL] preflight: tracked files have uncommitted changes; commit before running
+[16:46:26] END   swe-qa-w1/ALWAYS_RAG
+[16:46:26] START repoprobe-py8/ALWAYS_RAG
+[FAIL] preflight: tracked files have uncommitted changes; commit before running
+[16:46:27] END   repoprobe-py8/ALWAYS_RAG
+[16:46:27] START swe-qa-w1/ALWAYS_GRAPH
+[FAIL] preflight: tracked files have uncommitted changes; commit before running
+[16:46:27] END   swe-qa-w1/ALWAYS_GRAPH
+[16:46:27] START repoprobe-py8/ALWAYS_GRAPH
+[FAIL] preflight: tracked files have uncommitted changes; commit before running
+[16:46:27] END   repoprobe-py8/ALWAYS_GRAPH
+[16:46:27] START swe-qa-w1/PREASSESS
+[FAIL] preflight: tracked files have uncommitted changes; commit before running
+[16:46:27] END   swe-qa-w1/PREASSESS
+[16:46:27] START repoprobe-py8/PREASSESS
+[FAIL] preflight: tracked files have uncommitted changes; commit before running
+[16:46:27] END   repoprobe-py8/PREASSESS
+[16:46:27] START swe-qa-w1/ALWAYS_LC
+[FAIL] preflight: tracked files have uncommitted changes; commit before running
+[16:46:27] END   swe-qa-w1/ALWAYS_LC
+[16:46:27] START repoprobe-py8/ALWAYS_LC
+[FAIL] preflight: tracked files have uncommitted changes; commit before running
+[16:46:27] END   repoprobe-py8/ALWAYS_LC
+ALL DONE

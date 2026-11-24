@@ -1,0 +1,10 @@
+{
+ "job_id": "ALWAYS_GRAPH__qwen3.5-9b__swe-qa-w1__3ac1066__20261123T214029",
+ "tasks": 144,
+ "lines": 144,
+ "status_counts": {
+  "error": 1,
+  "ok": 143
+ },
+ "counted_as_failed": 1
+}

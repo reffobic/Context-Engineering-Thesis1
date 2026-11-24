@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "GASR",
+    "score": 0.0,
+    "max_score": 10.0,
+    "reason": "Let me evaluate this answer against the scoring criteria:\n\n**Relationship to Repository**: The model's answer is completely unrelated to the actual ADK repository information provided. The directory structure is empty, and the model fabricates extensive information about ADK features (AgentBuilderAssistant, schema modes, plugins, callbacks, LiteLlm wrapper classes) that do not appear in the provided repository context. The only actual code shown in the repository is about JWKS fetching and ReadonlyContext, which the model correctly identifies as unrelated to prompt caching. However, the model then proceeds to invent an entire ADK API that doesn't exist in the provided context.\n\n**Schema Mode Strategy (0/2 points)**: The model discusses 'query' and 'embedded' schema modes in AgentBuilderAssistant with detailed explanations and configuration instructions. However, these concepts do not appear anywhere in the provided repository information. This is fabricated content not grounded in the actual codebase.\n\n**ADK Plugins and Caching (0/4 points)**: The model provides comprehensive explanations of ADK Plugins, BasePlugin class, before_model_callback, InMemoryRunner registration, and even code examples. None of these elements appear in the provided repository context. The entire plugin system description is invented.\n\n**Model-Agnostic Architecture (0/2 points)**: The model explains LiteLlm wrapper classes and two integration methods for ADK. These do not exist in the provided repository information and are fabricated.\n\n**Token Usage Monitoring (0/1 point)**: The model mentions AgentOps integration and LlmResponse.token_usage, neither of which appear in the provided repository context. This is fabricated content.\n\n**Clarity (0/1 point)**: While the answer is well-structured and clearly written, it contains extensive hallucinations by fabricating an entire ADK framework that doesn't exist in the provided repository. The model creates non-existent APIs, classes, methods, and features throughout the response. This represents a fundamental failure to ground the answer in the actual codebase, making the clarity score 0 despite good formatting.\n\nThe model does acknowledge early on that the provided code snippets don't contain prompt caching APIs, but then completely contradicts itself by inventing elaborate ADK features. The answer would be useful if these features actually existed, but they don't based on the provided repository information.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 0.0,
+    "clarity_max": 1.0,
+    "hallucination": true
+  }
+]

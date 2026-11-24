@@ -1,0 +1,11 @@
+{
+  "arm": "ALWAYS_LC",
+  "n": 108,
+  "n_scored": 108,
+  "score_mean": 3.574074074074074,
+  "overall_pct_mean": 35.74074074074074,
+  "knowledge_score_mean": 3.064814814814815,
+  "clarity_score_mean": 0.5092592592592593,
+  "perfect_solve_pct": 12.037037037037036,
+  "wall_s_mean": 15.081333707880091
+}

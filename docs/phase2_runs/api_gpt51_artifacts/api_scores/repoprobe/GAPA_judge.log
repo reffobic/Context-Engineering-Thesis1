@@ -1,0 +1,158 @@
+=== RepoProbe pipeline score start model=anthropic/claude-sonnet-4.5 arms=['GAPA'] filter='' iterations=1 ===
+--- GAPA ---
+Traceback (most recent call last):
+  File "/home/g7/haya/Context-Engineering-Thesis1/scripts/phase2_repoprobe_score_pipeline.py", line 326, in <module>
+    raise SystemExit(main())
+  File "/home/g7/haya/Context-Engineering-Thesis1/scripts/phase2_repoprobe_score_pipeline.py", line 288, in main
+    recs = score_arm(
+  File "/home/g7/haya/Context-Engineering-Thesis1/scripts/phase2_repoprobe_score_pipeline.py", line 153, in score_arm
+    scores = scorer.score_answer_multiple(question, model_answer, num_iterations, repo_info=None)
+  File "/home/g7/haya/external/RepoProbe/scorer.py", line 257, in score_answer_multiple
+    self.cache.save_scoring_multiple(
+  File "/home/g7/haya/external/RepoProbe/cache.py", line 179, in save_scoring_multiple
+    cache_path.write_text(json.dumps(score_items, ensure_ascii=False, indent=2), encoding="utf-8")
+  File "/usr/lib/python3.10/pathlib.py", line 1154, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+  File "/usr/lib/python3.10/pathlib.py", line 1119, in open
+    return self._accessor.open(self, mode, buffering, encoding, errors,
+FileNotFoundError: [Errno 2] No such file or directory: '/home/g7/haya/api_scores/repoprobe/cache/scores_multiple/GAPA/f47c9b38808a372b_anthropic/claude-sonnet-4.5.json'
+=== RepoProbe pipeline score start model=anthropic/claude-sonnet-4.5 arms=['GAPA'] filter='' iterations=1 ===
+--- GAPA ---
+  scored GAPA FieldStation42__FieldStation42-0 total=3.0/10 K=3.0 C=0.0 wall_s=15.7
+  scored GAPA FieldStation42__FieldStation42-1 total=0.0/10 K=0.0 C=0.0 wall_s=15.7
+  scored GAPA FieldStation42__FieldStation42-2 total=1.0/10 K=0.0 C=1.0 wall_s=13.6
+  scored GAPA FieldStation42__FieldStation42-3 total=3.0/10 K=2.0 C=1.0 wall_s=16.2
+=== RepoProbe pipeline score start model=anthropic/claude-sonnet-4.5 arms=['GAPA'] filter='' iterations=1 ===
+--- GAPA ---
+  scored GAPA FieldStation42__FieldStation42-0 total=3.0/10 K=3.0 C=0.0 wall_s=0.0
+  scored GAPA FieldStation42__FieldStation42-1 total=0.0/10 K=0.0 C=0.0 wall_s=0.0
+  scored GAPA FieldStation42__FieldStation42-2 total=1.0/10 K=0.0 C=1.0 wall_s=0.0
+  scored GAPA FieldStation42__FieldStation42-3 total=3.0/10 K=2.0 C=1.0 wall_s=0.0
+  scored GAPA FieldStation42__FieldStation42-4 total=0.0/10 K=0.0 C=0.0 wall_s=19.5
+  scored GAPA FieldStation42__FieldStation42-5 total=2.0/10 K=2.0 C=0.0 wall_s=19.1
+  scored GAPA FieldStation42__FieldStation42-6 total=1.0/10 K=1.0 C=0.0 wall_s=17.3
+  scored GAPA FieldStation42__FieldStation42-7 total=2.0/10 K=2.0 C=0.0 wall_s=17.4
+  scored GAPA FieldStation42__FieldStation42-8 total=0.0/10 K=0.0 C=0.0 wall_s=16.3
+  scored GAPA FieldStation42__FieldStation42-9 total=2.0/10 K=2.0 C=0.0 wall_s=16.0
+  scored GAPA FieldStation42__FieldStation42-10 total=0.0/10 K=0.0 C=0.0 wall_s=16.8
+  scored GAPA FieldStation42__FieldStation42-11 total=4.0/10 K=4.0 C=0.0 wall_s=13.5
+  scored GAPA FieldStation42__FieldStation42-12 total=0.0/10 K=0.0 C=0.0 wall_s=14.8
+  scored GAPA FieldStation42__FieldStation42-13 total=1.0/10 K=1.0 C=0.0 wall_s=15.7
+  scored GAPA adk-python__adk-python-0 total=9.0/10 K=9.0 C=0.0 wall_s=15.8
+  scored GAPA adk-python__adk-python-1 total=5.0/10 K=4.0 C=1.0 wall_s=19.0
+  scored GAPA adk-python__adk-python-2 total=0.0/10 K=0.0 C=0.0 wall_s=17.6
+  scored GAPA adk-python__adk-python-3 total=9.0/10 K=8.0 C=1.0 wall_s=12.9
+  scored GAPA adk-python__adk-python-4 total=3.0/10 K=3.0 C=0.0 wall_s=15.6
+  scored GAPA adk-python__adk-python-5 total=0.0/10 K=0.0 C=0.0 wall_s=16.1
+  scored GAPA adk-python__adk-python-6 total=0.0/10 K=0.0 C=0.0 wall_s=15.6
+  scored GAPA adk-python__adk-python-7 total=2.0/10 K=2.0 C=0.0 wall_s=16.9
+  scored GAPA adk-python__adk-python-8 total=1.0/10 K=1.0 C=0.0 wall_s=18.3
+  scored GAPA adk-python__adk-python-9 total=2.0/10 K=2.0 C=0.0 wall_s=14.0
+  scored GAPA adk-python__adk-python-10 total=1.0/10 K=0.0 C=1.0 wall_s=12.9
+  scored GAPA adk-python__adk-python-11 total=1.0/10 K=1.0 C=0.0 wall_s=17.9
+  scored GAPA adk-python__adk-python-12 total=0.0/10 K=0.0 C=0.0 wall_s=20.4
+  scored GAPA adk-python__adk-python-13 total=9.0/10 K=8.0 C=1.0 wall_s=18.7
+  scored GAPA adk-python__adk-python-14 total=0.0/10 K=0.0 C=0.0 wall_s=17.5
+  scored GAPA adk-python__adk-python-15 total=1.0/10 K=0.0 C=1.0 wall_s=13.5
+  scored GAPA adk-python__adk-python-16 total=5.0/10 K=4.0 C=1.0 wall_s=16.0
+  scored GAPA adk-python__adk-python-17 total=0.0/10 K=0.0 C=0.0 wall_s=17.1
+  scored GAPA adk-python__adk-python-18 total=0.0/10 K=0.0 C=0.0 wall_s=15.1
+  scored GAPA adk-python__adk-python-19 total=6.0/10 K=5.0 C=1.0 wall_s=15.7
+  scored GAPA adk-python__adk-python-20 total=10.0/10 K=9.0 C=1.0 wall_s=13.5
+  scored GAPA adk-python__adk-python-21 total=1.0/10 K=1.0 C=0.0 wall_s=16.5
+  scored GAPA adk-python__adk-python-22 total=0.0/10 K=0.0 C=0.0 wall_s=16.6
+  scored GAPA adk-python__adk-python-23 total=8.0/10 K=7.0 C=1.0 wall_s=19.1
+  scored GAPA adk-python__adk-python-24 total=8.0/10 K=7.0 C=1.0 wall_s=16.8
+  scored GAPA adk-python__adk-python-25 total=10.0/10 K=9.0 C=1.0 wall_s=11.1
+  scored GAPA adk-python__adk-python-26 total=10.0/10 K=9.0 C=1.0 wall_s=15.0
+  scored GAPA adk-python__adk-python-27 total=10.0/10 K=9.0 C=1.0 wall_s=14.5
+  scored GAPA adk-python__adk-python-28 total=0.0/10 K=0.0 C=0.0 wall_s=14.2
+  scored GAPA adk-python__adk-python-29 total=8.0/10 K=7.0 C=1.0 wall_s=15.5
+  scored GAPA agent-framework__agent-framework-0 total=0.0/10 K=0.0 C=0.0 wall_s=17.7
+  scored GAPA agent-framework__agent-framework-1 total=0.0/10 K=0.0 C=0.0 wall_s=15.9
+  scored GAPA agent-framework__agent-framework-2 total=5.0/10 K=4.0 C=1.0 wall_s=16.4
+  scored GAPA agent-framework__agent-framework-3 total=1.0/10 K=0.0 C=1.0 wall_s=8.6
+  scored GAPA agent-framework__agent-framework-4 total=10.0/10 K=9.0 C=1.0 wall_s=12.8
+  scored GAPA agent-framework__agent-framework-5 total=0.0/10 K=0.0 C=0.0 wall_s=10.6
+  scored GAPA agent-framework__agent-framework-6 total=3.0/10 K=2.0 C=1.0 wall_s=16.9
+  scored GAPA agent-framework__agent-framework-7 total=0.0/10 K=0.0 C=0.0 wall_s=7.6
+  scored GAPA agent-framework__agent-framework-8 total=0.0/10 K=0.0 C=0.0 wall_s=14.7
+  scored GAPA browser-use__browser-use-0 total=3.0/10 K=3.0 C=0.0 wall_s=14.7
+  scored GAPA browser-use__browser-use-1 total=0.0/10 K=0.0 C=0.0 wall_s=16.0
+  scored GAPA browser-use__browser-use-2 total=0.0/10 K=0.0 C=0.0 wall_s=20.0
+  scored GAPA browser-use__browser-use-3 total=2.0/10 K=2.0 C=0.0 wall_s=15.4
+  scored GAPA browser-use__browser-use-4 total=0.0/10 K=0.0 C=0.0 wall_s=12.6
+  scored GAPA crawl4ai__crawl4ai-0 total=1.0/10 K=0.0 C=1.0 wall_s=14.0
+  scored GAPA crawl4ai__crawl4ai-1 total=10.0/10 K=9.0 C=1.0 wall_s=17.2
+  scored GAPA crawl4ai__crawl4ai-2 total=1.0/10 K=0.0 C=1.0 wall_s=13.5
+  scored GAPA crawl4ai__crawl4ai-3 total=0.0/10 K=0.0 C=0.0 wall_s=13.4
+  scored GAPA crawl4ai__crawl4ai-4 total=0.0/10 K=0.0 C=0.0 wall_s=14.5
+  scored GAPA crawl4ai__crawl4ai-5 total=0.0/10 K=0.0 C=0.0 wall_s=13.3
+  scored GAPA crawl4ai__crawl4ai-6 total=1.0/10 K=0.0 C=1.0 wall_s=12.8
+  scored GAPA crawl4ai__crawl4ai-7 total=9.0/10 K=9.0 C=0.0 wall_s=14.0
+  scored GAPA crawl4ai__crawl4ai-8 total=1.0/10 K=0.0 C=1.0 wall_s=18.3
+  scored GAPA crawl4ai__crawl4ai-9 total=4.0/10 K=3.0 C=1.0 wall_s=14.1
+  scored GAPA crawl4ai__crawl4ai-10 total=4.0/10 K=3.0 C=1.0 wall_s=13.0
+  scored GAPA crawl4ai__crawl4ai-11 total=1.0/10 K=0.0 C=1.0 wall_s=7.9
+  scored GAPA crawl4ai__crawl4ai-12 total=0.0/10 K=0.0 C=0.0 wall_s=12.8
+  scored GAPA crawl4ai__crawl4ai-13 total=5.0/10 K=4.0 C=1.0 wall_s=16.3
+  scored GAPA crawl4ai__crawl4ai-14 total=7.0/10 K=6.0 C=1.0 wall_s=11.7
+  scored GAPA crawl4ai__crawl4ai-15 total=0.0/10 K=0.0 C=0.0 wall_s=9.4
+  scored GAPA crawl4ai__crawl4ai-16 total=3.0/10 K=3.0 C=0.0 wall_s=16.9
+  scored GAPA crawl4ai__crawl4ai-17 total=0.0/10 K=0.0 C=0.0 wall_s=19.5
+  scored GAPA docling__docling-0 total=9.0/10 K=8.0 C=1.0 wall_s=18.0
+  scored GAPA docling__docling-1 total=1.0/10 K=0.0 C=1.0 wall_s=16.4
+  scored GAPA docling__docling-2 total=0.0/10 K=0.0 C=0.0 wall_s=13.0
+  scored GAPA docling__docling-3 total=2.0/10 K=1.0 C=1.0 wall_s=15.7
+  scored GAPA docling__docling-4 total=5.0/10 K=5.0 C=0.0 wall_s=16.1
+  scored GAPA docling__docling-5 total=0.0/10 K=0.0 C=0.0 wall_s=14.6
+  scored GAPA docling__docling-6 total=9.0/10 K=9.0 C=0.0 wall_s=14.2
+  scored GAPA docling__docling-7 total=0.0/10 K=0.0 C=0.0 wall_s=11.2
+  scored GAPA docling__docling-8 total=3.0/10 K=3.0 C=0.0 wall_s=14.1
+  scored GAPA docling__docling-9 total=0.0/10 K=0.0 C=0.0 wall_s=18.0
+  scored GAPA sglang__sglang-0 total=6.0/10 K=5.0 C=1.0 wall_s=16.6
+  scored GAPA sglang__sglang-1 total=3.0/10 K=2.0 C=1.0 wall_s=17.7
+  scored GAPA sglang__sglang-2 total=1.0/10 K=0.0 C=1.0 wall_s=12.3
+  scored GAPA sglang__sglang-3 total=10.0/10 K=9.0 C=1.0 wall_s=13.0
+  scored GAPA sglang__sglang-4 total=4.0/10 K=4.0 C=0.0 wall_s=15.7
+  scored GAPA sglang__sglang-5 total=8.0/10 K=7.0 C=1.0 wall_s=17.3
+  scored GAPA sglang__sglang-6 total=0.0/10 K=0.0 C=0.0 wall_s=14.1
+  scored GAPA sglang__sglang-7 total=6.0/10 K=5.0 C=1.0 wall_s=12.8
+  scored GAPA sglang__sglang-8 total=0.0/10 K=0.0 C=0.0 wall_s=13.4
+  scored GAPA sglang__sglang-9 total=3.0/10 K=2.0 C=1.0 wall_s=15.4
+  scored GAPA sglang__sglang-10 total=4.0/10 K=4.0 C=0.0 wall_s=16.5
+  scored GAPA yasb__yasb-0 total=4.0/10 K=4.0 C=0.0 wall_s=15.1
+  scored GAPA yasb__yasb-1 total=9.0/10 K=9.0 C=0.0 wall_s=14.9
+  scored GAPA yasb__yasb-2 total=3.0/10 K=3.0 C=0.0 wall_s=16.4
+  scored GAPA yasb__yasb-3 total=0.0/10 K=0.0 C=0.0 wall_s=11.0
+  scored GAPA yasb__yasb-4 total=0.0/10 K=0.0 C=0.0 wall_s=12.2
+  scored GAPA yasb__yasb-5 total=0.0/10 K=0.0 C=0.0 wall_s=10.2
+  scored GAPA yasb__yasb-6 total=3.0/10 K=2.0 C=1.0 wall_s=13.0
+  scored GAPA yasb__yasb-7 total=0.0/10 K=0.0 C=0.0 wall_s=12.9
+  scored GAPA yasb__yasb-8 total=6.0/10 K=5.0 C=1.0 wall_s=16.1
+  scored GAPA yasb__yasb-9 total=0.0/10 K=0.0 C=0.0 wall_s=9.2
+  scored GAPA yasb__yasb-10 total=1.0/10 K=0.0 C=1.0 wall_s=12.9
+[PASS] GAPA wrote /home/g7/haya/api_scores/repoprobe/GAPA_score.jsonl n_scored=108
+{
+  "scoring_model": "anthropic/claude-sonnet-4.5",
+  "repo_filter": "",
+  "num_iterations": 1,
+  "arms": [
+    {
+      "arm": "GAPA",
+      "n": 108,
+      "n_scored": 108,
+      "score_mean": 2.861111111111111,
+      "overall_pct_mean": 28.61111111111111,
+      "knowledge_score_mean": 2.462962962962963,
+      "clarity_score_mean": 0.39814814814814814,
+      "perfect_solve_pct": 6.481481481481482,
+      "wall_s_mean": 14.426736365865779
+    }
+  ],
+  "n_total": 108,
+  "n_scored": 108,
+  "wall_s_total": 1558.1857421398163,
+  "label": "local-judge \u00b7 single-judge \u00b7 scorer-on-pipeline"
+}
+=== done in 1558.2s ===

@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_GRAPH",
+    "score": 5.0,
+    "max_score": 10.0,
+    "reason": "Let me evaluate this answer against the scoring criteria:\n\n**Turn Take Chat Protocol Input Requirement (4 points):** The model correctly identifies the core issue and explains that the workflow must accept `List<ChatMessage>` and `TurnToken` as input. This is stated clearly in section 1: 'Both must implement the same Agent protocol: Accept input in the form of List<ChatMessage> and TurnToken.' and reinforced multiple times throughout the answer. The model explicitly mentions the error message indicates 'the wrapped workflow does not support those inputs, so it cannot be used as a ChatProtocol agent.' This deserves full 4 points.\n\n**Output Requirement (2 points):** The model mentions in section 1 that agents must 'Emit the same stream of WorkflowEvent / agent events that InProcessExecution.StreamAsync expects' but does NOT specifically explain that the workflow needs to output both `ChatMessage`s AND `TurnToken` to feed back to the parent workflow. The reference answer specifically calls out this dual output requirement, but the model's answer is vague about outputs. This deserves 0 points as it doesn't mention the specific output requirements.\n\n**HandoffsWorkflowBuilder Limitation (2 points):** The model does NOT mention the specific limitation about tools that the reference answer highlights - that workflows need tools to invoke handoffs which is not currently supported, and it's unclear how to make tools available or communicate handoffs without tools. The model discusses protocol mismatches but completely misses this tooling limitation. This deserves 0 points.\n\n**Workaround Context (1 point):** Since the model didn't identify the HandoffsWorkflowBuilder limitation, it naturally doesn't mention the workaround about terminating once the simpleAgent/workflowAgent is done. This deserves 0 points.\n\n**Clear and Concise Output (1 point):** The answer is very well-structured with clear sections, good formatting, and logical flow. The language is accessible and the explanation is thorough. However, the answer is quite verbose and could be more concise. The model also makes assumptions about the C# API without having the actual codebase (acknowledges this but still provides extensive speculation). No hallucinations are present - the model appropriately acknowledges when it's speculating about APIs not in the context. Given the good structure but verbosity and speculation, this deserves 1 point.\n\n**Hallucination Check:** No fabricated files or paths. The model appropriately acknowledges limitations of its knowledge.\n\nTotal: 4 + 0 + 0 + 0 + 1 = 5 out of 10 points.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 4.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 1.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

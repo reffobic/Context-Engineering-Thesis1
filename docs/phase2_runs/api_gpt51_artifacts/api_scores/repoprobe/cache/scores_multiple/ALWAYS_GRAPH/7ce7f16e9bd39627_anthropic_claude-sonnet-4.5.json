@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_GRAPH",
+    "score": 0.0,
+    "max_score": 10.0,
+    "reason": "Let me evaluate this answer against the scoring criteria:\n\n**Core Solution Understanding (3 points possible):**\nThe model answer does NOT identify the correct solution at all. The reference answer clearly states that the solution is to use custom Chrome remote debugging ports (via `chrome_remote_debugging_port` parameter in BrowserConfig) to enable multiple browser agents to run in parallel. Instead, the model focuses on:\n- General advice about ensuring separate browser sessions/contexts\n- Event loop and SignalHandler concerns\n- Generic isolation strategies\n\nThe model never mentions chrome_remote_debugging_port or the specific solution provided in the library. Score: 0 points\n\n**Configuration Method (4 points possible):**\nThe model does NOT explain the correct configuration method at all. It does not mention:\n- The BrowserConfig class with the specific parameters needed\n- The `chrome_remote_debugging_port` parameter\n- How to assign different port numbers (9222, 9223, 9224, 9225) to different agents\n\nInstead, it provides generic advice about browser isolation without the actual implementation details available in the library. Score: 0 points\n\n**Installation and Availability (2 points possible):**\nThe model does NOT mention:\n- That the feature is on the main branch but not yet released\n- The installation command to get the feature from GitHub\n\nThis critical information is completely absent from the response. Score: 0 points\n\n**Clear and Concise Output (1 point possible):**\nWhile the response is well-structured and organized with clear sections, it contains a fundamental problem: it doesn't answer the actual question based on the available solution in the repository. The model admits multiple times that it cannot see the relevant code (\"I can't see the browser/session management code\", \"the CONTEXT does not show which of these you're using\"), when in fact the repository has a specific solution for this exact problem. The response is essentially a generic troubleshooting guide rather than the specific answer needed. Given that the content is fundamentally off-target despite being well-organized, this deserves 0 points.\n\n**Hallucination Check:**\nThe model does not fabricate non-existent files or paths. It correctly references files that exist in the context (browser_use/utils.py, SignalHandler). However, it provides generic advice that doesn't match the actual solution available in the repository.\n\n**Summary:**\nThe model's answer completely misses the actual solution provided by the browser-use library. It gives generic troubleshooting advice about browser isolation, event loops, and signal handlers, when the question has a specific answer: use different chrome_remote_debugging_port values in BrowserConfig for each agent. The model fails on all knowledge criteria.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 0.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

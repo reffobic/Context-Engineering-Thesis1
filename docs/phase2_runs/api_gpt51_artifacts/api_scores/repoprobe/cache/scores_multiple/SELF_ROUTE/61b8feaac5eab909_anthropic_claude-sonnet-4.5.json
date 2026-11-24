@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "SELF_ROUTE",
+    "score": 0.0,
+    "max_score": 10.0,
+    "reason": "This answer is completely unrelated to the question being asked. The question asks about client tools concept specifically in the context of Microsoft.Extensions.AI, requesting how to create an AITool with only function name, description, and parameters (declaration-only, non-executable). The reference answer correctly identifies `AIFunctionFactory.CreateDeclaration` from the `Microsoft.Extensions.AI` namespace.\n\nHowever, the model's answer discusses:\n1. A Python-based `ChatAgent` implementation with async methods, `ChatOptions`, `ChatMessage`, and streaming responses\n2. Code analysis of lines 588-647, 612-639, etc., referencing a Python codebase\n3. Discussion of `MCPTool`, `ToolProtocol`, and Python-specific patterns\n4. No mention of C#, Microsoft.Extensions.AI, AIFunctionFactory, or CreateDeclaration method\n\nThe directory structure shows an empty repository, and the model appears to be analyzing a completely different codebase (Python agent framework) than what the question asks about (.NET/C# AI extensions). This is a fundamental mismatch - the question is about .NET/C# API while the answer discusses Python code.\n\nSince the answer is completely unrelated to the actual question and reference answer:\n- Core API Identification: 0 points (doesn't mention AIFunctionFactory.CreateDeclaration at all)\n- Method Parameters: 0 points (discusses wrong API entirely)\n- Key Behavior: 0 points (doesn't explain CreateDeclaration or AsDeclarationOnly)\n- Clarity: 0 points (well-structured but completely wrong context, constitutes a factual error)\n\nThe answer appears to be responding to a different question about Python-based agent tools rather than the C# Microsoft.Extensions.AI question asked.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 0.0,
+    "clarity_max": 1.0,
+    "hallucination": true
+  }
+]

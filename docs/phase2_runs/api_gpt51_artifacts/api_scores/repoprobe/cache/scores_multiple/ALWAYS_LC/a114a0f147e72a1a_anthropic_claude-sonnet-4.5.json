@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_LC",
+    "score": 1.0,
+    "max_score": 10.0,
+    "reason": "This answer provides extensive CLI configuration advice but completely misses the core solution required by the question. Let me evaluate systematically:\n\n**Core Solution (0/3)**: The answer focuses entirely on CLI command-line options and flags, discussing --pipeline, --ocr, --enrich-*, --image-export-mode, --to formats, --num-threads, --page-batch-size, --pdf-backend, --document-timeout, and --verbose. However, the reference answer clearly shows the proper solution is to use AcceleratorOptions with PdfPipelineOptions in Python code to control worker threads and device selection. The model answer mentions --num-threads in the CLI context but does NOT identify or explain the AcceleratorOptions class usage pattern that is the correct solution. This is a fundamental miss of the required solution approach.\n\n**Code Implementation (0/3)**: No Python code example is provided. The answer only shows bash CLI commands like 'docling convert ... --pipeline standard --ocr false', etc. The reference answer requires showing Python code with proper imports (AcceleratorOptions, PdfPipelineOptions), creating a PdfPipelineOptions instance with accelerator_options parameter, and passing it to DocumentConverter. None of this is present.\n\n**Parameter Explanation (0/2)**: While the answer discusses --num-threads CLI flag briefly in section 6, it does not explain the num_threads parameter of AcceleratorOptions or the device parameter (auto/cuda/mps/cpu) that should be used in the Python API. The CLI flag discussion is not equivalent to explaining the AcceleratorOptions parameters.\n\n**Alternative Configuration (0/1)**: The answer does not mention DOCLING_NUM_THREADS or OMP_NUM_THREADS environment variables at all.\n\n**Clarity (1/1)**: The answer is well-structured with clear sections, good formatting, and logical organization. The language is clear and accessible. While the content addresses the wrong approach (CLI vs Python API), the presentation itself is clear and professional. No hallucinations detected - the CLI flags and code references appear legitimate for the CLI interface.\n\n**Summary**: This answer demonstrates a fundamental misunderstanding of the question context. The user is asking about Python API usage for large file extraction performance, and the correct solution involves AcceleratorOptions in Python code. Instead, the model provides an exhaustive CLI configuration guide that, while technically accurate for CLI usage, completely misses the programmatic solution required. This is a case where the answer is well-written but addresses the wrong problem.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 1.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

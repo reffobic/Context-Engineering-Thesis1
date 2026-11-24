@@ -1,0 +1,141 @@
+[16:46:53] START swe-qa-w1/GAPA
+[138/144] pytest-041 ok route=RAG latency_ms=4610.998 startup_s=2.323 copy_s=0.147
+[139/144] pytest-042 ok route=LC latency_ms=9195.668 startup_s=2.297 copy_s=0.145
+[140/144] pytest-043 ok route=GRAPH latency_ms=10407.752 startup_s=2.378 copy_s=0.146
+[141/144] pytest-044 ok route=RAG latency_ms=4847.971 startup_s=2.315 copy_s=0.146
+[142/144] pytest-045 ok route=RAG latency_ms=13654.3 startup_s=2.327 copy_s=0.145
+[143/144] pytest-046 ok route=GRAPH latency_ms=12725.407 startup_s=2.31 copy_s=0.147
+[144/144] pytest-047 ok route=RAG latency_ms=7519.25 startup_s=2.302 copy_s=0.147
+{"job_id": "GAPA__qwen3.5-9b__swe-qa-w1__3ac1066__20261123T164653", "tasks": 144, "lines": 144, "status_counts": {"ok": 144}, "counted_as_failed": 0}
+[17:25:59] END   swe-qa-w1/GAPA
+[17:25:59] START repoprobe-py8/GAPA
+[102/108] yasb__yasb-4 ok route=RAG latency_ms=6835.281 startup_s=2.249 copy_s=0.076
+[103/108] yasb__yasb-5 ok route=LC latency_ms=8978.951 startup_s=2.27 copy_s=0.076
+[104/108] yasb__yasb-6 ok route=GRAPH latency_ms=15626.163 startup_s=2.273 copy_s=0.077
+[105/108] yasb__yasb-7 ok route=RAG latency_ms=6770.918 startup_s=2.205 copy_s=0.077
+[106/108] yasb__yasb-8 ok route=GRAPH latency_ms=16176.76 startup_s=2.271 copy_s=0.078
+[107/108] yasb__yasb-9 ok route=LC latency_ms=10112.623 startup_s=2.281 copy_s=0.078
+[108/108] yasb__yasb-10 ok route=RAG latency_ms=10959.334 startup_s=2.324 copy_s=0.077
+{"job_id": "GAPA__qwen3.5-9b__repoprobe-py8__3ac1066__20261123T172559", "tasks": 108, "lines": 108, "status_counts": {"ok": 108}, "counted_as_failed": 0}
+[18:07:39] END   repoprobe-py8/GAPA
+[18:07:39] START swe-qa-w1/GASR
+[138/144] pytest-041 ok route=RAG latency_ms=5141.5 startup_s=2.315 copy_s=0.147
+[139/144] pytest-042 ok route=RAG latency_ms=5882.37 startup_s=2.339 copy_s=0.147
+[140/144] pytest-043 ok route=GRAPH latency_ms=7676.55 startup_s=2.341 copy_s=0.146
+[141/144] pytest-044 ok route=RAG latency_ms=4975.881 startup_s=2.367 copy_s=0.145
+[142/144] pytest-045 ok route=RAG latency_ms=7915.912 startup_s=2.343 copy_s=0.145
+[143/144] pytest-046 ok route=GRAPH latency_ms=7259.818 startup_s=2.336 copy_s=0.145
+[144/144] pytest-047 ok route=LC latency_ms=7260.303 startup_s=2.348 copy_s=0.145
+{"job_id": "GASR__qwen3.5-9b__swe-qa-w1__3ac1066__20261123T180740", "tasks": 144, "lines": 144, "status_counts": {"ok": 144}, "counted_as_failed": 0}
+[18:40:17] END   swe-qa-w1/GASR
+[18:40:17] START repoprobe-py8/GASR
+[102/108] yasb__yasb-4 ok route=GRAPH latency_ms=11638.44 startup_s=2.272 copy_s=0.078
+[103/108] yasb__yasb-5 ok route=GRAPH latency_ms=9225.68 startup_s=2.282 copy_s=0.078
+[104/108] yasb__yasb-6 ok route=GRAPH latency_ms=13657.028 startup_s=2.278 copy_s=0.077
+[105/108] yasb__yasb-7 ok route=GRAPH latency_ms=6170.116 startup_s=2.35 copy_s=0.079
+[106/108] yasb__yasb-8 ok route=GRAPH latency_ms=15213.226 startup_s=2.283 copy_s=0.075
+[107/108] yasb__yasb-9 ok route=RAG latency_ms=11536.165 startup_s=2.284 copy_s=0.079
+[108/108] yasb__yasb-10 ok route=LC latency_ms=8293.98 startup_s=2.291 copy_s=0.078
+{"job_id": "GASR__qwen3.5-9b__repoprobe-py8__3ac1066__20261123T184018", "tasks": 108, "lines": 108, "status_counts": {"ok": 108}, "counted_as_failed": 0}
+[19:19:49] END   repoprobe-py8/GASR
+[19:19:49] START swe-qa-w1/SELF_ROUTE
+[138/144] pytest-041 ok route=RAG latency_ms=5353.05 startup_s=2.401 copy_s=0.152
+[139/144] pytest-042 ok route=RAG latency_ms=5259.833 startup_s=2.432 copy_s=0.147
+[140/144] pytest-043 ok route=LC latency_ms=9892.779 startup_s=2.469 copy_s=0.149
+[141/144] pytest-044 ok route=RAG latency_ms=4610.062 startup_s=2.397 copy_s=0.151
+[142/144] pytest-045 ok route=RAG latency_ms=7790.735 startup_s=2.364 copy_s=0.15
+[143/144] pytest-046 ok route=LC latency_ms=12898.478 startup_s=2.479 copy_s=0.149
+[144/144] pytest-047 ok route=LC latency_ms=9480.177 startup_s=2.41 copy_s=0.15
+{"job_id": "SELF_ROUTE__qwen3.5-9b__swe-qa-w1__3ac1066__20261123T191949", "tasks": 144, "lines": 144, "status_counts": {"ok": 144}, "counted_as_failed": 0}
+[19:54:36] END   swe-qa-w1/SELF_ROUTE
+[19:54:36] START repoprobe-py8/SELF_ROUTE
+[102/108] yasb__yasb-4 ok route=LC latency_ms=9019.061 startup_s=2.423 copy_s=0.079
+[103/108] yasb__yasb-5 ok route=LC latency_ms=9056.475 startup_s=2.276 copy_s=0.077
+[104/108] yasb__yasb-6 ok route=LC latency_ms=13729.269 startup_s=2.281 copy_s=0.079
+[105/108] yasb__yasb-7 ok route=LC latency_ms=8322.918 startup_s=2.294 copy_s=0.078
+[106/108] yasb__yasb-8 ok route=LC latency_ms=21711.989 startup_s=2.271 copy_s=0.077
+[107/108] yasb__yasb-9 ok route=LC latency_ms=8371.141 startup_s=2.279 copy_s=0.079
+[108/108] yasb__yasb-10 ok route=LC latency_ms=18886.392 startup_s=2.25 copy_s=0.078
+{"job_id": "SELF_ROUTE__qwen3.5-9b__repoprobe-py8__3ac1066__20261123T195437", "tasks": 108, "lines": 108, "status_counts": {"ok": 108}, "counted_as_failed": 0}
+[20:33:55] END   repoprobe-py8/SELF_ROUTE
+[20:33:55] START swe-qa-w1/ALWAYS_RAG
+[138/144] pytest-041 ok route=RAG latency_ms=3533.682 startup_s=2.326 copy_s=0.15
+[139/144] pytest-042 ok route=RAG latency_ms=4438.285 startup_s=2.293 copy_s=0.15
+[140/144] pytest-043 ok route=RAG latency_ms=5812.361 startup_s=2.263 copy_s=0.145
+[141/144] pytest-044 ok route=RAG latency_ms=3873.956 startup_s=2.318 copy_s=0.147
+[142/144] pytest-045 ok route=RAG latency_ms=8124.522 startup_s=2.315 copy_s=0.147
+[143/144] pytest-046 ok route=RAG latency_ms=13860.411 startup_s=2.467 copy_s=0.147
+[144/144] pytest-047 ok route=RAG latency_ms=9372.166 startup_s=2.325 copy_s=0.148
+{"job_id": "ALWAYS_RAG__qwen3.5-9b__swe-qa-w1__3ac1066__20261123T203355", "tasks": 144, "lines": 144, "status_counts": {"ok": 144}, "counted_as_failed": 0}
+[21:05:01] END   swe-qa-w1/ALWAYS_RAG
+[21:05:01] START repoprobe-py8/ALWAYS_RAG
+[102/108] yasb__yasb-4 ok route=RAG latency_ms=5813.805 startup_s=2.442 copy_s=0.071
+[103/108] yasb__yasb-5 ok route=RAG latency_ms=10039.73 startup_s=2.348 copy_s=0.076
+[104/108] yasb__yasb-6 ok route=RAG latency_ms=6486.065 startup_s=2.473 copy_s=0.075
+[105/108] yasb__yasb-7 ok route=RAG latency_ms=4771.863 startup_s=2.738 copy_s=0.078
+[106/108] yasb__yasb-8 ok route=RAG latency_ms=16497.545 startup_s=2.458 copy_s=0.079
+[107/108] yasb__yasb-9 ok route=RAG latency_ms=10919.578 startup_s=2.393 copy_s=0.073
+[108/108] yasb__yasb-10 ok route=RAG latency_ms=12687.026 startup_s=2.592 copy_s=0.081
+{"job_id": "ALWAYS_RAG__qwen3.5-9b__repoprobe-py8__3ac1066__20261123T210502", "tasks": 108, "lines": 108, "status_counts": {"ok": 108}, "counted_as_failed": 0}
+[21:40:29] END   repoprobe-py8/ALWAYS_RAG
+[21:40:29] START swe-qa-w1/ALWAYS_GRAPH
+[138/144] pytest-041 ok route=GRAPH latency_ms=3446.525 startup_s=2.338 copy_s=0.153
+[139/144] pytest-042 ok route=GRAPH latency_ms=4089.737 startup_s=2.364 copy_s=0.149
+[140/144] pytest-043 ok route=GRAPH latency_ms=7689.418 startup_s=2.423 copy_s=0.151
+[141/144] pytest-044 ok route=GRAPH latency_ms=5177.746 startup_s=2.394 copy_s=0.153
+[142/144] pytest-045 ok route=GRAPH latency_ms=8921.276 startup_s=2.488 copy_s=0.152
+[143/144] pytest-046 ok route=GRAPH latency_ms=6771.523 startup_s=2.483 copy_s=0.151
+[144/144] pytest-047 ok route=GRAPH latency_ms=11519.445 startup_s=2.438 copy_s=0.152
+{"job_id": "ALWAYS_GRAPH__qwen3.5-9b__swe-qa-w1__3ac1066__20261123T214029", "tasks": 144, "lines": 144, "status_counts": {"error": 1, "ok": 143}, "counted_as_failed": 1}
+[22:08:37] END   swe-qa-w1/ALWAYS_GRAPH
+[22:08:37] START repoprobe-py8/ALWAYS_GRAPH
+[102/108] yasb__yasb-4 ok route=GRAPH latency_ms=6023.581 startup_s=2.353 copy_s=0.079
+[103/108] yasb__yasb-5 ok route=GRAPH latency_ms=11216.36 startup_s=2.329 copy_s=0.075
+[104/108] yasb__yasb-6 ok route=GRAPH latency_ms=10295.337 startup_s=2.396 copy_s=0.076
+[105/108] yasb__yasb-7 ok route=GRAPH latency_ms=5386.334 startup_s=2.323 copy_s=0.077
+[106/108] yasb__yasb-8 ok route=GRAPH latency_ms=16407.226 startup_s=2.361 copy_s=0.076
+[107/108] yasb__yasb-9 ok route=GRAPH latency_ms=7807.518 startup_s=2.364 copy_s=0.076
+[108/108] yasb__yasb-10 ok route=GRAPH latency_ms=14062.383 startup_s=2.353 copy_s=0.077
+{"job_id": "ALWAYS_GRAPH__qwen3.5-9b__repoprobe-py8__3ac1066__20261123T220838", "tasks": 108, "lines": 108, "status_counts": {"ok": 108}, "counted_as_failed": 0}
+[22:42:52] END   repoprobe-py8/ALWAYS_GRAPH
+[22:42:52] START swe-qa-w1/PREASSESS
+[138/144] pytest-041 ok route=RAG latency_ms=5935.937 startup_s=2.318 copy_s=0.147
+[139/144] pytest-042 ok route=LC latency_ms=7541.209 startup_s=2.403 copy_s=0.152
+[140/144] pytest-043 ok route=LC latency_ms=10923.244 startup_s=2.323 copy_s=0.151
+[141/144] pytest-044 ok route=RAG latency_ms=4691.184 startup_s=2.363 copy_s=0.151
+[142/144] pytest-045 ok route=RAG latency_ms=7794.778 startup_s=2.443 copy_s=0.15
+[143/144] pytest-046 ok route=LC latency_ms=10271.39 startup_s=2.3 copy_s=0.151
+[144/144] pytest-047 ok route=RAG latency_ms=10835.754 startup_s=2.335 copy_s=0.152
+{"job_id": "PREASSESS__qwen3.5-9b__swe-qa-w1__3ac1066__20261123T224252", "tasks": 144, "lines": 144, "status_counts": {"ok": 144}, "counted_as_failed": 0}
+[23:16:25] END   swe-qa-w1/PREASSESS
+[23:16:25] START repoprobe-py8/PREASSESS
+[102/108] yasb__yasb-4 ok route=RAG latency_ms=9092.508 startup_s=2.441 copy_s=0.079
+[103/108] yasb__yasb-5 ok route=LC latency_ms=8805.056 startup_s=2.329 copy_s=0.077
+[104/108] yasb__yasb-6 ok route=LC latency_ms=12598.593 startup_s=2.456 copy_s=0.076
+[105/108] yasb__yasb-7 ok route=RAG latency_ms=7311.525 startup_s=2.395 copy_s=0.075
+[106/108] yasb__yasb-8 ok route=LC latency_ms=19543.819 startup_s=2.36 copy_s=0.073
+[107/108] yasb__yasb-9 ok route=LC latency_ms=7792.483 startup_s=2.556 copy_s=0.075
+[108/108] yasb__yasb-10 ok route=RAG latency_ms=9435.081 startup_s=2.542 copy_s=0.072
+{"job_id": "PREASSESS__qwen3.5-9b__repoprobe-py8__3ac1066__20261123T231626", "tasks": 108, "lines": 108, "status_counts": {"ok": 108}, "counted_as_failed": 0}
+[23:57:37] END   repoprobe-py8/PREASSESS
+[23:57:37] START swe-qa-w1/ALWAYS_LC
+[138/144] pytest-041 ok route=LC latency_ms=3865.308 startup_s=2.6 copy_s=0.165
+[139/144] pytest-042 ok route=LC latency_ms=6569.853 startup_s=2.998 copy_s=0.174
+[140/144] pytest-043 ok route=LC latency_ms=11103.134 startup_s=2.691 copy_s=0.153
+[141/144] pytest-044 ok route=LC latency_ms=4592.853 startup_s=2.77 copy_s=0.153
+[142/144] pytest-045 ok route=LC latency_ms=8276.016 startup_s=2.697 copy_s=0.158
+[143/144] pytest-046 ok route=LC latency_ms=11309.139 startup_s=2.456 copy_s=0.153
+[144/144] pytest-047 ok route=LC latency_ms=7512.876 startup_s=2.616 copy_s=0.159
+{"job_id": "ALWAYS_LC__qwen3.5-9b__swe-qa-w1__3ac1066__20261123T235738", "tasks": 144, "lines": 144, "status_counts": {"ok": 144}, "counted_as_failed": 0}
+[00:31:40] END   swe-qa-w1/ALWAYS_LC
+[00:31:40] START repoprobe-py8/ALWAYS_LC
+[102/108] yasb__yasb-4 ok route=LC latency_ms=6067.549 startup_s=2.374 copy_s=0.072
+[103/108] yasb__yasb-5 ok route=LC latency_ms=8117.543 startup_s=2.602 copy_s=0.075
+[104/108] yasb__yasb-6 ok route=LC latency_ms=8068.165 startup_s=2.359 copy_s=0.126
+[105/108] yasb__yasb-7 ok route=LC latency_ms=4817.245 startup_s=2.439 copy_s=0.079
+[106/108] yasb__yasb-8 ok route=LC latency_ms=17084.396 startup_s=2.31 copy_s=0.074
+[107/108] yasb__yasb-9 ok route=LC latency_ms=5578.378 startup_s=2.508 copy_s=0.098
+[108/108] yasb__yasb-10 ok route=LC latency_ms=6407.824 startup_s=2.577 copy_s=0.072
+{"job_id": "ALWAYS_LC__qwen3.5-9b__repoprobe-py8__3ac1066__20261124T003141", "tasks": 108, "lines": 108, "status_counts": {"ok": 108}, "counted_as_failed": 0}
+[01:06:13] END   repoprobe-py8/ALWAYS_LC
+ALL DONE

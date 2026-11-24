@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_GRAPH",
+    "score": 1.0,
+    "max_score": 10.0,
+    "reason": "The model's answer completely fails to identify the correct solution to the problem. According to the reference answer, the correct approach in version 0.4.247 is to use the `markdown_generator` option to pass html2text configuration parameters, including `skip_internal_links`. However, the model's answer never mentions `markdown_generator` at all, which is the core solution.\n\nFor Core Solution Identification (5 points): The model scores 0 points because it fails to identify markdown_generator as the new configuration method. Instead, it suggests three alternative approaches: (1) checking for a new configuration layer, (2) configuring html2text globally via a config module, and (3) post-processing markdown. None of these approaches correctly identify the actual solution.\n\nFor Configuration Migration Explanation (4 points): The model scores 0 points because it does not explain how to properly migrate from the old html2text parameter to the new markdown_generator approach. The model speculates about various possibilities (global config, missing code context, etc.) but never provides the actual migration path.\n\nFor Clear and Concise Output (1 point): The model scores 1 point. Despite providing an incorrect solution, the answer is well-structured with clear sections, logical flow, and reasonable explanations. The model acknowledges limitations based on available context and provides systematic troubleshooting steps. There are no hallucinations - the model references actual code patterns from the HTML2Text class and doesn't fabricate non-existent files or paths. The language is clear and professional.\n\nThe fundamental issue is that the model missed the correct answer entirely, focusing on alternative approaches that don't address the actual solution (markdown_generator option). This results in a very low knowledge score despite the answer being well-written.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 1.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

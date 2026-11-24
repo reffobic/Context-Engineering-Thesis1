@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_GRAPH",
+    "score": 0.0,
+    "max_score": 10.0,
+    "reason": "Let me evaluate this answer against the scoring criteria:\n\n**Root Cause Identification (0/3):** The model completely fails to identify the actual root cause. The reference answer clearly states that the issue is `memory_threshold_percent=70%` being set too low, which blocks new tasks when system memory (from all processes) already exceeds 70%. Instead, the model assumes it's missing code/implementation details and suggests the problem is in undocumented code sections like `arun_many`, `MemoryAdaptiveDispatcher`, etc. The model never mentions that 70% threshold is the culprit.\n\n**Parameter Mechanism Explanation (0/3):** The model does not explain how `memory_threshold_percent` works. It doesn't mention that this parameter monitors total system memory usage from all running processes (not just Crawl4AI). The model focuses entirely on debugging steps and missing code rather than understanding the parameter's actual behavior.\n\n**Solution and Design Purpose (0/3):** The model provides no solution related to adjusting the memory threshold. The reference answer suggests increasing it to 90% or 95% and explains the design purpose is to prevent system unresponsiveness/thrashing. The model instead suggests debugging steps like testing single URLs, removing the dispatcher, etc., which completely misses the point of the actual issue.\n\n**Clear and Concise Output (0/1):** While the response is well-structured with numbered debugging steps, it's actually misleading because it takes the user down the wrong path entirely. The answer is verbose and contains no hallucinations of files/paths, but it fundamentally misunderstands the problem. The user asked about tasks remaining in queue with the exact documentation code, and the actual issue is simply a configuration parameter being too conservative for their system. The model's response would lead to extensive unnecessary debugging.\n\n**Overall Assessment:** The model's answer is completely off-track. It assumes missing implementation details are the problem when the actual issue is a simple configuration parameter (70% memory threshold) that's too low for the user's system. This is a critical failure in problem diagnosis. The answer shows good debugging methodology but applies it to the wrong problem entirely.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 0.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

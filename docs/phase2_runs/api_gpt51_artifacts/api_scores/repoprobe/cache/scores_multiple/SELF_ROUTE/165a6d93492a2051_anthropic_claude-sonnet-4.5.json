@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "SELF_ROUTE",
+    "score": 7.0,
+    "max_score": 10.0,
+    "reason": "Let me evaluate this answer carefully against the scoring criteria:\n\n**Correct Configuration Class Identification (2 points):**\nThe model correctly identifies CrawlerRunConfig as the configuration class to use for handling delayed content loading. It provides extensive explanation of CrawlerRunConfig parameters throughout the answer. Score: 2/2\n\n**Key Parameters for Delayed Content Loading (6 points):**\nThe reference answer specifies 4 key parameters: delay_before_return_html, wait_for_images, scan_full_page, and scroll_delay.\n\nThe model mentions:\n- delay_before_return_html: ✓ (extensively discussed with examples)\n- wait_for_images: ✓ (mentioned as a key knob)\n- scan_full_page: ✗ (NOT mentioned at all)\n- scroll_delay: ✗ (NOT mentioned at all)\n\nThe model focuses heavily on wait_until, wait_for, and wait_for_timeout parameters instead, which while relevant to delayed loading, are NOT the specific parameters mentioned in the reference answer. The model only mentions 2 out of the 4 key parameters specified in the reference answer. Score: 4/6\n\n**Version Compatibility (1 point):**\nThe model does NOT mention the need to upgrade to version 0.5 or any version compatibility issues at all. Score: 0/1\n\n**Clear and Concise Output (1 point):**\nThe answer is extremely well-structured with clear sections, good formatting, code examples, and logical flow. The language is clear and professional. It includes proper references to line numbers from the repository code. However, it focuses on different parameters than what the reference answer emphasizes, which could be seen as taking a different technical approach rather than a hallucination. The structure and clarity are excellent. Score: 1/1\n\n**Hallucination Check:**\nThe model references specific line numbers (e.g., lines 1222-1326, 1384-1403) from CrawlerRunConfig, which appear to be legitimate references to repository code. No fabricated files or paths are detected.\n\n**Total Score Calculation:**\n- Knowledge: 2 + 4 + 0 = 6/9\n- Clarity: 1/1\n- Total: 7/10",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 6.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 1.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

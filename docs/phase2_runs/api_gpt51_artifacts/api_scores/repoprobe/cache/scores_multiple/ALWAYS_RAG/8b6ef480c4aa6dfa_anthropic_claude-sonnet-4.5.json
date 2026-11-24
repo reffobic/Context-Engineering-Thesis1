@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_RAG",
+    "score": 1.0,
+    "max_score": 10.0,
+    "reason": "Let me evaluate this answer against the scoring criteria:\n\n**Request Type Identification (4 points possible):**\nThe model does NOT identify that the request type is `AgentRunRequest`. Instead, it provides generic guidance about checking OpenAPI documentation and suggests common patterns like 'message' or 'new_message' fields. The model explicitly states 'That model definition isn't in the snippets you provided, so I can't tell you the exact shape from this codebase alone.' This shows the model failed to identify the correct request type. Score: 0 points.\n\n**File Path Location (3 points possible):**\nThe model does NOT mention the file path `src/google/adk/cli/fast_api.py` at all. It doesn't reference any specific file in the codebase where the definition can be found. Score: 0 points.\n\n**Line Number Reference (2 points possible):**\nThe model does NOT provide any line number reference (around line 590). Score: 0 points.\n\n**Clear and Concise Output (1 point possible):**\nThe response is well-structured with clear sections, uses markdown formatting effectively, provides practical debugging guidance, and offers step-by-step instructions for using OpenAPI docs. The language is clear and easy to understand. While the answer doesn't address the specific repository question (which file/line contains the definition), it does provide legitimate troubleshooting advice that would be generally helpful. However, since the question specifically asks for guidance and the reference answer points to a specific file location that the model completely missed, this represents a significant gap in addressing the actual problem. The response is well-organized but doesn't solve the core issue of identifying where in the codebase the request schema is defined. Score: 1 point (the structure and language are clear, though the content misses the mark).\n\n**Repository Relevance:**\nThe model's answer provides generic FastAPI troubleshooting advice but completely fails to reference the actual ADK repository structure or the specific file where `AgentRunRequest` is defined. While the advice isn't wrong per se, it doesn't leverage the repository information that would directly answer the question.\n\n**Hallucination Check:**\nNo fabricated files or paths were mentioned. The model avoided making up specific locations, instead admitting it couldn't determine the exact schema from the provided snippets.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 1.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

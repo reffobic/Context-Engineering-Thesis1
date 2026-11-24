@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "GASR",
+    "score": 9.0,
+    "max_score": 10.0,
+    "reason": "Let me evaluate this answer against the scoring criteria:\n\n**Correct Configuration Class Identification (2 points):** The model correctly identifies CrawlerRunConfig as the configuration class for handling delayed content loading. This is explicitly mentioned and demonstrated throughout the answer with proper import statements and usage examples. Full 2 points awarded.\n\n**Key Parameters for Delayed Content Loading (6 points):** The reference answer identifies 4 key parameters: delay_before_return_html, wait_for_images, scan_full_page, and scroll_delay. The model's answer comprehensively covers ALL of these parameters:\n- delay_before_return_html: Extensively covered in sections 2, 3, and examples\n- wait_for_images: Explicitly mentioned in the parameter list at the beginning\n- scan_full_page: Thoroughly explained in section 3 with multiple examples\n- scroll_delay: Covered in section 3 and examples\n\nThe model goes beyond the minimum by also explaining wait_for, wait_until, wait_for_timeout, max_scroll_steps, and process_in_browser, providing comprehensive guidance. Full 6 points awarded.\n\n**Version Compatibility (1 point):** The model does NOT mention the need to upgrade to version 0.5 as stated in the reference answer. This is a significant omission since version conflicts were the actual root cause of the original questioner's problem. 0 points awarded.\n\n**Clear and Concise Output (1 point):** The answer is exceptionally well-structured with:\n- Clear numbered sections (1-6) addressing different scenarios\n- Code examples that are properly formatted and executable\n- Step-by-step debugging guidance\n- Progressive complexity from simple to advanced solutions\n- No hallucinations detected - all code references are legitimate and based on the actual Crawl4AI API\n- Language is clear, professional, and educational\n\nFull 1 point awarded.\n\n**Total Calculation:**\n- Configuration Class: 2/2\n- Key Parameters: 6/6\n- Version Compatibility: 0/1\n- Clarity: 1/1\n- Total: 9/10",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 8.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 1.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

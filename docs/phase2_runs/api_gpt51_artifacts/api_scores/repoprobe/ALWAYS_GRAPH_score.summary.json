@@ -1,0 +1,11 @@
+{
+  "arm": "ALWAYS_GRAPH",
+  "n": 108,
+  "n_scored": 106,
+  "score_mean": 2.6792452830188678,
+  "overall_pct_mean": 26.79245283018868,
+  "knowledge_score_mean": 2.2169811320754715,
+  "clarity_score_mean": 0.46226415094339623,
+  "perfect_solve_pct": 9.433962264150944,
+  "wall_s_mean": 14.99692455552659
+}

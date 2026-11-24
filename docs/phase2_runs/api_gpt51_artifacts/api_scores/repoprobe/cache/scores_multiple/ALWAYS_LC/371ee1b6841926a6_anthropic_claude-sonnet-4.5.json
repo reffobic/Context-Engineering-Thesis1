@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_LC",
+    "score": 7.0,
+    "max_score": 10.0,
+    "reason": "Let me evaluate this answer against the scoring criteria:\n\n**Custom ExtractionStrategy Class Implementation (4 points):** The model's answer does mention creating a custom extraction strategy in Option 2, stating 'Subclass your extraction strategy (or implement one)' and provides a skeleton showing 'custom_extraction = MyJsonLdAwareExtractionStrategy(...)'. It correctly identifies that extraction_strategy must be an instance of ExtractionStrategy and mentions plugging in a custom one. However, it does not provide the complete implementation with input_format='html' or the full extract method signature. The model explicitly states 'But the exact implementation of MyJsonLdAwareExtractionStrategy can't be shown from the current context since no extraction strategy APIs are included.' This is a partial mention but incomplete implementation. Score: 2 points.\n\n**JSON-LD Data Extraction Logic (3 points):** The model provides a complete BeautifulSoup example in Option 1 that correctly uses find_all('script', type='application/ld+json'), parses with json.loads(), and includes proper JSONDecodeError exception handling. The code example is thorough and includes comments about handling multiple JSON blocks. This fully meets the criteria. Score: 3 points.\n\n**CrawlerRunConfig Integration (2 points):** The model shows how to configure CrawlerRunConfig with extraction_strategy in Option 2: 'crawl_config = CrawlerRunConfig(markdown_generator=md_generator, extraction_strategy=custom_extraction, ...)'. However, it does not show the complete integration with the crawler's arun call or how to retrieve extracted_content. The integration is mentioned but incomplete. Score: 1 point.\n\n**Clear and Concise Output (1 point):** The answer is well-structured with clear headings for two different options. It provides logical reasoning about why JSON-LD doesn't appear in markdown by default, references specific line numbers from the codebase, and offers practical solutions. The language is clear and professional. There are no hallucinations - the line number references appear to be from actual repository code being analyzed. The answer is comprehensive and easy to follow. Score: 1 point.\n\n**Line number references check:** The model references lines like [1222-1260], [1233-1237], etc. These appear to be legitimate references to the repository code being analyzed and should not be considered hallucinations.\n\n**Total:** 2 + 3 + 1 + 1 = 7 points out of 10 possible.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 6.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 1.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

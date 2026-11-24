@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_RAG",
+    "score": 1.0,
+    "max_score": 10.0,
+    "reason": "The model's answer is well-structured and provides comprehensive FastAPI troubleshooting advice, BUT it completely misses the actual fix that was required. Let me evaluate against the criteria:\n\n**Core Fix Implementation (0/5 points):** The model does NOT provide the required patched_async_playwright__crawler_strategy_close function. Instead, it focuses on general FastAPI patterns about browser lifecycle management, startup events, and avoiding multiple browser launches. The reference answer shows a specific patch that resets BrowserManager._playwright_instance = None, which is the actual fix needed. The model's answer discusses BrowserProfiler.launch_builtin_browser and BrowserProfiler.launch_standalone_browser, but the actual solution requires patching AsyncPlaywrightCrawlerStrategy.close method - completely different approach.\n\n**Code Implementation Completeness (0/4 points):** The model does not implement the required solution at all. It doesn't import AsyncPlaywrightCrawlerStrategy or BrowserManager in the context of the fix. It doesn't show the patched method being applied to AsyncPlaywrightCrawlerStrategy.close. The code examples provided are about FastAPI startup events and general browser management, not the specific patch needed. The model references BrowserProfiler methods from the repository code snippets, but these are not part of the actual solution.\n\n**Clear and Concise Output (1/1 point):** Despite providing the wrong solution, the answer is well-organized with clear sections, good formatting, logical flow, and no grammatical errors. The language is concise and easy to understand. While it references actual repository code (BrowserProfiler, launch_builtin_browser, etc.), these references are based on the provided context, so they're not hallucinations - just not relevant to solving the actual problem.\n\n**Overall Assessment:** The model provides generic FastAPI best practices for browser management but completely fails to address the specific bug fix required. The question asks about a specific error when hitting endpoints multiple times, and the reference answer shows this requires a temporary patch to reset the Playwright instance. The model's answer, while educational about FastAPI patterns, does not solve the stated problem.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 1.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

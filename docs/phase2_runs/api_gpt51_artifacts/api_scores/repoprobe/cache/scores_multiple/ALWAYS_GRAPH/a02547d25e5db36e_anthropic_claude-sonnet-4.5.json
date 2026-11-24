@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_GRAPH",
+    "score": 4.0,
+    "max_score": 10.0,
+    "reason": "Let me evaluate this answer against the scoring criteria:\n\n**Custom ExtractionStrategy Class Implementation (4 points):** The model's answer does NOT provide a custom ExtractionStrategy class implementation. While it mentions extraction strategies in Option 2, it does not create a class inheriting from ExtractionStrategy with input_format='html' and an extract method. The reference answer shows this is the core solution - creating a JsonLdExtractionStrategy class. The model instead suggests using BeautifulSoup directly on the HTML result or using LLMExtractionStrategy, which are different approaches. Score: 0 points.\n\n**JSON-LD Data Extraction Logic (3 points):** The model DOES provide correct JSON-LD extraction logic in Option 1. It shows using BeautifulSoup's find_all(\"script\", type=\"application/ld+json\"), parsing with json.loads(), and handling JSONDecodeError exceptions with try-except. This matches the reference answer's extraction logic exactly. Score: 3 points.\n\n**CrawlerRunConfig Integration (2 points):** The model does NOT show how to properly integrate a custom extraction strategy into CrawlerRunConfig. While it mentions CrawlerRunConfig in various contexts, it doesn't demonstrate setting extraction_strategy parameter with a custom ExtractionStrategy class and using it with crawler.arun() to get extracted_content. The Option 2 example uses LLMExtractionStrategy, not a custom JsonLdExtractionStrategy. Score: 0 points.\n\n**Clear and Concise Output (1 point):** The response is well-structured with clear sections (Option 1, Option 2, Why changing options doesn't help, Minimal change). The language is clear and easy to understand. It provides working code examples and explains the problem well. However, it misses the actual solution pattern shown in the reference answer (custom ExtractionStrategy class). The answer is relevant to the problem domain and contains no hallucinations. Score: 1 point.\n\nTotal: The model provides good alternative solutions and correctly identifies the JSON-LD extraction logic, but completely misses the main solution approach of creating a custom ExtractionStrategy class, which is what the reference answer demonstrates and what the scoring criteria primarily evaluates.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 3.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 1.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

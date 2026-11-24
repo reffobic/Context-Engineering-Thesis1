@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_GRAPH",
+    "score": 10.0,
+    "max_score": 10.0,
+    "reason": "This is a comprehensive and well-structured answer that addresses the deployment question thoroughly. Let me evaluate each criterion:\n\n**Remote Agent OAuth Authentication Mechanism (3/3)**: The answer correctly explains that OAuth UI happens on the client side while token handling occurs where the MCP client lives (backend if agent is remote). It provides detailed explanation of the flow: (1) Agent/backend initiates OAuth and sends URL to client, (2) Client opens OAuth page for user consent, (3) OAuth provider redirects to backend, (4) Backend stores tokens and resumes MCP connection. This demonstrates clear understanding of the ADK framework's authentication handling mechanism, though it doesn't explicitly reference the A2A OAuth sample, the explanation is accurate and detailed.\n\n**Local Agent API Key Secure Injection (3/3)**: The answer excellently addresses secure key injection for local agents. It recommends user-provided keys stored in OS keychain/secure store (macOS Keychain, Windows Credential Manager, Linux libsecret), explains injection methods (environment variables preferred over command-line args), provides concrete code example for Electron, and explicitly warns against hardcoding or bundling keys. It covers both development and production scenarios comprehensively.\n\n**Deployment Architecture Recommendations (3/3)**: The answer provides excellent deployment architecture guidance, recommending backend-hosted agent for most apps with clear pros/cons analysis. It discusses scalability (multi-session/multi-user support, centralized logging, rate limiting), mentions websocket server deployment, and provides decision guide for when to use backend vs local deployment. While it doesn't mention specific platforms like Cloud Run or GKE by name, it thoroughly covers the architectural considerations and tradeoffs, which is more valuable than just listing deployment platforms.\n\n**Clear and Concise Output (1/1)**: The response is exceptionally well-organized with clear sections, numbered points, code examples, and a decision guide. The language is professional, technical yet accessible. No hallucinations detected - all information provided is accurate and logically sound. The structure with clear headings, pros/cons lists, and step-by-step flows makes it easy to follow.\n\nThe answer goes beyond the reference answer in depth and practical guidance, providing a more nuanced understanding of deployment tradeoffs. It's highly relevant to the ADK framework and addresses all key concerns raised in the question.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 9.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 1.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

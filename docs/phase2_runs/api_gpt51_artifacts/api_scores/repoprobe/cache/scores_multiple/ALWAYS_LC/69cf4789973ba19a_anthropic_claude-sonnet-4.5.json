@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_LC",
+    "score": 1.0,
+    "max_score": 10.0,
+    "reason": "The model's answer is completely off-topic and unrelated to the actual question. The question asks about how to pass raw HTML to LLMExtractionStrategy in Crawl4AI (v0.7.x), which uses a simple prefix-based approach (`raw:` prefix). Instead, the model provides a detailed code-level analysis of internal implementation details of LLMExtractionStrategy, discussing sections, sanitization methods, and internal method calls. This suggests the model is analyzing a different version or completely different codebase. The reference answer clearly shows the solution is straightforward: use `raw:{html}` prefix with `crawler.arun()`. The model's answer: 1) Does NOT mention the `raw:` prefix at all (0/4 points for criterion 1), 2) Does NOT identify the three input type prefixes (http://, https://, file://, raw:) (0/3 points for criterion 2), 3) Does NOT explain the unified `arun()` method usage or output consistency (0/2 points for criterion 3). While the answer is well-structured and detailed, it addresses an entirely different technical question about internal implementation rather than the user-facing API question being asked. The model appears to be analyzing internal code that may not even be from the correct repository version. This is a fundamental mismatch between the question and the answer provided.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 1.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

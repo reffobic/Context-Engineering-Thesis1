@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "PREASSESS",
+    "score": 0.0,
+    "max_score": 10.0,
+    "reason": "The model's answer is completely off-topic and does not address the actual question. The question asks 'how to pass raw html to LLMExtractionStrategy?' and the reference answer clearly shows this is about using the `raw:` prefix with the crawler (e.g., `raw_html = f\"raw:{html}\"` passed to `crawler.arun()`). Instead, the model provides a detailed technical analysis of internal sanitization mechanisms within `LLMExtractionStrategy` class, discussing code paths like `sanitize_html()`, `sanitize_input_encode()`, and merge operations. While this information might be technically accurate about the internal workings of the class, it does not answer the user's question about HOW TO PASS raw HTML to the strategy. The user is asking about the INPUT format/prefix, not about internal processing. The model completely misses the `raw:` prefix mechanism, does not mention the three input types (http://, file://, raw:), does not explain the unified `arun()` method usage, and provides no actionable solution to the user's question. According to scoring criteria: (1) Raw HTML Prefix Usage: 0 points - does not mention the `raw:` prefix at all; (2) Input Type Prefixes: 0 points - does not mention the different input type prefixes; (3) Output Consistency: 0 points - does not mention the unified method usage; (4) Clarity: 0 points - while technically detailed, it answers the wrong question entirely, making it unhelpful and misleading for the user's actual need. The answer discusses internal implementation details that are irrelevant to the user's question about passing raw HTML as input.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 0.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

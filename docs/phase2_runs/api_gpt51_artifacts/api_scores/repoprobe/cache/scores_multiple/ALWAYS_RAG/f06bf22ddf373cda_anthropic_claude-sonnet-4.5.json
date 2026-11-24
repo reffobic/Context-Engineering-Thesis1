@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_RAG",
+    "score": 2.0,
+    "max_score": 10.0,
+    "reason": "Let me evaluate this answer against the scoring criteria:\n\n**Environment Variable Configuration (0/3):** The answer does NOT mention DOCLING_SERVE_ARTIFACTS_PATH at all. Instead, it vaguely refers to 'settings.cache_dir / \"models\"' and 'output_dir' from the CLI, which is not the correct environment variable configuration needed for offline usage. The answer focuses on downloading models using CLI commands but completely misses the critical environment variable setup required for Docling to find local models. This is a fundamental omission.\n\n**Model Folder Naming Convention (0/3):** The answer does not explain the required folder naming convention at all. It doesn't mention that folder names must replace '/' with '--' in repo IDs, nor does it mention the critical requirement to use 'docling-project--' prefix instead of 'ds4sd--'. The answer only mentions generic repo IDs like 'docling-project/docling-models' in CLI commands but provides no guidance on how the downloaded folders should be structured or named.\n\n**Required Files and Code Configuration (1/3):** The answer mentions using CLI commands to download models and vaguely references 'snapshot_download', but it does NOT list the specific required files (model.safetensors, config.json, preprocessor_config.json). More importantly, it does NOT explain how to explicitly pass artifacts_path in PdfPipelineOptions, which is essential for offline usage. It only provides a generic CLI download command example. The answer gets 1 point for at least mentioning that models need to be downloaded and placed in a directory, but lacks the critical details.\n\n**Clear and Concise Output (1/1):** The answer is well-structured with clear sections (numbered points), logical flow, and reasonable language. It correctly references code snippets from the repository (docling/cli/models.py, docling/models/utils/hf_model_download.py) without hallucinating non-existent files. The overall structure is good, though the content itself misses the key points.\n\n**Summary:** The answer fundamentally misunderstands the question. While it provides detailed information about downloading models using CLI commands and huggingface_hub, it completely misses the core issue: how to configure Docling to USE those downloaded models offline. The reference answer focuses on environment variable setup (DOCLING_SERVE_ARTIFACTS_PATH), folder naming conventions (docling-project-- prefix), and code configuration (artifacts_path in PdfPipelineOptions), none of which are adequately addressed in this answer. The answer treats this as purely a 'how to download' question rather than a 'how to configure for offline use' question.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 1.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 1.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

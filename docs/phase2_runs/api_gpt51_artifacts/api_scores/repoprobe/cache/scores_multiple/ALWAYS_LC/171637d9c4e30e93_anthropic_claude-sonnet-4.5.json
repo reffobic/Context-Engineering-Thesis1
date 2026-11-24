@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_LC",
+    "score": 2.0,
+    "max_score": 10.0,
+    "reason": "This answer requires careful evaluation against the ADK-specific criteria:\n\n**Schema Mode Strategy (0/2 points)**: The answer does NOT mention the `query` vs `embedded` schema modes in `AgentBuilderAssistant` at all. Instead, it discusses `static_instruction` and `instruction` from `LlmAgent`, which while valid ADK concepts, do not address the specific schema mode strategy for token efficiency mentioned in the reference answer. The answer focuses on prompt separation rather than schema fetching modes.\n\n**ADK Plugins and Caching (0/4 points)**: The answer does NOT mention ADK Plugins, `BasePlugin`, `before_model_callback`, or the plugin system at all. Instead, it discusses provider-side caching (Gemini context caching) and suggests implementing caching at the abstraction layer level (OpenRouter/LiteLLM). While these are valid approaches to caching, they do not address the ADK-specific plugin mechanism that the reference answer emphasizes. The code examples provided are from `LlmAgent` configuration, not plugin creation.\n\n**Model-Agnostic Architecture (1/2 points)**: The answer does acknowledge model flexibility and discusses abstraction layers (OpenRouter/LiteLLM), and mentions that ADK doesn't expose a universal prompt-cache abstraction. However, it doesn't explain ADK's specific integration methods (Direct String/Registry vs Wrapper Classes like `LiteLlm`) as described in the reference answer. It gets partial credit for addressing model flexibility conceptually.\n\n**Token Usage Monitoring (0/1 points)**: The answer does NOT mention AgentOps integration or `LlmResponse.token_usage` for monitoring token consumption. It doesn't address monitoring tools at all.\n\n**Clarity (1/1 point)**: The answer is well-structured, clearly written, and logically organized with numbered sections. It provides detailed explanations and code snippets from the repository. The language is professional and easy to understand. No hallucinations are detected - the code snippets reference actual ADK concepts from `LlmAgent` even though they don't answer the specific question about plugins and schema modes.\n\n**Critical Issue**: While the answer demonstrates deep understanding of `LlmAgent` internals and provides technically sound advice about prompt separation and provider-side caching, it fundamentally misses the ADK-specific solutions (schema modes and plugins) that the question is asking about. The answer appears to be working from `LlmAgent` code but not from the broader ADK framework features that would address token efficiency through plugins and schema query modes.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 1.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 1.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

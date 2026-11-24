@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "SELF_ROUTE",
+    "score": 1.0,
+    "max_score": 10.0,
+    "reason": "The model's answer completely misses the actual fix required for the problem. Let me evaluate against the scoring criteria:\n\n**Core Fix Implementation (0/5 points):** The reference answer provides a specific patch that involves creating a `patched_async_playwright__crawler_strategy_close` function that resets `BrowserManager._playwright_instance = None`. The model's answer does NOT provide this fix at all. Instead, it focuses on explaining general FastAPI lifecycle management and proper usage patterns of BrowserManager, which while technically correct advice, is not the solution to the specific issue. The model never mentions the need to reset the static Playwright instance, which is the core of the actual fix.\n\n**Code Implementation Completeness (0/4 points):** The model does not import or use `AsyncPlaywrightCrawlerStrategy` at all. It doesn't show the patched function implementation, doesn't demonstrate the `async with AsyncWebCrawler` pattern with the crawler_strategy parameter, and doesn't show how to apply the patched method to `AsyncPlaywrightCrawlerStrategy.close`. The code examples provided are about general FastAPI integration patterns, not the specific fix needed. The reference answer requires a very specific monkey-patching approach that the model completely misses.\n\n**Clear and Concise Output (1/1 point):** Despite providing the wrong solution, the answer is well-structured with clear sections, good formatting, proper code blocks, and logical flow. The language is clear and professional. There are no obvious hallucinations - the model references actual methods from the codebase like `BrowserManager.start()`, `BrowserManager.close()`, and `get_page()`. The line number references appear to be from actual code analysis. However, this clarity doesn't help when the solution is fundamentally incorrect for the stated problem.\n\n**Summary:** The model provided a comprehensive guide on how to properly integrate Playwright with FastAPI using lifecycle management, which is good general advice. However, the question asks for a specific fix to a known issue that requires patching the AsyncPlaywrightCrawlerStrategy.close method and resetting the static Playwright instance. The model completely missed this requirement and instead provided alternative architectural advice. This is a fundamental mismatch between the question and the answer.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 1.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

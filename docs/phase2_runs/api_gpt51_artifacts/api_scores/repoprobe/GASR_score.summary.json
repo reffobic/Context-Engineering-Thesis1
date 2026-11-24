@@ -1,0 +1,11 @@
+{
+  "arm": "GASR",
+  "n": 108,
+  "n_scored": 108,
+  "score_mean": 3.2222222222222223,
+  "overall_pct_mean": 32.22222222222222,
+  "knowledge_score_mean": 2.7777777777777777,
+  "clarity_score_mean": 0.4444444444444444,
+  "perfect_solve_pct": 7.407407407407407,
+  "wall_s_mean": 15.030835350354513
+}

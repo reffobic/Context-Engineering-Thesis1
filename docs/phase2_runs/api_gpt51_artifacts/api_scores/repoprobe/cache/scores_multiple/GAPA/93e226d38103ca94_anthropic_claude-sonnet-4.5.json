@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "GAPA",
+    "score": 0.0,
+    "max_score": 10.0,
+    "reason": "This answer is completely unrelated to the question being asked. The question is about C# and the Microsoft.Extensions.AI library, specifically asking about AITool having only function name, description, and parameter. The reference answer correctly identifies `AIFunctionFactory.CreateDeclaration` from the `Microsoft.Extensions.AI` namespace. However, the model's answer discusses Python code with ChatAgent, ChatMessage, and async/await patterns that appear to be from a different framework entirely. The model provides an extensive implementation guide for a Python-based chat agent system with client-side tool execution, which has nothing to do with the C# AITool question. The answer shows technical competence in explaining a client-tools pattern in Python, but it's answering a completely different question. Since the answer is entirely unrelated to the repository information and the actual question being asked (which is about C#/.NET), it deserves 0 points across all criteria according to scoring requirement #2.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 0.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

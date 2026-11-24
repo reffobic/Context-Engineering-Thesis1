@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_GRAPH",
+    "score": 2.0,
+    "max_score": 10.0,
+    "reason": "Let me evaluate this answer against the scoring criteria:\n\n**Correct Identification of Request Type (4 points):**\nThe model answer mentions 'RunAgentRequest' multiple times throughout the response but never identifies the correct type 'AgentRunRequest'. The reference answer clearly states it should be 'AgentRunRequest', not 'RunAgentRequest'. This is an incorrect identification. Score: 0 points.\n\n**Correct File Path Location (3 points):**\nThe model references 'src/google/adk/cli/adk_web_server.py' as the location of the request model definition. However, the reference answer indicates the correct file is 'src/google/adk/cli/fast_api.py'. While the model mentions the correct directory structure (src/google/adk/cli/), it provides the wrong file name (adk_web_server.py instead of fast_api.py). This is partially correct since it mentions the cli directory. Score: 2 points.\n\n**Correct Line Number Reference (2 points):**\nThe model answer does not mention any line number reference at all. The reference answer specifies 'around line 590', but the model's response contains no line number information. Score: 0 points.\n\n**Clear and Concise Output (1 point):**\nThe answer is well-structured with clear sections, numbered steps, and helpful debugging guidance. It provides practical advice about using OpenAPI docs, checking the response body for 422 errors, and offers troubleshooting steps. The language is clear and easy to understand. However, there are factual errors (wrong class name and wrong file name), which counts against it. Despite the good organization and helpful approach, the factual inaccuracies prevent a full score. Score: 0 points (due to factual errors in the core information).\n\n**Hallucination Check:**\nThe model references 'src/google/adk/cli/adk_web_server.py' which appears to be an incorrect file path (should be fast_api.py). This could be considered a hallucination if this file doesn't exist in the repository, though it's also possible this is a related file. Given the directory structure provided is empty, I cannot definitively confirm if this is a hallucination or just an incorrect reference. I'll mark it as a factual error rather than pure hallucination.\n\n**Total Calculation:**\nKnowledge: 0 + 2 + 0 = 2/9\nClarity: 0/1\nTotal: 2/10",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 2.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 0.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

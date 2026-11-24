@@ -1,0 +1,9 @@
+{
+ "job_id": "ALWAYS_RAG__qwen3.5-9b__swe-qa-w1__3ac1066__20261123T164525",
+ "tasks": 1,
+ "lines": 1,
+ "status_counts": {
+  "ok": 1
+ },
+ "counted_as_failed": 0
+}

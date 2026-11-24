@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "GASR",
+    "score": 0.0,
+    "max_score": 10.0,
+    "reason": "The model's answer completely misses the correct CLI command (`yasbc toggle-widget powermenu`) that actually exists in YASB. The model claims there is no CLI argument to open the power menu based on the snippets provided, which is factually incorrect. The reference answer clearly shows that YASB has a CLI tool (`yasbc`) with a `toggle-widget` command that can be used specifically for this purpose. The model's response discusses `update_yasb`, `download_yasb`, and power plan code, but completely fails to identify the actual CLI command that answers the user's question. The model suggests the user needs to either find documentation, inspect the full CLI file, or implement a custom patch - when in reality the solution already exists. For scoring: (1) CLI Command Identification and Syntax (5 points): 0 points - The model does not identify the correct CLI command (`yasbc toggle-widget powermenu`) and incorrectly states that no such CLI exists. (2) Command Options Explanation (4 points): 0 points - The model does not mention `--follow-mouse` or `--screen <screen_name>` options at all. (3) Clear and Concise Output (1 point): 0 points - While the response is well-structured and easy to read, it contains a fundamental factual error by claiming the CLI capability doesn't exist when it actually does. This is a critical hallucination regarding functionality. Total knowledge score: 0/9. Clarity score: 0/1 due to the fundamental factual error that undermines the entire response.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 0.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

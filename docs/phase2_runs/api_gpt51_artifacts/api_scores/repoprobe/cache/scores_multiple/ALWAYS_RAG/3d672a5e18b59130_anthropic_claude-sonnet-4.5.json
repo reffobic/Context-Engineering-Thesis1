@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_RAG",
+    "score": 2.0,
+    "max_score": 10.0,
+    "reason": "Let me evaluate this answer against the scoring criteria:\n\n**Feature Status Explanation (2 points possible):**\nThe model answer does NOT clearly state that there is currently no built-in feature for this functionality. Instead, it claims \"Yes, that is exactly the general pattern this codebase supports\" and proceeds to explain how the codebase allegedly supports this workflow. This is fundamentally incorrect based on the reference answer which clearly states \"we currently don't have a feature like this.\" The model misrepresents the current capabilities of the codebase. Score: 0 points.\n\n**Alternative Solution Workflow (4 points possible):**\nThe model provides an extremely detailed workflow involving LLM-driven extraction, schema generation using `generate_schema`, and extraction strategies. However, this workflow does NOT match the reference answer's recommended approach of: 1) using `result.html` to get raw HTML, and 2) manually using an external LLM (ChatGPT/Claude) to work out the mapping. The model's answer suggests using built-in functions like `generate_schema` and `_generate_llm_schema` which may or may not exist in the actual codebase for this specific purpose. The workflow provided is overly complex and doesn't align with the simple workaround described in the reference answer. Score: 2 points (mentions some steps but lacks alignment with the actual recommended workflow).\n\n**Non-LLM Extraction Strategies (3 points possible):**\nThe model answer does NOT mention `JsonCssExtractionStrategy` or `JsonXPathExtractionStrategy` at all, which are the key non-LLM extraction strategies mentioned in the reference answer. While it vaguely references CSS-based extraction and mentions writing a \"pure-Python extractor,\" it fails to identify the specific built-in strategies that should be used. Score: 0 points.\n\n**Clear and Concise Output (1 point possible):**\nThe response is well-structured with clear sections and markdown formatting. However, it contains significant factual errors - primarily the claim that the codebase currently supports this workflow when it does not. This misrepresentation is a critical issue. The answer is also overly verbose and complex compared to what's needed. Due to the fundamental misrepresentation of feature availability, this constitutes a form of hallucination about capabilities. Score: 0 points.\n\nTotal Knowledge Score: 0 + 2 + 0 = 2/9\nClarity Score: 0/1\nTotal: 2/10",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 2.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 0.0,
+    "clarity_max": 1.0,
+    "hallucination": true
+  }
+]

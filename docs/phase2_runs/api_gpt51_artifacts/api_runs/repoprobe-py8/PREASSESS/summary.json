@@ -1,0 +1,9 @@
+{
+ "job_id": "PREASSESS__qwen3.5-9b__repoprobe-py8__3ac1066__20261123T231626",
+ "tasks": 108,
+ "lines": 108,
+ "status_counts": {
+  "ok": 108
+ },
+ "counted_as_failed": 0
+}

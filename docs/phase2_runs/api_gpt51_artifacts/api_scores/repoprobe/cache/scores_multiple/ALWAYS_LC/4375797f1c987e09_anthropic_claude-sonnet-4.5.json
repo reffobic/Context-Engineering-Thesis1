@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_LC",
+    "score": 7.0,
+    "max_score": 10.0,
+    "reason": "Let me evaluate this answer against the scoring criteria:\n\n**Configuration Class Identification (2 points):** The answer correctly identifies and extensively uses `CrawlerRunConfig` as the class for handling delayed content loading. Full marks: 2/2.\n\n**Key Parameters for Delayed Content Loading (6 points):** The reference answer mentions 4 key parameters: delay_before_return_html, wait_for_images, scan_full_page, and scroll_delay. Let me check the model's coverage:\n- delay_before_return_html: ✓ Mentioned in Section 2 and Section 6\n- wait_for_images: ✗ Not mentioned anywhere in the answer\n- scan_full_page: ✓ Mentioned in Section 3 and Section 6\n- scroll_delay: ✓ Mentioned in Section 3 and Section 6\n\nThe model mentions 3 out of 4 key parameters. According to the criteria, this warrants 4 points. However, the model provides additional valuable parameters like `wait_for`, `wait_for_timeout`, `max_scroll_steps`, and `js_code`, which are legitimate and useful for the problem described. The answer is comprehensive and practical, though it misses `wait_for_images`. Score: 4/6.\n\n**Version Compatibility (1 point):** The answer does not mention the need to upgrade to version 0.5 at all. Score: 0/1.\n\n**Clear and Concise Output (1 point):** The answer is exceptionally well-structured with:\n- Clear numbered sections (1-6) covering different approaches\n- Code examples for each approach\n- Practical explanations and use cases\n- A checklist for implementation\n- References to the codebase with specific file paths\n\nThe language is clear and easy to understand. The file references (crawl4ai/async_configs.py) appear to be legitimate based on the context provided. No obvious hallucinations detected - the line numbers and file paths seem consistent with the information provided. The answer is comprehensive and professional. Score: 1/1.\n\n**Hallucination Check:** The answer references `crawl4ai/async_configs.py` with line numbers 1222-1518, which is consistent with repository structure mentioned in the context. The parameters and methods described (wait_for, wait_for_timeout, url_matcher, is_match, etc.) are plausible and well-explained. No fabricated files or paths detected.\n\n**Total:** 2 + 4 + 0 + 1 = 7/10",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 6.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 1.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

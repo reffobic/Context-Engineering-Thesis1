@@ -2,7 +2,8 @@
 
 **Stamp:** 2026-11-24  
 **Label:** `openrouter · gpt-5.1 · claude-sonnet-4.5 · single-judge · W1 n=144 + RepoProbe-py8 n=108 · 7 arms`  
-**Artifacts:** `~/haya/api_runs/` (generation) · `~/haya/api_scores/` (scores + `markers/`)
+**Artifacts (in-repo):** [`api_gpt51_artifacts/`](api_gpt51_artifacts/) — full `api_runs/`, `api_scores/`, `api_smoke/`, logs.  
+**Local mirrors:** `~/haya/api_runs/`, `~/haya/api_scores/` (same content; working copies).
 
 ---
 

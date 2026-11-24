@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "GAPA",
+    "score": 0.0,
+    "max_score": 10.0,
+    "reason": "The model's answer is completely incorrect. The reference answer clearly states that the solution is to set `always_on_top: true` in the configuration file. However, the model claims there is no such documented option and suggests opening a feature request instead. The model references various documentation files (docs/CLI.md, docs/Configuration.md, docs/Styling.md) and states these files don't mention an 'always on top' setting. This is factually incorrect based on the reference answer which indicates this configuration option does exist. The model's conclusion that 'there is no user-exposed config or command to keep YASB visible through Win+D / Show Desktop' is fundamentally wrong. For scoring: (1) Configuration Option (5 points): The model fails to identify `always_on_top` as the solution, earning 0 points. (2) Implementation Details (4 points): Since the model doesn't identify the correct option, it cannot provide correct implementation details, earning 0 points. (3) Clear and Concise Output (1 point): While the response is well-structured and clearly written, it contains a major factual error (claiming the feature doesn't exist when it does), which qualifies as a hallucination/factual error according to the criteria. Therefore, 0 points for clarity. The model's references to documentation files appear legitimate (not fabricated paths), but the content interpretation is incorrect.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 0.0,
+    "clarity_max": 1.0,
+    "hallucination": true
+  }
+]

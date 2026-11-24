@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "ALWAYS_RAG",
+    "score": 1.0,
+    "max_score": 10.0,
+    "reason": "The model's answer completely misunderstands the question and provides an incorrect analysis. The user is asking how to pass raw HTML to LLMExtractionStrategy, and the correct answer involves using the `raw:` prefix with the crawler's `arun()` method (e.g., `raw_html = f\"raw:{html}\"` and `await crawler.arun(url=raw_html, config=config)`). However, the model's answer focuses on the `input_format` parameter of `LLMExtractionStrategy` and discusses cleaned vs. raw HTML from the crawler's output, which is not what the question is asking about. The model claims it cannot answer due to missing context, when in fact the question has a specific, documented answer about prefix-based input handling that the model failed to identify. \n\n**Knowledge Score Breakdown:**\n- Raw HTML Prefix Usage (4 points): 0 points - The model does not mention the `raw:` prefix at all, which is the core answer to the question.\n- Input Type Prefixes (3 points): 0 points - The model does not identify any of the three supported input types (http://, file://, raw:) with their prefixes.\n- Output Consistency and Method Usage (2 points): 0 points - The model does not explain that all input types use the same `arun()` method with consistent output.\n\n**Clarity Score:** 1 point - While the answer is well-structured and clearly written, it addresses the wrong problem entirely. The model provides a coherent explanation but it's fundamentally off-topic. However, since it maintains a logical structure and clear language without hallucinations, it deserves the clarity point.\n\n**Hallucination Check:** No fabricated files or paths were identified. The model references code snippets it claims to have seen (like line 525-526 for `input_format`), which may or may not be accurate, but these are not outright fabrications of non-existent files.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 1.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

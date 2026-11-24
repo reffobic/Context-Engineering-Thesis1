@@ -1,0 +1,9 @@
+{
+ "job_id": "PREASSESS__qwen3.5-9b__swe-qa-w1__3ac1066__20261123T224252",
+ "tasks": 144,
+ "lines": 144,
+ "status_counts": {
+  "ok": 144
+ },
+ "counted_as_failed": 0
+}

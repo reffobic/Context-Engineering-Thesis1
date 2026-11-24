@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "GAPA",
+    "score": 4.0,
+    "max_score": 10.0,
+    "reason": "Let me evaluate this answer against the scoring criteria:\n\n**Custom ExtractionStrategy Class Implementation (4 points max):** The answer does NOT provide the correct solution of creating a custom ExtractionStrategy class. Instead, it suggests two alternative approaches: (1) extracting JSON-LD separately using BeautifulSoup on the raw HTML, and (2) modifying the extraction strategy to treat JSON-LD as data by switching input_format. While these are valid workarounds, they completely miss the actual solution shown in the reference answer, which is to create a custom class inheriting from ExtractionStrategy. The model mentions 'LLMExtractionStrategy' but never demonstrates creating a custom ExtractionStrategy subclass. Score: 0 points.\n\n**JSON-LD Data Extraction Logic (3 points max):** The answer DOES correctly demonstrate JSON-LD extraction logic using BeautifulSoup. In multiple code snippets, it shows: `soup.find_all('script', type='application/ld+json')`, `json.loads(script.string or script.get_text())`, and proper exception handling with `except json.JSONDecodeError`. This logic is correct and complete. Score: 3 points.\n\n**CrawlerRunConfig Integration (2 points max):** The answer does NOT show the correct integration pattern. The reference answer uses `extraction_strategy=JsonLdExtractionStrategy()` in CrawlerRunConfig, but the model's answer only shows the existing markdown_generator configuration and suggests using the raw HTML result separately. It never demonstrates passing a custom extraction strategy to CrawlerRunConfig as the solution. Score: 0 points.\n\n**Clear and Concise Output (1 point max):** The answer is well-structured with clear sections, numbered approaches, code examples, and explanations. However, it fundamentally misses the actual solution architecture (custom ExtractionStrategy class). While the presentation is clear, the content doesn't address the core problem correctly. The answer is verbose and suggests workarounds rather than the proper solution. Given that it provides alternative approaches that could work but misses the intended solution pattern, I'll give partial credit. Score: 1 point.\n\n**Total Knowledge Score: 0 + 3 + 0 = 3 out of 9**\n**Total Clarity Score: 1 out of 1**\n**Total: 4 out of 10**",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 3.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 1.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]

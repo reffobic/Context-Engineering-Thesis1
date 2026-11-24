@@ -1,0 +1,15 @@
+[
+  {
+    "model_name": "SELF_ROUTE",
+    "score": 0.0,
+    "max_score": 10.0,
+    "reason": "This answer completely misses the actual root cause of the problem. The reference answer clearly identifies that the issue is the memory_threshold_percent being set too low at 70%, which causes tasks to remain in queue when system memory (from ALL processes, not just Crawl4AI) exceeds this threshold. The model's answer instead explores multiple unrelated potential causes:\n\n1. **Root Cause Identification (0/3)**: The model fails to identify the actual root cause. It discusses event loop issues, Playwright browser startup problems, robots.txt blocking, dispatcher/monitor TTY issues, and logging - none of which address the actual memory threshold problem. The model never mentions that 70% is too low or that the threshold monitors total system memory usage.\n\n2. **Parameter Mechanism Explanation (0/3)**: The model does not explain how memory_threshold_percent works. It doesn't mention that this parameter monitors total system memory usage from all running processes, not just Crawl4AI. This is a critical misunderstanding of the parameter's behavior.\n\n3. **Solution and Design Purpose (0/3)**: The model suggests removing the monitor entirely or disabling check_robots_txt, which are not the correct solutions. The correct solution is to increase memory_threshold_percent to 90% or 95%. The model also fails to explain that the design purpose of this threshold is to prevent system unresponsiveness or thrashing.\n\n4. **Clear and Concise Output (0/1)**: While the response is well-structured and organized with clear sections, it contains substantial factual errors by misdiagnosing the problem entirely. The answer provides extensive troubleshooting steps for issues that don't exist, leading the user down wrong paths. This constitutes a significant factual error that makes the entire answer misleading and unhelpful for solving the actual problem.\n\nThe model's answer, though comprehensive and well-written, is fundamentally incorrect and would not help the user solve their actual problem. It demonstrates a failure to understand the specific behavior of the MemoryAdaptiveDispatcher's memory threshold mechanism.",
+    "success": true,
+    "error_message": "",
+    "knowledge_score": 0.0,
+    "knowledge_max": 9.0,
+    "clarity_score": 0.0,
+    "clarity_max": 1.0,
+    "hallucination": false
+  }
+]
