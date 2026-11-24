@@ -1,0 +1,10 @@
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/SELF_ROUTE_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/SELF_ROUTE_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 96,
+ "n_failed_or_skipped": 0,
+ "mean_overall": 59.65,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}

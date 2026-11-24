@@ -1,0 +1,9 @@
+{
+ "job_id": "SELF_ROUTE__qwen3.5-9b__swe-qa-rest__3ac1066__20261124T142922",
+ "tasks": 96,
+ "lines": 96,
+ "status_counts": {
+  "ok": 96
+ },
+ "counted_as_failed": 0
+}

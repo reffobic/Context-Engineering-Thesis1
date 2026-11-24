@@ -1,0 +1,125 @@
+[2026-11-24T13:19:23+02:00] STRAT-REST gen start out=/home/g7/haya/api_runs sample=eval_harness/samples_strat/swe-qa-rest.strat2.sample.json (rest only; skip W1+RP)
+[13:19:23] START swe-qa-rest/GAPA
+[FAIL] preflight: record authorisation is for another pipeline SHA / harness commit than the one running
+[13:19:23] END   swe-qa-rest/GAPA
+[13:19:23] START swe-qa-rest/GASR
+[FAIL] preflight: record authorisation is for another pipeline SHA / harness commit than the one running
+[13:19:23] END   swe-qa-rest/GASR
+[13:19:23] START swe-qa-rest/SELF_ROUTE
+[FAIL] preflight: record authorisation is for another pipeline SHA / harness commit than the one running
+[13:19:23] END   swe-qa-rest/SELF_ROUTE
+[13:19:23] START swe-qa-rest/ALWAYS_RAG
+[FAIL] preflight: record authorisation is for another pipeline SHA / harness commit than the one running
+[13:19:23] END   swe-qa-rest/ALWAYS_RAG
+[13:19:23] START swe-qa-rest/ALWAYS_GRAPH
+[FAIL] preflight: record authorisation is for another pipeline SHA / harness commit than the one running
+[13:19:23] END   swe-qa-rest/ALWAYS_GRAPH
+[13:19:23] START swe-qa-rest/PREASSESS
+[FAIL] preflight: record authorisation is for another pipeline SHA / harness commit than the one running
+[13:19:24] END   swe-qa-rest/PREASSESS
+[13:19:24] START swe-qa-rest/ALWAYS_LC
+[FAIL] preflight: record authorisation is for another pipeline SHA / harness commit than the one running
+[13:19:24] END   swe-qa-rest/ALWAYS_LC
+ALL DONE
+[2026-11-24T13:19:24+02:00] STRAT-REST gen finished
+[2026-11-24T13:20:29+02:00] STRAT-REST gen start out=/home/g7/haya/api_runs sample=eval_harness/samples_strat/swe-qa-rest.strat2.sample.json (rest only; skip W1+RP)
+[13:20:29] START swe-qa-rest/GAPA
+[86/96] sympy-034 ok route=RAG latency_ms=18335.352 startup_s=5.586 copy_s=0.819
+[87/96] sympy-039 ok route=GRAPH latency_ms=12679.302 startup_s=2.934 copy_s=0.821
+[88/96] sympy-041 ok route=GRAPH latency_ms=14192.872 startup_s=3.019 copy_s=0.821
+[89/96] xarray-001 ok route=LC latency_ms=19795.016 startup_s=2.42 copy_s=0.356
+[90/96] xarray-006 ok route=GRAPH latency_ms=21739.419 startup_s=2.541 copy_s=0.216
+[91/96] xarray-018 ok route=RAG latency_ms=12174.358 startup_s=2.499 copy_s=0.215
+[92/96] xarray-023 ok route=LC latency_ms=11878.828 startup_s=2.428 copy_s=0.216
+[93/96] xarray-024 ok route=GRAPH latency_ms=27853.103 startup_s=2.903 copy_s=0.216
+[94/96] xarray-035 ok route=RAG latency_ms=26273.751 startup_s=2.701 copy_s=0.218
+[95/96] xarray-038 ok route=GRAPH latency_ms=13623.76 startup_s=2.524 copy_s=0.212
+[96/96] xarray-041 ok route=GRAPH latency_ms=19511.991 startup_s=2.976 copy_s=0.215
+{"job_id": "GAPA__qwen3.5-9b__swe-qa-rest__3ac1066__20261124T132031", "tasks": 96, "lines": 96, "status_counts": {"ok": 96}, "counted_as_failed": 0}
+[13:55:33] END   swe-qa-rest/GAPA
+[13:55:33] START swe-qa-rest/GASR
+[86/96] sympy-034 ok route=RAG latency_ms=18798.246 startup_s=3.809 copy_s=0.805
+[87/96] sympy-039 ok route=GRAPH latency_ms=10276.572 startup_s=3.945 copy_s=0.802
+[88/96] sympy-041 ok route=GRAPH latency_ms=13043.271 startup_s=3.955 copy_s=0.807
+[89/96] xarray-001 ok route=GRAPH latency_ms=11365.876 startup_s=2.551 copy_s=0.217
+[90/96] xarray-006 ok route=LC latency_ms=8900.666 startup_s=2.895 copy_s=0.218
+[91/96] xarray-018 ok route=GRAPH latency_ms=9011.621 startup_s=2.584 copy_s=0.258
+[92/96] xarray-023 ok route=LC latency_ms=8227.548 startup_s=2.753 copy_s=0.218
+[93/96] xarray-024 ok route=GRAPH latency_ms=19803.846 startup_s=3.1 copy_s=0.216
+[94/96] xarray-035 ok route=RAG latency_ms=26206.103 startup_s=2.669 copy_s=0.217
+[95/96] xarray-038 ok route=GRAPH latency_ms=13695.124 startup_s=2.371 copy_s=0.218
+[96/96] xarray-041 ok route=GRAPH latency_ms=14891.552 startup_s=2.422 copy_s=0.228
+{"job_id": "GASR__qwen3.5-9b__swe-qa-rest__3ac1066__20261124T135534", "tasks": 96, "lines": 96, "status_counts": {"ok": 96}, "counted_as_failed": 0}
+[14:29:21] END   swe-qa-rest/GASR
+[14:29:21] START swe-qa-rest/SELF_ROUTE
+[86/96] sympy-034 ok route=RAG latency_ms=33252.115 startup_s=3.74 copy_s=0.8
+[87/96] sympy-039 ok route=LC latency_ms=11152.73 startup_s=4.854 copy_s=0.804
+[88/96] sympy-041 ok route=LC latency_ms=12395.396 startup_s=3.232 copy_s=0.814
+[89/96] xarray-001 ok route=LC latency_ms=15007.263 startup_s=2.585 copy_s=0.218
+[90/96] xarray-006 ok route=LC latency_ms=21615.827 startup_s=2.449 copy_s=0.217
+[91/96] xarray-018 ok route=LC latency_ms=28853.185 startup_s=2.418 copy_s=0.217
+[92/96] xarray-023 ok route=LC latency_ms=10561.494 startup_s=2.953 copy_s=0.215
+[93/96] xarray-024 ok route=LC latency_ms=10359.187 startup_s=2.572 copy_s=0.217
+[94/96] xarray-035 ok route=RAG latency_ms=15825.028 startup_s=2.451 copy_s=0.216
+[95/96] xarray-038 ok route=RAG latency_ms=7684.86 startup_s=2.472 copy_s=0.218
+[96/96] xarray-041 ok route=LC latency_ms=10997.134 startup_s=2.427 copy_s=0.214
+{"job_id": "SELF_ROUTE__qwen3.5-9b__swe-qa-rest__3ac1066__20261124T142922", "tasks": 96, "lines": 96, "status_counts": {"ok": 96}, "counted_as_failed": 0}
+[15:07:46] END   swe-qa-rest/SELF_ROUTE
+[15:07:46] START swe-qa-rest/ALWAYS_RAG
+[86/96] sympy-034 ok route=RAG latency_ms=15874.887 startup_s=3.792 copy_s=0.814
+[87/96] sympy-039 ok route=RAG latency_ms=8729.414 startup_s=3.211 copy_s=0.815
+[88/96] sympy-041 ok route=RAG latency_ms=9355.765 startup_s=3.878 copy_s=0.811
+[89/96] xarray-001 ok route=RAG latency_ms=7363.998 startup_s=2.417 copy_s=0.216
+[90/96] xarray-006 ok route=RAG latency_ms=19859.464 startup_s=2.771 copy_s=0.218
+[91/96] xarray-018 ok route=RAG latency_ms=8869.353 startup_s=2.421 copy_s=0.219
+[92/96] xarray-023 ok route=RAG latency_ms=16384.891 startup_s=2.875 copy_s=0.218
+[93/96] xarray-024 ok route=RAG latency_ms=12440.921 startup_s=2.488 copy_s=0.218
+[94/96] xarray-035 ok route=RAG latency_ms=16684.988 startup_s=2.444 copy_s=0.217
+[95/96] xarray-038 ok route=RAG latency_ms=5823.385 startup_s=2.393 copy_s=0.218
+[96/96] xarray-041 ok route=RAG latency_ms=7201.217 startup_s=2.983 copy_s=0.219
+{"job_id": "ALWAYS_RAG__qwen3.5-9b__swe-qa-rest__3ac1066__20261124T150747", "tasks": 96, "lines": 96, "status_counts": {"ok": 96}, "counted_as_failed": 0}
+[15:33:12] END   swe-qa-rest/ALWAYS_RAG
+[15:33:12] START swe-qa-rest/ALWAYS_GRAPH
+[86/96] sympy-034 ok route=GRAPH latency_ms=12919.815 startup_s=4.804 copy_s=0.796
+[87/96] sympy-039 ok route=GRAPH latency_ms=9414.751 startup_s=2.914 copy_s=0.801
+[88/96] sympy-041 ok route=GRAPH latency_ms=11151.707 startup_s=3.366 copy_s=0.8
+[89/96] xarray-001 ok route=GRAPH latency_ms=11859.3 startup_s=3.271 copy_s=0.219
+[90/96] xarray-006 ok route=GRAPH latency_ms=17654.559 startup_s=2.458 copy_s=0.217
+[91/96] xarray-018 ok route=GRAPH latency_ms=7792.918 startup_s=2.397 copy_s=0.218
+[92/96] xarray-023 ok route=GRAPH latency_ms=19060.709 startup_s=2.411 copy_s=0.216
+[93/96] xarray-024 ok route=GRAPH latency_ms=16242.465 startup_s=4.256 copy_s=0.217
+[94/96] xarray-035 ok route=GRAPH latency_ms=14131.027 startup_s=2.504 copy_s=0.219
+[95/96] xarray-038 ok route=GRAPH latency_ms=5813.356 startup_s=2.412 copy_s=0.219
+[96/96] xarray-041 ok route=GRAPH latency_ms=8992.87 startup_s=2.388 copy_s=0.218
+{"job_id": "ALWAYS_GRAPH__qwen3.5-9b__swe-qa-rest__3ac1066__20261124T153313", "tasks": 96, "lines": 96, "status_counts": {"ok": 96}, "counted_as_failed": 0}
+[15:58:26] END   swe-qa-rest/ALWAYS_GRAPH
+[15:58:26] START swe-qa-rest/PREASSESS
+[86/96] sympy-034 ok route=RAG latency_ms=16197.868 startup_s=3.159 copy_s=0.828
+[87/96] sympy-039 ok route=LC latency_ms=8232.416 startup_s=3.437 copy_s=0.83
+[88/96] sympy-041 ok route=LC latency_ms=13161.228 startup_s=3.998 copy_s=0.83
+[89/96] xarray-001 ok route=LC latency_ms=7421.163 startup_s=2.586 copy_s=0.218
+[90/96] xarray-006 ok route=LC latency_ms=12878.634 startup_s=3.131 copy_s=0.222
+[91/96] xarray-018 ok route=RAG latency_ms=15253.64 startup_s=2.522 copy_s=0.218
+[92/96] xarray-023 ok route=LC latency_ms=7465.62 startup_s=2.563 copy_s=0.218
+[93/96] xarray-024 ok route=LC latency_ms=15521.01 startup_s=2.64 copy_s=0.219
+[94/96] xarray-035 ok route=RAG latency_ms=12976.049 startup_s=2.462 copy_s=0.234
+[95/96] xarray-038 ok route=LC latency_ms=9228.744 startup_s=2.622 copy_s=0.219
+[96/96] xarray-041 ok route=LC latency_ms=10830.104 startup_s=2.446 copy_s=0.218
+{"job_id": "PREASSESS__qwen3.5-9b__swe-qa-rest__3ac1066__20261124T155827", "tasks": 96, "lines": 96, "status_counts": {"ok": 96}, "counted_as_failed": 0}
+[16:27:40] END   swe-qa-rest/PREASSESS
+[16:27:40] START swe-qa-rest/ALWAYS_LC
+[86/96] sympy-034 ok route=LC latency_ms=15798.143 startup_s=3.642 copy_s=0.817
+[87/96] sympy-039 ok route=LC latency_ms=7056.24 startup_s=3.431 copy_s=0.815
+[88/96] sympy-041 ok route=LC latency_ms=13876.381 startup_s=4.595 copy_s=0.815
+[89/96] xarray-001 ok route=LC latency_ms=12073.773 startup_s=2.517 copy_s=0.219
+[90/96] xarray-006 ok route=LC latency_ms=6448.762 startup_s=2.485 copy_s=0.217
+[91/96] xarray-018 ok route=LC latency_ms=25853.785 startup_s=2.433 copy_s=0.219
+[92/96] xarray-023 ok route=LC latency_ms=6777.116 startup_s=2.467 copy_s=0.22
+[93/96] xarray-024 ok route=LC latency_ms=10112.987 startup_s=2.427 copy_s=0.22
+[94/96] xarray-035 ok route=LC latency_ms=23855.107 startup_s=2.376 copy_s=0.216
+[95/96] xarray-038 ok route=LC latency_ms=7412.513 startup_s=2.508 copy_s=0.22
+[96/96] xarray-041 ok route=LC latency_ms=6833.319 startup_s=3.316 copy_s=0.218
+{"job_id": "ALWAYS_LC__qwen3.5-9b__swe-qa-rest__3ac1066__20261124T162741", "tasks": 96, "lines": 96, "status_counts": {"ok": 96}, "counted_as_failed": 0}
+[16:53:53] END   swe-qa-rest/ALWAYS_LC
+ALL DONE
+[2026-11-24T16:53:53+02:00] STRAT-REST gen finished

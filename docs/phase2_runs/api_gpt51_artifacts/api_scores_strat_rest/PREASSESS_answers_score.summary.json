@@ -1,0 +1,11 @@
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 96,
+ "n_failed_or_skipped": 0,
+ "mean_overall": 54.66,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge",
+ "note": "reflex-040 completed via oneshot repair after parse missing clarity; stream retries cancelled to stop rebill"
+}

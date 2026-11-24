@@ -1,0 +1,624 @@
+[13:19:25] STRAT-REST STREAM judge started pid=1285797 poll=45s scores=/home/g7/haya/api_scores_strat_rest
+[13:19:25] cancel: touch /home/g7/haya/api_runs/CANCEL_JUDGE_STRAT_REST   OR   kill $(cat /home/g7/haya/api_runs/judge_strat_rest.pid)
+[13:19:25] gen ALL DONE; waiting on remaining REST markers
+[13:20:10] CANCEL seen — exit (markers kept; no further spend)
+[13:20:32] STRAT-REST STREAM judge started pid=1286587 poll=45s scores=/home/g7/haya/api_scores_strat_rest
+[13:20:32] cancel: touch /home/g7/haya/api_runs/CANCEL_JUDGE_STRAT_REST   OR   kill $(cat /home/g7/haya/api_runs/judge_strat_rest.pid)
+[13:56:32] building rest-only reference.jsonl
+[13:56:32] SWE-QA-REST judge START GAPA (need 96)
+GAPA 96 answers
+gold answers: 576 tasks: 576
+  scored overall=37 q='How does the dynamic method injection pattern in `inject_num'
+  scored overall=47 q='Why does CopyOnWriteArray defer the materialization of array'
+  scored overall=91 q='Why does the ResolvedGrouper class bridge the abstraction ga'
+  scored overall=36 q="Where does the control flow in ContStyle's __init__ method p"
+  scored overall=76 q='Where in the codebase is the skipna parameter handling logic'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/GAPA_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/GAPA_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 96,
+ "n_failed_or_skipped": 0,
+ "mean_overall": 56.0,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[14:02:07] SWE-QA-REST judge END GAPA scored_lines=96
+[14:29:52] SWE-QA-REST judge START GASR (need 96)
+GASR 96 answers
+gold answers: 576 tasks: 576
+  scored overall=32 q='How does the dynamic method injection pattern in `inject_num'
+  scored overall=45 q='Why does CopyOnWriteArray defer the materialization of array'
+  scored overall=91 q='Why does the ResolvedGrouper class bridge the abstraction ga'
+  scored overall=37 q="Where does the control flow in ContStyle's __init__ method p"
+  scored overall=62 q='Where in the codebase is the skipna parameter handling logic'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/GASR_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/GASR_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 96,
+ "n_failed_or_skipped": 0,
+ "mean_overall": 57.55,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[14:35:27] SWE-QA-REST judge END GASR scored_lines=96
+[15:08:28] SWE-QA-REST judge START SELF_ROUTE (need 96)
+SELF_ROUTE 96 answers
+gold answers: 576 tasks: 576
+  scored overall=33 q='How does the dynamic method injection pattern in `inject_num'
+  scored overall=33 q='Why does CopyOnWriteArray defer the materialization of array'
+  scored overall=93 q='Why does the ResolvedGrouper class bridge the abstraction ga'
+  scored overall=53 q="Where does the control flow in ContStyle's __init__ method p"
+  scored overall=31 q='Where in the codebase is the skipna parameter handling logic'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/SELF_ROUTE_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/SELF_ROUTE_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 96,
+ "n_failed_or_skipped": 0,
+ "mean_overall": 59.65,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[15:14:02] SWE-QA-REST judge END SELF_ROUTE scored_lines=96
+[15:33:33] SWE-QA-REST judge START ALWAYS_RAG (need 96)
+ALWAYS_RAG 96 answers
+gold answers: 576 tasks: 576
+  scored overall=68 q='How does the dynamic method injection pattern in `inject_num'
+  scored overall=60 q='Why does CopyOnWriteArray defer the materialization of array'
+  scored overall=91 q='Why does the ResolvedGrouper class bridge the abstraction ga'
+  scored overall=53 q="Where does the control flow in ContStyle's __init__ method p"
+  scored overall=76 q='Where in the codebase is the skipna parameter handling logic'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/ALWAYS_RAG_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/ALWAYS_RAG_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 96,
+ "n_failed_or_skipped": 0,
+ "mean_overall": 56.32,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[15:39:07] SWE-QA-REST judge END ALWAYS_RAG scored_lines=96
+[15:59:22] SWE-QA-REST judge START ALWAYS_GRAPH (need 96)
+ALWAYS_GRAPH 96 answers
+gold answers: 576 tasks: 576
+  scored overall=75 q='How does the dynamic method injection pattern in `inject_num'
+  scored overall=56 q='Why does CopyOnWriteArray defer the materialization of array'
+  scored overall=92 q='Why does the ResolvedGrouper class bridge the abstraction ga'
+  scored overall=28 q="Where does the control flow in ContStyle's __init__ method p"
+  scored overall=81 q='Where in the codebase is the skipna parameter handling logic'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/ALWAYS_GRAPH_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/ALWAYS_GRAPH_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 96,
+ "n_failed_or_skipped": 0,
+ "mean_overall": 52.45,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[16:04:57] SWE-QA-REST judge END ALWAYS_GRAPH scored_lines=96
+[16:28:12] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+  scored overall=37 q='How does the dynamic method injection pattern in `inject_num'
+  scored overall=50 q='Why does CopyOnWriteArray defer the materialization of array'
+  scored overall=91 q='Why does the ResolvedGrouper class bridge the abstraction ga'
+  scored overall=37 q="Where does the control flow in ContStyle's __init__ method p"
+  scored overall=53 q='Where in the codebase is the skipna parameter handling logic'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[16:33:47] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[16:35:42] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[16:35:45] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[16:37:40] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[16:37:42] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[16:39:37] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[16:39:40] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[16:41:35] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[16:41:37] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[16:43:32] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[16:43:35] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[16:45:30] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[16:45:32] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[16:47:27] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[16:47:30] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[16:49:25] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[16:49:27] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[16:51:22] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[16:51:25] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[16:53:20] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[16:53:22] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[16:54:32] SWE-QA-REST judge START ALWAYS_LC (need 96)
+ALWAYS_LC 96 answers
+gold answers: 576 tasks: 576
+  scored overall=37 q='How does the dynamic method injection pattern in `inject_num'
+  scored overall=42 q='Why does CopyOnWriteArray defer the materialization of array'
+  scored overall=91 q='Why does the ResolvedGrouper class bridge the abstraction ga'
+  scored overall=37 q="Where does the control flow in ContStyle's __init__ method p"
+  scored overall=34 q='Where in the codebase is the skipna parameter handling logic'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/ALWAYS_LC_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/ALWAYS_LC_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 96,
+ "n_failed_or_skipped": 0,
+ "mean_overall": 58.64,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[17:00:07] SWE-QA-REST judge END ALWAYS_LC scored_lines=96
+[17:00:07] gen ALL DONE; waiting on remaining REST markers
+[17:00:52] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[17:00:55] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[17:02:05] gen ALL DONE; waiting on remaining REST markers
+[17:02:50] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[17:02:53] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[17:04:03] gen ALL DONE; waiting on remaining REST markers
+[17:04:48] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[17:04:50] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[17:06:00] gen ALL DONE; waiting on remaining REST markers
+[17:06:45] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[17:06:47] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[17:07:57] gen ALL DONE; waiting on remaining REST markers
+[17:08:42] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[17:08:45] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[17:09:55] gen ALL DONE; waiting on remaining REST markers
+[17:10:40] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[17:10:42] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[17:11:52] gen ALL DONE; waiting on remaining REST markers
+[17:12:37] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[17:12:40] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[17:13:50] gen ALL DONE; waiting on remaining REST markers
+[17:14:35] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[17:14:38] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[17:15:48] gen ALL DONE; waiting on remaining REST markers
+[17:16:33] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[17:16:36] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[17:17:46] gen ALL DONE; waiting on remaining REST markers
+[17:18:31] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[17:18:33] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[17:19:43] gen ALL DONE; waiting on remaining REST markers
+[17:20:28] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[17:20:30] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[17:21:40] gen ALL DONE; waiting on remaining REST markers
+[17:22:25] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[17:22:28] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[17:23:38] gen ALL DONE; waiting on remaining REST markers
+[17:24:23] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[17:24:25] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[17:25:35] gen ALL DONE; waiting on remaining REST markers
+[17:26:20] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[17:26:23] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[17:27:33] gen ALL DONE; waiting on remaining REST markers
+[17:28:18] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[17:28:20] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[17:29:30] gen ALL DONE; waiting on remaining REST markers
+[17:30:15] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[17:30:18] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[17:31:28] gen ALL DONE; waiting on remaining REST markers
+[17:32:13] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[17:32:15] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[17:33:25] gen ALL DONE; waiting on remaining REST markers
+[17:34:10] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[17:34:13] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[17:35:23] gen ALL DONE; waiting on remaining REST markers
+[17:36:08] SWE-QA-REST judge START PREASSESS (need 96)
+PREASSESS 96 answers
+gold answers: 576 tasks: 576
+[resume] keeping 95 existing scores in PREASSESS_answers_score.jsonl
+[WARN] parse failed; raw head='{\n"correctness": 3,\n"completeness": 4,\n"relevance": 8,\n"reasoning": 10\n}'
+{
+ "candidate": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers.jsonl",
+ "output": "/home/g7/haya/api_scores_strat_rest/PREASSESS_answers_score.jsonl",
+ "n_candidates": 96,
+ "n_scored": 95,
+ "n_failed_or_skipped": 1,
+ "mean_overall": 54.84,
+ "judge_model": "anthropic/claude-sonnet-4.5",
+ "label": "local-judge single-judge"
+}
+[17:36:11] REST PREASSESS partial scores=95 < 96 — resume next poll; sleep 70s for RPM
+[17:37:21] gen ALL DONE; waiting on remaining REST markers
